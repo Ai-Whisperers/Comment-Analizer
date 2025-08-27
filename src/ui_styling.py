@@ -418,72 +418,99 @@ class ThemeManager:
             transform: translateX(100%);
         }
         
-        /* File uploader with glass effect */
+        /* File uploader - FIXED for drag and drop functionality */
         [data-testid="stFileUploader"] {
             background: var(--glass-bg);
             border: 2px dashed var(--glass-border);
             border-radius: 20px;
             padding: 2rem;
             transition: all var(--duration-normal) var(--easing-default);
-            position: relative;
+            position: relative !important;
+            z-index: 100 !important;
         }
         
-        [data-testid="stFileUploader"]::before {
-            content: '';
-            position: absolute;
-            inset: -2px;
-            border-radius: 20px;
-            padding: 2px;
-            background: linear-gradient(135deg, 
-                var(--primary), 
-                var(--secondary));
-            -webkit-mask: linear-gradient(#fff 0 0) content-box, 
-                         linear-gradient(#fff 0 0);
-            -webkit-mask-composite: xor;
-            mask-composite: exclude;
-            opacity: 0;
-            transition: opacity var(--duration-normal);
+        /* Disable overlay that blocks drag and drop */
+        [data-testid="stFileUploader"]::before,
+        [data-testid="stFileUploader"]::after {
+            pointer-events: none !important;
+            z-index: -1 !important;
         }
         
         [data-testid="stFileUploader"]:hover {
             background: var(--glass-bg-hover);
+            border-color: var(--primary);
+            box-shadow: 0 0 20px rgba(139, 92, 246, 0.4);
         }
         
-        [data-testid="stFileUploader"]:hover::before {
-            opacity: 1;
+        /* Fix the dropzone to be fully interactive */
+        [data-testid="stFileUploadDropzone"],
+        [data-testid="stFileUploader"] section {
+            position: relative !important;
+            z-index: 101 !important;
+            pointer-events: auto !important;
+            cursor: pointer !important;
+        }
+        
+        /* Ensure all child elements are interactive */
+        [data-testid="stFileUploader"] * {
+            pointer-events: auto !important;
         }
         
         /* Fix for file uploader browse button */
-        [data-testid="stFileUploader"] button {
-            z-index: 10 !important;
+        [data-testid="stFileUploader"] button,
+        [data-testid="baseButton-secondary"] {
+            z-index: 102 !important;
             position: relative !important;
             pointer-events: auto !important;
             cursor: pointer !important;
             background: var(--primary) !important;
             color: white !important;
-        }
-        
-        /* Ensure dropzone is clickable */
-        [data-testid="stFileUploadDropzone"] {
-            position: relative !important;
-            z-index: 5 !important;
-            pointer-events: auto !important;
+            border: none !important;
+            padding: 0.5rem 1.5rem !important;
+            border-radius: 8px !important;
         }
         
         /* Fix for upload button hover */
-        [data-testid="stFileUploader"] button:hover {
+        [data-testid="stFileUploader"] button:hover,
+        [data-testid="baseButton-secondary"]:hover {
             background: var(--primary-dark) !important;
             transform: scale(1.05);
             transition: all 0.2s;
         }
         
-        /* Ensure file input is accessible */
+        /* Ensure file input is fully clickable */
         [data-testid="stFileUploader"] input[type="file"] {
             position: absolute !important;
+            top: 0 !important;
+            left: 0 !important;
+            width: 100% !important;
+            height: 100% !important;
             opacity: 0 !important;
             pointer-events: auto !important;
-            z-index: 15 !important;
+            z-index: 103 !important;
             cursor: pointer !important;
+        }
+        
+        /* Visual feedback for drag over state */
+        [data-testid="stFileUploader"].st-emotion-cache-1gulkj5:hover,
+        [data-testid="stFileUploader"][data-dragging="true"] {
+            background: rgba(139, 92, 246, 0.1) !important;
+            border-color: var(--primary) !important;
+            border-width: 2px !important;
+            border-style: solid !important;
+        }
+        
+        /* Remove interference from parent containers */
+        .stApp .main .block-container {
+            position: relative !important;
+            z-index: 1 !important;
+        }
+        
+        /* Ensure particles don't block interaction */
+        .particles-container,
+        [class*="particle"] {
+            pointer-events: none !important;
+            z-index: -999 !important;
         }
         
         /* Metrics with coherent styling */
@@ -845,15 +872,15 @@ class UIComponents:
     
     @staticmethod
     def floating_particles() -> str:
-        """Generate floating particles HTML"""
+        """Generate floating particles HTML that won't block interactions"""
         return """
-        <div class="particles-container">
-            <div class="particle"></div>
-            <div class="particle"></div>
-            <div class="particle"></div>
-            <div class="particle"></div>
-            <div class="particle"></div>
-            <div class="particle"></div>
+        <div class="particles-container" style="pointer-events: none !important; z-index: -999 !important;">
+            <div class="particle" style="pointer-events: none;"></div>
+            <div class="particle" style="pointer-events: none;"></div>
+            <div class="particle" style="pointer-events: none;"></div>
+            <div class="particle" style="pointer-events: none;"></div>
+            <div class="particle" style="pointer-events: none;"></div>
+            <div class="particle" style="pointer-events: none;"></div>
         </div>
         """
     

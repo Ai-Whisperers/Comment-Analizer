@@ -458,7 +458,36 @@ class AIAnalysisOverseer:
             if validation.enhanced_insights:
                 report.append(f"\nInsights de IA ({len(validation.enhanced_insights)}):")
                 for insight in validation.enhanced_insights[:3]:
-                    report.append(f"  🤖 {insight['content']}")
+                    # Clean up the content if it contains JSON
+                    content = insight['content']
+                    if isinstance(content, str):
+                        # Remove JSON formatting if present
+                        if content.startswith('```json'):
+                            content = content.replace('```json', '').replace('```', '').strip()
+                        # Try to parse JSON and extract meaningful text
+                        try:
+                            if content.startswith('{'):
+                                parsed = json.loads(content)
+                                # Extract the most relevant info from parsed JSON
+                                if 'issues' in parsed and parsed['issues']:
+                                    content = parsed['issues'][0] if isinstance(parsed['issues'], list) else str(parsed['issues'])
+                                elif 'insights' in parsed and parsed['insights']:
+                                    content = parsed['insights'][0] if isinstance(parsed['insights'], list) else str(parsed['insights'])
+                                elif 'quality_assessment' in parsed:
+                                    content = parsed['quality_assessment']
+                                else:
+                                    # Fallback to first meaningful value
+                                    for key, value in parsed.items():
+                                        if key != 'confidence_score' and value and str(value).strip():
+                                            content = str(value) if not isinstance(value, (list, dict)) else str(value[0]) if isinstance(value, list) and value else str(value)
+                                            break
+                        except (json.JSONDecodeError, TypeError):
+                            # If not JSON or parsing fails, clean up the string
+                            content = content.replace('\\n', ' ').replace('\\t', ' ')
+                            # Limit length for display
+                            if len(content) > 200:
+                                content = content[:200] + "..."
+                    report.append(f"  🤖 {content}")
         else:
             report.append("AI OVERSEER VALIDATION REPORT")
             report.append("=" * 50)
@@ -484,7 +513,36 @@ class AIAnalysisOverseer:
             if validation.enhanced_insights:
                 report.append(f"\nAI Insights ({len(validation.enhanced_insights)}):")
                 for insight in validation.enhanced_insights[:3]:
-                    report.append(f"  🤖 {insight['content']}")
+                    # Clean up the content if it contains JSON
+                    content = insight['content']
+                    if isinstance(content, str):
+                        # Remove JSON formatting if present
+                        if content.startswith('```json'):
+                            content = content.replace('```json', '').replace('```', '').strip()
+                        # Try to parse JSON and extract meaningful text
+                        try:
+                            if content.startswith('{'):
+                                parsed = json.loads(content)
+                                # Extract the most relevant info from parsed JSON
+                                if 'issues' in parsed and parsed['issues']:
+                                    content = parsed['issues'][0] if isinstance(parsed['issues'], list) else str(parsed['issues'])
+                                elif 'insights' in parsed and parsed['insights']:
+                                    content = parsed['insights'][0] if isinstance(parsed['insights'], list) else str(parsed['insights'])
+                                elif 'quality_assessment' in parsed:
+                                    content = parsed['quality_assessment']
+                                else:
+                                    # Fallback to first meaningful value
+                                    for key, value in parsed.items():
+                                        if key != 'confidence_score' and value and str(value).strip():
+                                            content = str(value) if not isinstance(value, (list, dict)) else str(value[0]) if isinstance(value, list) and value else str(value)
+                                            break
+                        except (json.JSONDecodeError, TypeError):
+                            # If not JSON or parsing fails, clean up the string
+                            content = content.replace('\\n', ' ').replace('\\t', ' ')
+                            # Limit length for display
+                            if len(content) > 200:
+                                content = content[:200] + "..."
+                    report.append(f"  🤖 {content}")
         
         report.append("=" * 50)
         
