@@ -1,32 +1,137 @@
-# Analizador de Comentarios - Sistema de Análisis de Feedback de Clientes
+# Analizador de Comentarios - Personal Paraguay
 
-Sistema sofisticado de análisis de sentimientos y detección de patrones multilingüe diseñado para analizar comentarios de clientes sobre servicios de fibra óptica al hogar. Desarrollado específicamente para Personal Paraguay (Núcleo S.A.) para proporcionar inteligencia empresarial accionable a partir del feedback de clientes.
+Sistema avanzado de análisis de sentimientos y detección de patrones para comentarios de clientes sobre servicios de fibra óptica. Desarrollado para Personal Paraguay (Núcleo S.A.).
 
-## 📚 Documentación
+---
 
-Para documentación técnica completa, guías de desarrollo y especificaciones arquitectónicas, visite el **[Centro de Documentación Técnica](./documentation/README.md)** (en inglés).
+## ⚡ INICIO RÁPIDO - FUNCIONANDO EN 3 MINUTOS
 
-## 📊 Formato de Datos de Entrada - Guía Detallada
+### 📋 Requisitos Previos
+- Python 3.11 o superior instalado
+- Clave API de OpenAI con créditos disponibles
+- 5MB+ de espacio en disco disponible
+- Navegador web moderno (Chrome, Firefox, Edge)
+
+### 🚀 Instalación Rápida (3 Pasos)
+
+#### Paso 1: Instalar Dependencias
+```bash
+pip install -r requirements.txt
+```
+
+#### Paso 2: Configurar Entorno
+Crear archivo `.env` en el directorio raíz:
+```env
+# REQUERIDO: Tu clave API real de OpenAI
+OPENAI_API_KEY=sk-proj-TU-CLAVE-API-REAL-AQUI
+
+# CONFIGURACIÓN OPTIMIZADA PARA USO INMEDIATO
+OPENAI_MODEL=gpt-4
+OPENAI_MAX_TOKENS=2000
+OPENAI_TEMPERATURE=0.7
+STREAMLIT_PORT=8501
+LOG_LEVEL=INFO
+```
+
+#### Paso 3: Lanzar Aplicación
+```bash
+python run.py
+```
+Luego abrir: **http://localhost:8501**
+
+### 🧪 Prueba Rápida (30 segundos)
+1. Crear archivo `test_data.xlsx` con los datos de ejemplo (ver sección abajo)
+2. Subir archivo en la interfaz web
+3. Hacer clic en "🚀 Análisis Rápido"
+4. Verificar que aparezcan gráficos de sentimientos y métricas
+
+**✅ Éxito**: Si ves gráficos coloridos y métricas de sentimientos, ¡todo está listo!
+
+---
+
+## 📦 LISTA DE VERIFICACIÓN PARA TESTERS
+
+### ✅ ANTES DE COMPARTIR CON TESTERS
+
+#### Archivos Críticos Requeridos:
+- [ ] **`.env`** - Con clave API real de OpenAI (no placeholder)
+- [ ] **`README.md`** - Esta guía completa
+- [ ] **`requirements.txt`** - Todas las dependencias listadas
+- [ ] **`run.py`** - Lanzador de aplicación
+- [ ] **`src/`** - Directorio completo del código fuente
+- [ ] **`test_data.xlsx`** - Archivo de datos de muestra para pruebas
+
+#### Verificación de API Key:
+- [ ] Reemplazaste `TU-CLAVE-API-REAL-AQUI` con clave real
+- [ ] La clave empieza con `sk-proj-` o `sk-`
+- [ ] Verificaste que la clave tiene créditos suficientes ($5+ recomendado)
+- [ ] Probaste localmente - la aplicación inicia sin errores
+
+#### Comandos de Verificación:
+```bash
+# Verificación rápida de configuración
+python -c "from src.config import Config; print('✅ API configurada' if Config.OPENAI_API_KEY else '❌ API faltante')"
+
+# Debe iniciar sin errores
+python run.py  
+```
+
+### 🎯 CASOS DE PRUEBA PARA TESTERS
+
+1. **✅ Inicio Básico**: La aplicación se lanza y carga la interfaz
+2. **✅ Carga de Archivos**: Acepta archivos Excel/CSV, muestra vista previa
+3. **✅ Análisis**: Procesa datos, muestra gráficos de sentimientos (30-60 segundos)
+4. **✅ Exportación**: Genera reporte Excel descargable
+
+#### Resultados Esperados:
+- **Tiempo de instalación**: 2-3 minutos
+- **Primer análisis exitoso**: Menos de 5 minutos
+- **Archivo de muestra (50 comentarios)**: 30-60 segundos de procesamiento
+- **Costo API**: ~$0.02-0.04 USD por prueba
+
+### ⚠️ Problemas Comunes y Soluciones
+- **"OPENAI_API_KEY not found"** → Verificar que existe archivo `.env` en directorio raíz
+- **"Port 8501 already in use"** → Ejecutar: `streamlit run src/main.py --server.port 8502`
+- **"ModuleNotFoundError"** → Ejecutar: `pip install -r requirements.txt`
+- **Errores de análisis** → Verificar formato de datos y columnas requeridas
+
+---
+
+## 📊 FORMATO DE DATOS DE ENTRADA
 
 ### Estructura del Archivo Excel
 
-El sistema está optimizado para procesar archivos Excel con comentarios de clientes. A continuación se detalla la estructura esperada:
+El sistema está optimizado para procesar archivos Excel con comentarios de clientes.
 
 #### Columnas Principales
 
 | Nombre de Columna | Tipo de Dato | Obligatorio | Descripción | Ejemplo |
 |-------------------|--------------|-------------|-------------|---------|
 | **Comentario Final** | Texto | ✅ Sí | Comentario del cliente | "Excelente servicio, muy rápido" |
-| **Fecha** | Fecha/Hora | ⚪ No | Fecha del comentario | 27/08/2025 14:30 |
+| **Fecha** | Fecha/Hora | ⚪ No | Fecha del comentario | 27/12/2024 |
 | **Nota** | Número (1-10) | ⚪ No | Calificación numérica | 8 |
 | **NPS** | Texto | ⚪ No | Categoría NPS | "Promotor" |
 | **ID Cliente** | Texto/Número | ⚪ No | Identificador único | "C12345" |
 | **Región** | Texto | ⚪ No | Ubicación geográfica | "Asunción" |
-| **Tipo Servicio** | Texto | ⚪ No | Servicio específico | "Fibra 100MB" |
+
+### Archivo de Prueba Ejemplo
+
+Crear `test_data.xlsx` con estos datos:
+
+| Comentario Final | Fecha | Nota |
+|------------------|-------|------|
+| Excelente servicio de Internet, muy rápido | 01/12/2024 | 9 |
+| La conexión se corta frecuentemente | 02/12/2024 | 3 |
+| Buena atención al cliente, resolvieron rápido | 03/12/2024 | 8 |
+| Precio muy alto para el servicio ofrecido | 04/12/2024 | 4 |
+| Instalación eficiente, técnicos profesionales | 05/12/2024 | 9 |
+| Internet lento durante las noches | 06/12/2024 | 5 |
+| Servicio estable, sin problemas | 07/12/2024 | 7 |
+| Mala señal en días de lluvia | 08/12/2024 | 4 |
+| Soporte técnico muy útil | 09/12/2024 | 8 |
+| Velocidad constante, cumple lo prometido | 10/12/2024 | 9 |
 
 #### Nombres de Columna Reconocidos Automáticamente
-
-El sistema detecta inteligentemente las siguientes variaciones de nombres:
 
 **Para Comentarios:**
 - Comentario Final
@@ -35,7 +140,6 @@ El sistema detecta inteligentemente las siguientes variaciones de nombres:
 - Feedback
 - Opinión
 - Sugerencias
-- Comentario del Cliente
 
 **Para Calificaciones:**
 - Nota
@@ -48,528 +152,283 @@ El sistema detecta inteligentemente las siguientes variaciones de nombres:
 - Fecha
 - Fecha de Registro
 - Timestamp
-- Fecha Comentario
+- Fecha_Registro
 
-### Preparación del Archivo Excel
+---
 
-#### Paso 1: Verificar Formato
+## 🏗️ INFORMACIÓN DEL SISTEMA
+
+### Especificaciones Técnicas
+
+**Versión Actual**: 2.0.0  
+**Última Actualización**: 27 de Diciembre, 2024  
+**Tecnología Principal**: Streamlit + Python 3.12  
+**Integración IA**: OpenAI GPT-4  
+**Puerto Predeterminado**: 8501 (configurable vía STREAMLIT_PORT)
+
+### Arquitectura del Sistema
+
 ```
-✅ Formato correcto: .xlsx o .xls
-✅ Primera fila: Nombres de columnas
-✅ Datos desde la fila 2 en adelante
-✅ Sin filas vacías intermedias
-```
-
-#### Paso 2: Limpiar Datos (Opcional)
-El sistema maneja automáticamente:
-- Espacios en blanco extras
-- Comentarios duplicados
-- Caracteres especiales
-- Diferentes codificaciones
-
-#### Paso 3: Validar Contenido Mínimo
-- **Mínimo recomendado**: 10 comentarios
-- **Óptimo para análisis**: 50+ comentarios
-- **Máximo procesable**: 10,000 comentarios por archivo
-
-### Ejemplos de Archivos
-
-#### Ejemplo Mínimo Viable
-```
-| Comentario Final |
-|------------------|
-| El servicio es bueno |
-| Muy lenta la conexión |
-| Excelente atención |
-```
-
-#### Ejemplo Completo
-```
-| Comentario Final | Fecha | Nota | NPS | Cliente |
-|------------------|-------|------|-----|---------|
-| Excelente servicio | 27/08/2025 | 9 | Promotor | C001 |
-| Problemas frecuentes | 26/08/2025 | 4 | Detractor | C002 |
-| Servicio regular | 25/08/2025 | 7 | Pasivo | C003 |
+Comment-Analizer/
+├── src/                    # Código fuente principal
+│   ├── main.py            # Punto de entrada Streamlit
+│   ├── config.py          # Configuración del sistema
+│   ├── ai_overseer.py     # Validador de IA
+│   ├── api/               # Integraciones API
+│   ├── components/        # Componentes UI
+│   ├── services/          # Lógica de negocio
+│   ├── sentiment_analysis/# Motores de análisis
+│   ├── data_processing/   # Procesamiento de datos
+│   ├── utils/             # Utilidades compartidas
+│   └── theme/             # Sistema de temas UI
+├── tests/                  # Suite de pruebas (92+ tests)
+├── documentation/          # Documentación técnica
+├── requirements.txt        # Dependencias Python
+├── run.py                 # Lanzador de aplicación
+└── .env                   # Configuración (crear manualmente)
 ```
 
-### Procesamiento de Idiomas
+---
 
-El sistema procesa automáticamente:
-- **Español**: Análisis completo con corrección ortográfica
-- **Guaraní**: Detección y análisis básico
-- **Mixto**: Maneja comentarios bilingües español-guaraní
+## 🎯 CARACTERÍSTICAS PRINCIPALES
 
-### Validaciones Automáticas
+### Capacidades Actuales
+- ✅ **Análisis de sentimientos** (Español/Guaraní)
+- ✅ **Insights potenciados por IA** con GPT-4
+- ✅ **Detección de patrones** y análisis de tendencias
+- ✅ **Exportación profesional** a Excel
+- ✅ **Visualizaciones interactivas** con Plotly
+- ✅ **Procesamiento por lotes** de grandes volúmenes
+- ✅ **Cache inteligente** para optimización de API
+- ✅ **Modo oscuro/claro** personalizable
 
-El sistema realiza las siguientes validaciones:
+### Métricas Disponibles
+- Distribución de sentimientos (Positivo/Neutral/Negativo)
+- Score NPS (Promotores/Neutros/Detractores)
+- Temas principales identificados
+- Análisis temporal de tendencias
+- Palabras clave frecuentes
+- Patrones de problemas recurrentes
+- Recomendaciones basadas en IA
 
-1. **Detección de columna de comentarios**: Busca automáticamente la columna principal
-2. **Limpieza de datos**: Elimina duplicados y comentarios vacíos
-3. **Normalización**: Corrige errores ortográficos comunes
-4. **Categorización**: Asigna categorías automáticamente si no existen
+---
 
-### Salida del Análisis - Estructura del Reporte Excel
+## 📈 USO DE LA APLICACIÓN
 
-#### Hojas Generadas en el Reporte
+### Flujo de Trabajo Típico
 
-1. **Resumen Ejecutivo**
-   - Métricas principales
-   - Gráficos de distribución
-   - Insights clave
+1. **Preparar Datos**
+   - Asegurar que el Excel tenga columna "Comentario Final"
+   - Verificar formato de fechas (DD/MM/YYYY)
+   - Incluir calificaciones numéricas si están disponibles
 
-2. **Análisis Detallado**
-   - Comentario original
-   - Sentimiento detectado
-   - Puntuación de confianza
-   - Emociones identificadas
-   - Temas extraídos
+2. **Cargar y Analizar**
+   - Subir archivo Excel/CSV vía interfaz
+   - Seleccionar tipo de análisis (Rápido/Completo)
+   - Esperar procesamiento (1-2 min por 100 comentarios)
 
-3. **Análisis de Sentimientos**
-   - Distribución porcentual
-   - Tendencias temporales
-   - Segmentación por categorías
+3. **Revisar Resultados**
+   - Explorar dashboard interactivo
+   - Filtrar por sentimiento/fecha/categoría
+   - Identificar insights clave y patrones
 
-4. **Detección de Temas**
-   - Temas más frecuentes
-   - Palabras clave
-   - Asociaciones de temas
+4. **Exportar Reportes**
+   - Descargar Excel con análisis completo
+   - Generar PDF para presentaciones
+   - Exportar gráficos como imágenes
 
-5. **Métricas NPS**
-   - Cálculo de NPS
-   - Distribución promotores/detractores
-   - Análisis por segmentos
+### Opciones de Análisis
 
-6. **Análisis Avanzado**
-   - Predicción de abandono
-   - Análisis emocional profundo
-   - Recomendaciones de acción
+#### 🚀 **Análisis Rápido**
+- Procesamiento básico de sentimientos
+- Métricas esenciales
+- Ideal para revisiones diarias
+- Tiempo: ~30 seg por 100 comentarios
 
-7. **Calidad de Datos**
-   - Estadísticas de limpieza
-   - Comentarios procesados vs descartados
-   - Métricas de calidad
+#### 🔬 **Análisis Completo con IA**
+- Análisis profundo con GPT-4
+- Detección avanzada de patrones
+- Recomendaciones estratégicas
+- Insights de negocio detallados
+- Tiempo: 2-3 min por 100 comentarios
+- Costo estimado: $0.10-0.20 USD por 100 comentarios
 
-## 🚀 Características Principales
+---
 
-### Capacidades Fundamentales
-- **Soporte Multilingüe**: Soporte completo para español (dialecto paraguayo) y detección de guaraní
-- **Análisis de Sentimientos Avanzado**: Detección de emociones y puntuación de sentimientos usando OpenAI GPT-4
-- **Reconocimiento de Patrones**: Identificación automática de temas y análisis de tendencias
-- **Panel Interactivo**: Visualización en tiempo real con interfaz Streamlit
-- **Reportes Profesionales**: Exportaciones a Excel con múltiples hojas, análisis detallados y visualizaciones
+## 🐳 INSTALACIÓN CON DOCKER
 
-### Características Técnicas
-- **Integración con IA**: OpenAI GPT-4 para análisis avanzado
-- **Optimización de Rendimiento**: Caché inteligente y procesamiento por lotes
-- **Control de Costos**: Monitoreo integrado del uso de API
-- **Diseño Responsivo**: Interfaz adaptable para móviles con tema profesional
-- **Seguridad**: Validación de entrada y manejo seguro de API
-
-## 📦 Instalación Rápida
-
-### Requisitos Previos
-- Python 3.9 o superior
-- Clave de API de OpenAI (GPT-4)
-- 4GB RAM mínimo recomendado
-
-### Pasos de Instalación
-
-1. **Clonar el repositorio**
-   ```bash
-   git clone https://github.com/aiwhispererwvdp/Comment-Analizer.git
-   cd Comment-Analizer
-   ```
-
-2. **Crear entorno virtual** (recomendado)
-   ```bash
-   python -m venv venv
-   source venv/bin/activate  # En Windows: venv\Scripts\activate
-   ```
-
-3. **Instalar dependencias**
-   ```bash
-   pip install -r requirements.txt
-   ```
-
-4. **Configurar variables de entorno**
-   
-   Crear archivo `.env` en la raíz del proyecto:
-   ```env
-   # =============================================
-   # CONFIGURACIÓN ANALIZADOR DE COMENTARIOS
-   # =============================================
-   
-   # REQUERIDO: Clave API de OpenAI (reemplazar con clave real)
-   OPENAI_API_KEY=tu_clave_api_aqui
-   
-   # CONFIGURACIÓN IA (Opcional - valores por defecto recomendados)
-   OPENAI_MODEL=gpt-4
-   OPENAI_MAX_TOKENS=4000
-   OPENAI_TEMPERATURE=0.7
-   
-   # CONFIGURACIÓN APLICACIÓN (Opcional)
-   APP_ENV=production
-   DEBUG_MODE=False
-   LOG_LEVEL=INFO
-   
-   # LÍMITES DE PROCESAMIENTO (Opcional)
-   MAX_FILE_SIZE_MB=10
-   MAX_COMMENTS_PER_BATCH=100
-   CACHE_TTL_SECONDS=900
-   
-   # PUERTO DEL SERVIDOR (Configurable - por defecto 8501)
-   STREAMLIT_PORT=8501
-   ```
-
-## 🎯 Uso Rápido
-
-### Iniciar la Aplicación
+### Opción Rápida con Docker
 
 ```bash
-# Opción 1: Usando Streamlit directamente
-streamlit run src/main.py
+# Construir imagen
+docker build -t comment-analyzer .
 
-# Opción 2: Usando el script de inicio
-python run.py
+# Ejecutar contenedor
+docker run -p 8501:8501 \
+  -e OPENAI_API_KEY=tu-clave-api \
+  comment-analyzer
 ```
 
-La aplicación se abrirá automáticamente en tu navegador. El puerto por defecto es `http://localhost:8501` (configurable con STREAMLIT_PORT)
+### Docker Compose (Producción)
 
-### Cómo Usar la Aplicación
+```yaml
+# docker-compose.yml
+version: '3.8'
+services:
+  analyzer:
+    build: .
+    ports:
+      - "8501:8501"
+    environment:
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+    volumes:
+      - ./data:/app/data
+      - ./outputs:/app/outputs
+    restart: unless-stopped
+```
 
-1. **Acceder a la interfaz**: Navegar a http://localhost:8501 (o el puerto configurado en STREAMLIT_PORT)
-2. **Cargar archivo**: Usar el cargador para subir Excel con comentarios
-3. **Analizar**: Hacer clic en "🚀 Análisis Rápido"
-4. **Ver resultados**: Explorar el panel interactivo con métricas y gráficos
-5. **Exportar**: Descargar reportes profesionales en Excel
+Ejecutar con:
+```bash
+docker-compose up -d
+```
 
-## 📊 Formato de Datos de Entrada
+---
 
-### Archivos Soportados
-- **Excel** (.xlsx, .xls) - Formato recomendado
-- **CSV** (.csv) - Soporte alternativo
+## 🔧 CONFIGURACIÓN AVANZADA
 
-### Estructura Requerida
-El archivo debe contener al menos una columna con comentarios de texto:
+### Variables de Entorno Completas
 
-| Columna | Tipo | Requerido | Descripción |
-|---------|------|-----------|-------------|
-| Comentario | Texto | ✅ Sí | Feedback del cliente |
-| Fecha | Fecha | ⚪ No | Timestamp del comentario |
-| Nota | Número | ⚪ No | Calificación numérica |
-| NPS | Texto | ⚪ No | Categoría NPS |
-| Cliente | Texto | ⚪ No | Identificador del cliente |
+```env
+# === API CONFIGURATION ===
+OPENAI_API_KEY=sk-proj-xxx              # Requerido
+OPENAI_MODEL=gpt-4                      # Modelo a usar
+OPENAI_MAX_TOKENS=2000                  # Límite de tokens
+OPENAI_TEMPERATURE=0.7                  # Creatividad (0-1)
+OPENAI_TIMEOUT=60                       # Timeout en segundos
 
-**Nota**: El sistema detecta automáticamente columnas con nombres como "Comentario Final", "Observaciones", "Feedback", etc.
+# === APPLICATION SETTINGS ===
+APP_ENV=production                      # production/testing/development
+STREAMLIT_PORT=8501                     # Puerto de la aplicación
+LOG_LEVEL=INFO                          # DEBUG/INFO/WARNING/ERROR
+DEBUG_MODE=False                        # Modo debug
 
-## 📈 Capacidades de Análisis
+# === PERFORMANCE TUNING ===
+MAX_FILE_SIZE_MB=10                     # Tamaño máximo de archivo
+MAX_COMMENTS_PER_BATCH=100              # Comentarios por lote
+CACHE_TTL_SECONDS=3600                  # Duración del cache
+ENABLE_CACHE=True                       # Habilitar cache
 
-### Análisis Disponibles
-- **Sentimiento**: Positivo, Negativo, Neutro con puntuación de confianza
-- **Emociones**: Detección de alegría, enojo, tristeza, miedo, sorpresa
-- **Temas Clave**: Identificación automática de tópicos recurrentes
-- **Tendencias**: Análisis temporal de cambios en sentimiento
-- **Métricas NPS**: Cálculos automáticos de Net Promoter Score
+# === SECURITY ===
+ENABLE_RATE_LIMITING=True               # Limitar tasa de peticiones
+MAX_REQUESTS_PER_MINUTE=60              # Peticiones por minuto
+SECURE_HEADERS=True                     # Headers de seguridad
+```
 
-### Formatos de Exportación
+---
 
-#### Reporte Excel Profesional
-Libro de trabajo completo con 15+ hojas incluyendo:
-- Resumen ejecutivo con métricas clave
-- Análisis detallado comentario por comentario
-- Detección de temas y patrones
-- Segmentación de clientes
-- Análisis avanzados (riesgo de abandono, emociones)
-- Recomendaciones accionables
+## 🧪 PRUEBAS Y VALIDACIÓN
 
-## 🔒 Seguridad y Privacidad
-
-- ✅ Todo el procesamiento se realiza localmente
-- ✅ Las llamadas a API usan conexiones encriptadas
-- ✅ No se almacenan datos de clientes permanentemente
-- ✅ Políticas configurables de retención de datos
-- ✅ Validación y sanitización de entrada
-
-## 🎯 Casos de Uso
-
-### Aplicaciones Empresariales
-- **Servicio al Cliente**: Identificar quejas y problemas comunes
-- **Desarrollo de Producto**: Entender solicitudes de funcionalidades
-- **Marketing**: Medir efectividad de campañas
-- **Calidad**: Rastrear tendencias de calidad del servicio
-- **Inteligencia de Negocio**: Toma de decisiones basada en datos
-
-## 🧪 Ejecutar Pruebas
+### Ejecutar Suite de Pruebas
 
 ```bash
-# Ejecutar suite completa de pruebas
+# Todas las pruebas
 pytest tests/
 
-# Ejecutar con cobertura
+# Con cobertura
 pytest --cov=src tests/
 
-# Ejecutar pruebas específicas
+# Pruebas específicas
 pytest tests/test_sentiment_analysis.py
 ```
 
-## 📁 Estructura del Proyecto
+### Validación de Configuración
 
-```
-Comment-Analyzer/
-├── src/                    # Código fuente principal
-│   ├── main.py            # Punto de entrada de la aplicación
-│   ├── ai_overseer.py     # Supervisión de calidad con IA
-│   └── [módulos...]       # Componentes del sistema
-├── data/                   # Almacenamiento de datos
-├── outputs/                # Resultados generados
-├── tests/                  # Suite de pruebas
-├── documentation/          # Documentación técnica (inglés)
-└── local-reports/          # Reportes de análisis internos
-```
-
-## 🤝 Soporte
-
-Para soporte, solicitudes de funcionalidades o reportes de errores:
-- Contactar al equipo de desarrollo de Personal Paraguay
-- Crear un issue en este repositorio
-- Revisar la [documentación técnica](./documentation/README.md)
-
-## 📝 Licencia
-
-Software Propietario - Personal Paraguay (Núcleo S.A.)  
-Todos los derechos reservados.
-
-## 🧪 GUÍA ESPECÍFICA PARA TESTERS
-
-### 📦 Archivos Críticos Incluidos en el Bundle
-
-Para ejecutar el sistema correctamente, asegúrate de que el bundle incluya:
-
-#### ✅ Archivos Obligatorios
-- **`.env`** - Archivo de configuración con clave API (MÁS IMPORTANTE)
-- **`README.md`** - Esta guía de instalación
-- **`requirements.txt`** - Lista de dependencias Python
-- **`run.py`** - Script para iniciar la aplicación
-- **`src/`** - Carpeta completa del código fuente
-
-#### ✅ Archivos Recomendados
-- **`test_data.xlsx`** - Archivo de muestra para pruebas
-- **`documentation/`** - Documentación técnica adicional
-
-### 🔧 Configuración del Archivo .env
-
-**CRÍTICO**: El archivo `.env` debe estar en la raíz del proyecto y contener una clave API válida de OpenAI.
-
-#### Plantilla Completa del .env
-```env
-# =============================================
-# CONFIGURACIÓN PARA TESTERS
-# =============================================
-
-# REQUERIDO: Clave API de OpenAI - REEMPLAZAR CON CLAVE REAL
-OPENAI_API_KEY=sk-proj-TU-CLAVE-REAL-AQUI
-
-# CONFIGURACIÓN RECOMENDADA PARA PRUEBAS
-OPENAI_MODEL=gpt-4
-OPENAI_MAX_TOKENS=2000
-OPENAI_TEMPERATURE=0.7
-
-# CONFIGURACIÓN DE PRUEBAS
-APP_ENV=testing
-DEBUG_MODE=True
-LOG_LEVEL=DEBUG
-
-# LÍMITES PARA PRUEBAS (Más conservadores)
-MAX_FILE_SIZE_MB=5
-MAX_COMMENTS_PER_BATCH=50
-CACHE_TTL_SECONDS=600
-
-# PUERTO (Cambiar si hay conflicto)
-STREAMLIT_PORT=8501
-```
-
-### 📋 Lista de Verificación Pre-Prueba
-
-Antes de comenzar las pruebas:
-
-1. **Verificar Python**
-   ```bash
-   python --version  # Debe ser 3.9 o superior
-   ```
-
-2. **Verificar archivo .env**
-   - [ ] Existe en la raíz del proyecto
-   - [ ] Contiene OPENAI_API_KEY con clave válida
-   - [ ] Sin espacios extra alrededor del signo =
-
-3. **Instalar dependencias**
-   ```bash
-   pip install -r requirements.txt
-   ```
-
-4. **Prueba rápida de configuración**
-   ```bash
-   python -c "from src.config import Config; print('✅ API configurada' if Config.OPENAI_API_KEY else '❌ API no configurada')"
-   ```
-
-### 🚀 Pasos de Ejecución para Testers
-
-#### Opción 1: Inicio Rápido
 ```bash
-python run.py
+# Verificar instalación
+python verify_setup.py
+
+# Verificar imports
+python verify_imports.py
+
+# Test de integración IA
+python test_ai_integration.py
 ```
-
-#### Opción 2: Inicio con Streamlit
-```bash
-streamlit run src/main.py
-```
-
-#### Opción 3: Puerto Personalizado
-```bash
-streamlit run src/main.py --server.port 8502
-```
-
-### 🔍 Casos de Prueba Básicos
-
-#### 1. Prueba de Conectividad
-- Abrir http://localhost:8501
-- Verificar que la interfaz carga correctamente
-- Confirmar que no hay errores en la consola
-
-#### 2. Prueba de Carga de Archivos
-- Usar archivo `test_data.xlsx` (si se incluye)
-- O crear archivo Excel simple con columna "Comentario Final"
-- Verificar que acepta el archivo sin errores
-
-#### 3. Prueba de Análisis
-- Hacer clic en "🚀 Análisis Rápido"
-- Esperar procesamiento (puede tomar 30-60 segundos)
-- Verificar que se muestran gráficos y métricas
-
-#### 4. Prueba de Exportación
-- Hacer clic en "Descargar Reporte Excel"
-- Verificar que se genera y descarga archivo .xlsx
-- Abrir archivo y confirmar múltiples hojas de cálculo
-
-### ⚠️ Solución de Problemas Comunes
-
-#### Error: "OPENAI_API_KEY not found"
-**Causa**: Archivo .env no existe o clave API no configurada
-**Solución**: 
-1. Verificar que .env existe en la raíz
-2. Confirmar que contiene `OPENAI_API_KEY=sk-...`
-3. Reiniciar la aplicación
-
-#### Error: "Port 8501 is already in use"
-**Causa**: Puerto ocupado por otra aplicación
-**Solución**:
-```bash
-# Cambiar puerto en .env
-STREAMLIT_PORT=8502
-
-# O ejecutar con puerto específico
-STREAMLIT_PORT=8502 streamlit run src/main.py
-```
-
-#### Error: "ModuleNotFoundError"
-**Causa**: Dependencias no instaladas
-**Solución**:
-```bash
-pip install -r requirements.txt
-```
-
-#### Error: "API quota exceeded"
-**Causa**: Límite de API de OpenAI alcanzado
-**Solución**: Verificar créditos en cuenta OpenAI
-
-### 📊 Datos de Prueba
-
-#### Archivo Excel Mínimo (crear como test_data.xlsx)
-```
-| Comentario Final |
-|------------------|
-| Excelente servicio de Internet |
-| Muy lenta la conexión por las mañanas |
-| Buena atención al cliente |
-| Precio demasiado alto |
-| Instalación rápida y eficiente |
-```
-
-#### Archivo Excel Completo
-```
-| Comentario Final | Fecha | Nota | NPS |
-|------------------|-------|------|-----|
-| Excelente servicio | 01/08/2024 | 9 | Promotor |
-| Internet muy lento | 02/08/2024 | 3 | Detractor |
-| Servicio regular | 03/08/2024 | 7 | Pasivo |
-```
-
-### 📞 Contacto de Soporte para Testers
-
-Si encuentran problemas durante las pruebas:
-1. Revisar esta sección de solución de problemas
-2. Verificar logs en carpeta `logs/`
-3. Contactar al equipo de desarrollo con:
-   - Descripción del error
-   - Captura de pantalla
-   - Archivo de log (si existe)
-
-### ✅ Criterios de Éxito para Pruebas
-
-La prueba es exitosa si:
-- [ ] La aplicación inicia sin errores
-- [ ] Se puede cargar un archivo Excel
-- [ ] El análisis se ejecuta y muestra resultados
-- [ ] Se pueden ver gráficos y métricas
-- [ ] Se puede descargar reporte Excel
-- [ ] El reporte contiene múltiples hojas con datos
-
-## 🚀 Estado del Proyecto
-
-**Versión**: 1.0.0  
-**Estado**: Producción  
-**Última Actualización**: Agosto 2025  
-**Mantenido por**: Equipo de Desarrollo Personal Paraguay
 
 ---
 
-## 💡 Inicio Rápido para Diferentes Roles
+## 📚 DOCUMENTACIÓN ADICIONAL
 
-### Para Analistas de Negocio
-1. Instalar siguiendo los pasos anteriores
-2. Preparar archivo Excel con comentarios
-3. Ejecutar análisis y descargar reportes
-4. Revisar [Guía de Usuario](./documentation/guides/USER_GUIDE.md)
+### Guías Técnicas Disponibles
 
-### Para Desarrolladores
-1. Clonar y configurar entorno de desarrollo
-2. Revisar [Documentación Técnica](./documentation/README.md)
-3. Ejecutar pruebas para verificar configuración
-4. Explorar arquitectura en `/documentation/architecture/`
+Para documentación técnica detallada, consultar la carpeta `documentation/`:
 
-### Para DevOps
-1. Revisar [Guía de Docker](./documentation/deployment/DOCKER_DEPLOYMENT.md)
-2. Configurar variables de entorno
-3. Desplegar usando contenedores Docker
-4. Monitorear health endpoint: `http://localhost:8501/_stcore/health`
+- **Guías de Usuario**: `documentation/guides/USER_GUIDE.md`
+- **Arquitectura**: `documentation/architecture/`
+- **Instalación Detallada**: `documentation/deployment/INSTALLATION.md`
+- **Configuración API**: `documentation/guides/AI_INTEGRATION_COMPLETE_GUIDE.md`
+- **Solución de Problemas**: `documentation/guides/CRITICAL_FIXES_QUICKSTART.md`
 
 ---
 
-## 🔄 Actualizaciones Recientes
+## 🆘 SOPORTE Y RECURSOS
 
-### Versión 1.0.0 (Agosto 2025)
-- ✅ Limpieza completa del código base
-- ✅ Optimización de dependencias (-40% tamaño)
-- ✅ Mejoras en manejo de errores
-- ✅ Documentación actualizada en español
-- ✅ Integración mejorada con AI Overseer
+### Recursos Internos
+- **Logs de error**: `/logs/comment_analyzer_*.log`
+- **Health check**: `http://localhost:8501/_stcore/health`
+- **Suite de pruebas**: `pytest tests/`
+- **Verificación**: `python verify_setup.py`
 
-### Próximas Mejoras Planificadas
-- 🔄 Soporte completo para guaraní
-- 🔄 Dashboard de monitoreo en tiempo real
-- 🔄 Integración con webhooks
-- 🔄 Exportación a formatos adicionales
+### Solución Rápida de Problemas
+
+| Problema | Solución |
+|----------|----------|
+| API key no funciona | Verificar formato: `sk-proj-...` y créditos disponibles |
+| Aplicación no inicia | Revisar puerto 8501 libre, reinstalar dependencias |
+| Error de análisis | Verificar formato Excel, columna "Comentario Final" |
+| Resultados vacíos | Revisar que haya comentarios no vacíos |
+| Exportación falla | Verificar permisos de escritura en `/outputs` |
+
+### Contacto y Soporte
+- **Logs detallados**: Revisar `/logs/` para errores específicos
+- **Configuración**: Verificar archivo `.env` está completo
+- **Dependencias**: Ejecutar `pip install --upgrade -r requirements.txt`
 
 ---
 
-Construido con ❤️ para Personal Paraguay para mejorar la experiencia del cliente a través de insights basados en datos.
+## 📊 ESTIMACIÓN DE COSTOS
+
+### Uso de API OpenAI
+
+| Volumen de Comentarios | Tiempo Estimado | Costo Aproximado |
+|------------------------|-----------------|------------------|
+| 50 comentarios | 30-60 segundos | $0.02-0.04 USD |
+| 100 comentarios | 1-2 minutos | $0.05-0.10 USD |
+| 500 comentarios | 5-8 minutos | $0.25-0.50 USD |
+| 1000 comentarios | 10-15 minutos | $0.50-1.00 USD |
+
+---
+
+## ✅ CHECKLIST FINAL ANTES DE DESPLIEGUE
+
+### Para Producción
+- [ ] API Key configurada y con créditos
+- [ ] Archivo `.env` completo y seguro
+- [ ] Pruebas ejecutadas exitosamente
+- [ ] Logs configurados correctamente
+- [ ] Backups de datos configurados
+- [ ] SSL/HTTPS habilitado (si aplica)
+- [ ] Rate limiting configurado
+- [ ] Monitoreo activo
+
+### Para Testers
+- [ ] Instrucciones claras en español
+- [ ] Datos de prueba incluidos
+- [ ] Casos de prueba documentados
+- [ ] Información de contacto para soporte
+- [ ] Estimación de costos comunicada
+
+---
+
+**Sistema desarrollado para**: Personal Paraguay (Núcleo S.A.)  
+**Versión**: 2.0.0  
+**Última actualización**: 27 de Diciembre, 2024

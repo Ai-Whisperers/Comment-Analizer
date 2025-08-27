@@ -1,8 +1,105 @@
-# Personal Paraguay Comment Analyzer - Documentation Hub
+# Personal Paraguay Comment Analyzer
 
-## 📚 Complete Documentation Index
+## ⚡ QUICKSTART GUIDE - GET STARTED IN 3 MINUTES
 
-Welcome to the comprehensive documentation for the Personal Paraguay Comment Analyzer system. This documentation accurately reflects the current codebase structure and capabilities.
+### 📋 Prerequisites
+- Python 3.11+ installed
+- OpenAI API key with available credits
+- 5MB+ available disk space
+
+### 🚀 Quick Installation (3 Steps)
+
+#### 1. Install Dependencies
+```bash
+pip install -r requirements.txt
+```
+
+#### 2. Configure Environment
+Create a `.env` file in the root directory:
+```env
+# REQUIRED: Your real OpenAI API key
+OPENAI_API_KEY=sk-proj-YOUR-ACTUAL-OPENAI-KEY-HERE
+
+# OPTIMIZED DEFAULTS FOR IMMEDIATE USE
+OPENAI_MODEL=gpt-4
+OPENAI_MAX_TOKENS=2000
+OPENAI_TEMPERATURE=0.7
+STREAMLIT_PORT=8501
+```
+
+#### 3. Launch Application
+```bash
+python run.py
+```
+Then open: http://localhost:8501
+
+### 🧪 Quick Test (30 seconds)
+1. Download our [test_data.xlsx](../test_data.xlsx) sample file
+2. Upload it in the web interface
+3. Click "🚀 Análisis Rápido"
+4. Verify you see sentiment analysis results and charts
+
+**✅ Success**: If you see colorful charts and sentiment metrics, you're ready to go!
+
+---
+
+## 📦 TESTER VERIFICATION CHECKLIST
+
+### ✅ **BEFORE SHARING WITH TESTERS**
+
+#### Critical Files Required:
+- [ ] **`.env`** - With real OpenAI API key (not placeholder)
+- [ ] **`README.md`** - This complete guide  
+- [ ] **`requirements.txt`** - All dependencies listed
+- [ ] **`run.py`** - Application launcher
+- [ ] **`src/`** - Complete source code directory
+- [ ] **`test_data.xlsx`** - Sample data file for testing
+
+#### API Key Verification:
+- [ ] Replaced `tu_clave_api_aqui` with actual API key
+- [ ] Key starts with `sk-proj-` or `sk-`
+- [ ] Verified key has sufficient credits ($5+ recommended)
+- [ ] Tested locally - application starts without errors
+
+#### Bundle Testing:
+```bash
+# Quick verification commands
+python -c "from src.config import Config; print('✅ API configured' if Config.OPENAI_API_KEY else '❌ API missing')"
+python run.py  # Should start without errors
+```
+
+### 🎯 **TESTER INSTRUCTIONS**
+
+#### Test Cases for Testers:
+1. **✅ Basic Startup**: Application launches and loads interface
+2. **✅ File Upload**: Accepts Excel/CSV files, shows preview  
+3. **✅ Analysis**: Processes data, shows sentiment charts (30-60 seconds)
+4. **✅ Export**: Generates downloadable Excel report
+
+#### Expected Results:
+- **Installation time**: 2-3 minutes
+- **First successful analysis**: Under 5 minutes
+- **Sample file (50 comments)**: 30-60 seconds processing
+- **API cost**: ~$0.02-0.04 USD per test
+
+#### Common Issues & Solutions:
+- **"OPENAI_API_KEY not found"** → Check `.env` file exists in root directory
+- **"Port 8501 already in use"** → Run: `streamlit run src/main.py --server.port 8502`  
+- **"ModuleNotFoundError"** → Run: `pip install -r requirements.txt`
+
+### 📊 Sample Test Data
+Create `test_data.xlsx` with these comments:
+
+| Comentario Final | Fecha | Nota |
+|------------------|-------|------|
+| Excelente servicio de Internet, muy rápido | 01/08/2024 | 9 |
+| La conexión se corta frecuentemente | 02/08/2024 | 3 |
+| Buena atención al cliente, resolvieron rápido | 03/08/2024 | 8 |
+| Precio muy alto para el servicio ofrecido | 04/08/2024 | 4 |
+| Instalación eficiente, técnicos profesionales | 05/08/2024 | 9 |
+| Internet lento durante las noches | 06/08/2024 | 5 |
+
+---
 
 ## 🏗️ System Overview
 
