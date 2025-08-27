@@ -2,9 +2,152 @@
 
 Sistema sofisticado de análisis de sentimientos y detección de patrones multilingüe diseñado para analizar comentarios de clientes sobre servicios de fibra óptica al hogar. Desarrollado específicamente para Personal Paraguay (Núcleo S.A.) para proporcionar inteligencia empresarial accionable a partir del feedback de clientes.
 
-## 📚 Documentación Técnica
+## 📚 Documentación
 
 Para documentación técnica completa, guías de desarrollo y especificaciones arquitectónicas, visite el **[Centro de Documentación Técnica](./documentation/README.md)** (en inglés).
+
+## 📊 Formato de Datos de Entrada - Guía Detallada
+
+### Estructura del Archivo Excel
+
+El sistema está optimizado para procesar archivos Excel con comentarios de clientes. A continuación se detalla la estructura esperada:
+
+#### Columnas Principales
+
+| Nombre de Columna | Tipo de Dato | Obligatorio | Descripción | Ejemplo |
+|-------------------|--------------|-------------|-------------|---------|
+| **Comentario Final** | Texto | ✅ Sí | Comentario del cliente | "Excelente servicio, muy rápido" |
+| **Fecha** | Fecha/Hora | ⚪ No | Fecha del comentario | 27/08/2025 14:30 |
+| **Nota** | Número (1-10) | ⚪ No | Calificación numérica | 8 |
+| **NPS** | Texto | ⚪ No | Categoría NPS | "Promotor" |
+| **ID Cliente** | Texto/Número | ⚪ No | Identificador único | "C12345" |
+| **Región** | Texto | ⚪ No | Ubicación geográfica | "Asunción" |
+| **Tipo Servicio** | Texto | ⚪ No | Servicio específico | "Fibra 100MB" |
+
+#### Nombres de Columna Reconocidos Automáticamente
+
+El sistema detecta inteligentemente las siguientes variaciones de nombres:
+
+**Para Comentarios:**
+- Comentario Final
+- Comentarios
+- Observaciones
+- Feedback
+- Opinión
+- Sugerencias
+- Comentario del Cliente
+
+**Para Calificaciones:**
+- Nota
+- Puntuación
+- Rating
+- Calificación
+- Score
+
+**Para Fechas:**
+- Fecha
+- Fecha de Registro
+- Timestamp
+- Fecha Comentario
+
+### Preparación del Archivo Excel
+
+#### Paso 1: Verificar Formato
+```
+✅ Formato correcto: .xlsx o .xls
+✅ Primera fila: Nombres de columnas
+✅ Datos desde la fila 2 en adelante
+✅ Sin filas vacías intermedias
+```
+
+#### Paso 2: Limpiar Datos (Opcional)
+El sistema maneja automáticamente:
+- Espacios en blanco extras
+- Comentarios duplicados
+- Caracteres especiales
+- Diferentes codificaciones
+
+#### Paso 3: Validar Contenido Mínimo
+- **Mínimo recomendado**: 10 comentarios
+- **Óptimo para análisis**: 50+ comentarios
+- **Máximo procesable**: 10,000 comentarios por archivo
+
+### Ejemplos de Archivos
+
+#### Ejemplo Mínimo Viable
+```
+| Comentario Final |
+|------------------|
+| El servicio es bueno |
+| Muy lenta la conexión |
+| Excelente atención |
+```
+
+#### Ejemplo Completo
+```
+| Comentario Final | Fecha | Nota | NPS | Cliente |
+|------------------|-------|------|-----|---------|
+| Excelente servicio | 27/08/2025 | 9 | Promotor | C001 |
+| Problemas frecuentes | 26/08/2025 | 4 | Detractor | C002 |
+| Servicio regular | 25/08/2025 | 7 | Pasivo | C003 |
+```
+
+### Procesamiento de Idiomas
+
+El sistema procesa automáticamente:
+- **Español**: Análisis completo con corrección ortográfica
+- **Guaraní**: Detección y análisis básico
+- **Mixto**: Maneja comentarios bilingües español-guaraní
+
+### Validaciones Automáticas
+
+El sistema realiza las siguientes validaciones:
+
+1. **Detección de columna de comentarios**: Busca automáticamente la columna principal
+2. **Limpieza de datos**: Elimina duplicados y comentarios vacíos
+3. **Normalización**: Corrige errores ortográficos comunes
+4. **Categorización**: Asigna categorías automáticamente si no existen
+
+### Salida del Análisis - Estructura del Reporte Excel
+
+#### Hojas Generadas en el Reporte
+
+1. **Resumen Ejecutivo**
+   - Métricas principales
+   - Gráficos de distribución
+   - Insights clave
+
+2. **Análisis Detallado**
+   - Comentario original
+   - Sentimiento detectado
+   - Puntuación de confianza
+   - Emociones identificadas
+   - Temas extraídos
+
+3. **Análisis de Sentimientos**
+   - Distribución porcentual
+   - Tendencias temporales
+   - Segmentación por categorías
+
+4. **Detección de Temas**
+   - Temas más frecuentes
+   - Palabras clave
+   - Asociaciones de temas
+
+5. **Métricas NPS**
+   - Cálculo de NPS
+   - Distribución promotores/detractores
+   - Análisis por segmentos
+
+6. **Análisis Avanzado**
+   - Predicción de abandono
+   - Análisis emocional profundo
+   - Recomendaciones de acción
+
+7. **Calidad de Datos**
+   - Estadísticas de limpieza
+   - Comentarios procesados vs descartados
+   - Métricas de calidad
 
 ## 🚀 Características Principales
 
