@@ -221,7 +221,7 @@ def process_file_simple(uploaded_file):
         file_size_kb = uploaded_file.size / 1024 if hasattr(uploaded_file, 'size') else 0
         avg_length = np.mean([len(comment) for comment in unique_comments]) if unique_comments else 0
         
-        return {
+        results = {
             'total': total,
             'raw_total': len(raw_comments),
             'duplicates_removed': len(raw_comments) - len(unique_comments),
@@ -266,11 +266,81 @@ def process_file_simple(uploaded_file):
         return None
 
 def create_simple_excel(results):
-    """Create Excel report with analysis results"""
+    """Create enhanced Excel report with complete analysis results and formatting"""
     output = BytesIO()
     
     with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
-        # Sheet 1: Summary
+        workbook = writer.book
+        
+        # Define formats for better visualization
+        header_format = workbook.add_format({
+            'bold': True,
+            'text_wrap': True,
+            'valign': 'center',
+            'fg_color': '#8B5CF6',
+            'font_color': 'white',
+            'border': 1
+        })
+        
+        positive_format = workbook.add_format({
+            'fg_color': '#E6F7ED',
+            'font_color': '#10B981',
+            'border': 1
+        })
+        
+        negative_format = workbook.add_format({
+            'fg_color': '#FEE2E2',
+            'font_color': '#EF4444',
+            'border': 1
+        })
+        
+        neutral_format = workbook.add_format({
+            'fg_color': '#F3F4F6',
+            'font_color': '#6B7280',
+            'border': 1
+        })
+        
+        # Sheet 1: Executive Summary (NEW)
+        exec_summary = {
+            'KPI': [
+                'Total Comentarios Analizados',
+                'Satisfacción Neta (Positivos - Negativos)',
+                'Temas Críticos Detectados',
+                'Calidad del Análisis',
+                'Comentarios Únicos',
+                'Tasa de Duplicación'
+            ],
+            'Valor': [
+                results['total'],
+                f"{results['positive_pct'] - results['negative_pct']:.1f}%",
+                sum(1 for v in results.get('theme_counts', {}).values() if v > 5),
+                f"{results.get('overseer_validation', {}).get('quality_score', 0):.0%}",
+                results['total'],
+                f"{(results.get('duplicates_removed', 0) / results.get('raw_total', results.get('total', 1)) * 100) if results.get('raw_total', results.get('total', 1)) > 0 else 0:.1f}%"
+            ],
+            'Interpretación': [
+                'Volumen total de feedback procesado',
+                'Diferencia entre sentimientos positivos y negativos',
+                'Número de temas con más de 5 menciones',
+                'Confianza en el análisis realizado',
+                'Comentarios después de eliminar duplicados',
+                'Porcentaje de comentarios duplicados encontrados'
+            ]
+        }
+        df_exec = pd.DataFrame(exec_summary)
+        df_exec.to_excel(writer, sheet_name='Resumen Ejecutivo', index=False)
+        worksheet_exec = writer.sheets['Resumen Ejecutivo']
+        
+        # Format executive summary headers
+        for col_num, value in enumerate(df_exec.columns.values):
+            worksheet_exec.write(0, col_num, value, header_format)
+        
+        # Auto-adjust column widths
+        worksheet_exec.set_column('A:A', 40)
+        worksheet_exec.set_column('B:B', 25)
+        worksheet_exec.set_column('C:C', 50)
+        
+        # Sheet 2: Original Summary (Enhanced)
         summary_data = {
             'Métrica': ['Total Comentarios', 'Positivos', 'Neutrales', 'Negativos', 'Duplicados Eliminados'],
             'Valor': [results['total'], f"{results['positive_pct']}%", f"{results['neutral_pct']}%", 
@@ -278,23 +348,192 @@ def create_simple_excel(results):
             'Cantidad': [results['total'], results['positive_count'], results['neutral_count'],
                         results['negative_count'], results['duplicates_removed']]
         }
-        pd.DataFrame(summary_data).to_excel(writer, sheet_name='Resumen', index=False)
+        df_summary = pd.DataFrame(summary_data)
+        df_summary.to_excel(writer, sheet_name='Resumen', index=False)
+        worksheet_summary = writer.sheets['Resumen']
         
-        # Sheet 2: Comments with sentiment
+        # Format summary headers
+        for col_num, value in enumerate(df_summary.columns.values):
+            worksheet_summary.write(0, col_num, value, header_format)
+        
+        # Sheet 3: ALL Comments with enhanced data (NO LIMIT)
         comments_data = {
-            'Comentario': results['comments'][:500],
-            'Sentimiento': results['sentiments'][:500],
-            'Frecuencia': [results['comment_frequencies'].get(c, 1) for c in results['comments'][:500]]
+            'Comentario': results['comments'],  # ALL comments, no [:500] limit
+            'Sentimiento': results['sentiments'],
+            'Frecuencia': [results['comment_frequencies'].get(c, 1) for c in results['comments']],
+            'Requiere Acción': ['Sí' if s == 'negativo' else 'No' for s in results['sentiments']],
+            'Prioridad': ['Alta' if s == 'negativo' else 'Media' if s == 'neutral' else 'Baja' 
+                         for s in results['sentiments']]
         }
-        pd.DataFrame(comments_data).to_excel(writer, sheet_name='Comentarios', index=False)
+        df_comments = pd.DataFrame(comments_data)
+        df_comments.to_excel(writer, sheet_name='Comentarios Completos', index=False)
+        worksheet_comments = writer.sheets['Comentarios Completos']
         
-        # Sheet 3: Themes
-        if results['theme_counts']:
+        # Format comments headers
+        for col_num, value in enumerate(df_comments.columns.values):
+            worksheet_comments.write(0, col_num, value, header_format)
+        
+        # Auto-adjust column width for comments
+        worksheet_comments.set_column('A:A', 60)
+        worksheet_comments.set_column('B:E', 15)
+        
+        # Sheet 4: Themes with more details
+        if results.get('theme_counts'):
             themes_data = {
                 'Tema': list(results['theme_counts'].keys()),
-                'Cantidad': list(results['theme_counts'].values())
+                'Cantidad': list(results['theme_counts'].values()),
+                'Porcentaje': [f"{(v/results['total']*100):.1f}%" if results['total'] > 0 else "0%" 
+                              for v in results['theme_counts'].values()],
+                'Impacto': ['Alto' if v > 10 else 'Medio' if v > 5 else 'Bajo' 
+                           for v in results['theme_counts'].values()]
             }
-            pd.DataFrame(themes_data).to_excel(writer, sheet_name='Temas', index=False)
+            df_themes = pd.DataFrame(themes_data)
+            df_themes.to_excel(writer, sheet_name='Análisis de Temas', index=False)
+            worksheet_themes = writer.sheets['Análisis de Temas']
+            
+            # Format themes headers
+            for col_num, value in enumerate(df_themes.columns.values):
+                worksheet_themes.write(0, col_num, value, header_format)
+        
+        # Sheet 5: Pain Points Matrix (NEW)
+        pain_points_data = {
+            'Punto de Dolor': [
+                'Velocidad/Lentitud',
+                'Interrupciones del Servicio',
+                'Atención al Cliente',
+                'Precios Altos',
+                'Problemas de Cobertura',
+                'Demoras en Instalación'
+            ],
+            'Frecuencia': [
+                results.get('theme_counts', {}).get('velocidad', 0),
+                results.get('theme_counts', {}).get('interrupciones', 0),
+                results.get('theme_counts', {}).get('servicio', 0),
+                results.get('theme_counts', {}).get('precio', 0),
+                results.get('theme_counts', {}).get('cobertura', 0),
+                results.get('theme_counts', {}).get('instalacion', 0)
+            ]
+        }
+        
+        # Calculate impact scores based on frequency and sentiment correlation
+        pain_points_data['Impacto en Negocio'] = [
+            'CRÍTICO' if freq > 10 else 'ALTO' if freq > 5 else 'MEDIO' if freq > 0 else 'BAJO'
+            for freq in pain_points_data['Frecuencia']
+        ]
+        
+        pain_points_data['Prioridad'] = [
+            1 if imp == 'CRÍTICO' else 2 if imp == 'ALTO' else 3 if imp == 'MEDIO' else 4
+            for imp in pain_points_data['Impacto en Negocio']
+        ]
+        
+        pain_points_data['Acción Recomendada'] = [
+            'Intervención inmediata requerida' if freq > 10 else
+            'Revisar y mejorar proceso' if freq > 5 else
+            'Monitorear tendencia' if freq > 0 else
+            'Sin acciones requeridas'
+            for freq in pain_points_data['Frecuencia']
+        ]
+        
+        df_pain = pd.DataFrame(pain_points_data)
+        df_pain = df_pain.sort_values('Prioridad')  # Sort by priority
+        df_pain.to_excel(writer, sheet_name='Matriz de Puntos Críticos', index=False)
+        worksheet_pain = writer.sheets['Matriz de Puntos Críticos']
+        
+        # Format pain points headers
+        for col_num, value in enumerate(df_pain.columns.values):
+            worksheet_pain.write(0, col_num, value, header_format)
+        
+        # Apply conditional formatting for impact column
+        worksheet_pain.conditional_format('C2:C7', {
+            'type': 'cell',
+            'criteria': 'equal to',
+            'value': '"CRÍTICO"',
+            'format': negative_format
+        })
+        
+        worksheet_pain.conditional_format('C2:C7', {
+            'type': 'cell',
+            'criteria': 'equal to',
+            'value': '"ALTO"',
+            'format': workbook.add_format({'fg_color': '#FEF3C7', 'font_color': '#F59E0B'})
+        })
+        
+        # Auto-adjust columns
+        worksheet_pain.set_column('A:A', 25)
+        worksheet_pain.set_column('B:B', 12)
+        worksheet_pain.set_column('C:C', 18)
+        worksheet_pain.set_column('D:D', 10)
+        worksheet_pain.set_column('E:E', 35)
+        
+        # Sheet 6: AI Insights (if available)
+        if 'overseer_validation' in results:
+            ai_data = {
+                'Métrica de Calidad': [
+                    'Validación Aplicada',
+                    'Confianza del Análisis',
+                    'Calidad General',
+                    'Mejorado con IA',
+                    'Fecha de Análisis'
+                ],
+                'Valor': [
+                    'Sí' if results['overseer_validation'].get('validated') else 'No',
+                    f"{results['overseer_validation'].get('confidence', 0):.0%}",
+                    f"{results['overseer_validation'].get('quality_score', 0):.0%}",
+                    'Sí' if results['overseer_validation'].get('ai_enhanced') else 'No',
+                    results['overseer_validation'].get('timestamp', 'N/A')
+                ]
+            }
+            df_ai = pd.DataFrame(ai_data)
+            df_ai.to_excel(writer, sheet_name='Validación IA', index=False)
+            worksheet_ai = writer.sheets['Validación IA']
+            
+            # Format AI insights headers
+            for col_num, value in enumerate(df_ai.columns.values):
+                worksheet_ai.write(0, col_num, value, header_format)
+            
+            worksheet_ai.set_column('A:A', 25)
+            worksheet_ai.set_column('B:B', 30)
+        
+        # Sheet 7: Sentiment Analysis Chart Data
+        chart_data = {
+            'Sentimiento': ['Positivo', 'Neutral', 'Negativo'],
+            'Cantidad': [results['positive_count'], results['neutral_count'], results['negative_count']],
+            'Porcentaje': [results['positive_pct'], results['neutral_pct'], results['negative_pct']]
+        }
+        df_chart = pd.DataFrame(chart_data)
+        df_chart.to_excel(writer, sheet_name='Datos para Gráficos', index=False)
+        worksheet_chart = writer.sheets['Datos para Gráficos']
+        
+        # Create a pie chart
+        pie_chart = workbook.add_chart({'type': 'pie'})
+        pie_chart.add_series({
+            'name': 'Distribución de Sentimientos',
+            'categories': ['Datos para Gráficos', 1, 0, 3, 0],
+            'values': ['Datos para Gráficos', 1, 1, 3, 1],
+            'points': [
+                {'fill': {'color': '#10B981'}},  # Green for positive
+                {'fill': {'color': '#6B7280'}},  # Gray for neutral
+                {'fill': {'color': '#EF4444'}},  # Red for negative
+            ],
+        })
+        pie_chart.set_title({'name': 'Distribución de Sentimientos'})
+        pie_chart.set_size({'width': 380, 'height': 280})
+        worksheet_chart.insert_chart('E2', pie_chart)
+        
+        # Create a column chart for themes
+        if results.get('theme_counts'):
+            col_chart = workbook.add_chart({'type': 'column'})
+            col_chart.add_series({
+                'name': 'Frecuencia de Temas',
+                'categories': ['Análisis de Temas', 1, 0, len(results['theme_counts']), 0],
+                'values': ['Análisis de Temas', 1, 1, len(results['theme_counts']), 1],
+                'fill': {'color': '#8B5CF6'},
+            })
+            col_chart.set_title({'name': 'Temas Principales Detectados'})
+            col_chart.set_x_axis({'name': 'Tema'})
+            col_chart.set_y_axis({'name': 'Frecuencia'})
+            col_chart.set_size({'width': 480, 'height': 320})
+            worksheet_themes.insert_chart('F2', col_chart)
     
     output.seek(0)
     return output.getvalue()
@@ -327,6 +566,8 @@ uploaded_file = st.file_uploader(
 
 # Analysis button
 if uploaded_file:
+    # Add section divider
+    st.markdown(ui.section_divider(), unsafe_allow_html=True)
     st.info(f"Archivo cargado: {uploaded_file.name}")
     
     # Animated analyze button
@@ -363,6 +604,9 @@ if st.session_state.analysis_results:
             st.warning(f"Calidad de Análisis: {quality_score:.1%} - Mejorable")
         else:
             st.error(f"Calidad de Análisis: {quality_score:.1%} - Requiere Revisión")
+    
+    # Add section divider before results
+    st.markdown(ui.section_divider(), unsafe_allow_html=True)
     
     # Enhanced metrics header
     st.markdown(ui.results_header(), unsafe_allow_html=True)
