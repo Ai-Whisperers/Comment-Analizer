@@ -30,7 +30,7 @@ This guide covers all configuration options for the Comment Analyzer system, inc
 | Variable | Default | Description | Valid Values |
 |----------|---------|-------------|--------------|
 | `LOG_LEVEL` | `INFO` | Logging verbosity | `DEBUG`, `INFO`, `WARNING`, `ERROR` |
-| `STREAMLIT_PORT` | `8501` | Port for Streamlit application | Any available port |
+| `STREAMLIT_PORT` | `8501` | Port for Streamlit application (configurable) | Any available port |
 | `MAX_FILE_SIZE_MB` | `50` | Maximum upload file size in MB | `1-100` |
 | `CACHE_TTL` | `3600` | Cache time-to-live in seconds | `0-86400` |
 | `BATCH_SIZE` | `10` | Comments per API batch | `1-50` |
@@ -64,7 +64,7 @@ OPENAI_TEMPERATURE=0.7
 
 # Application Settings
 LOG_LEVEL=INFO
-STREAMLIT_PORT=8501
+STREAMLIT_PORT=8501  # Configurable port (default: 8501)
 MAX_FILE_SIZE_MB=50
 
 # Features
@@ -125,7 +125,7 @@ textColor = "#FAFAFA"
 font = "sans serif"
 
 [server]
-port = 8501
+port = ${STREAMLIT_PORT:-8501}  # Uses environment variable
 address = "localhost"
 headless = true
 runOnSave = false
@@ -146,7 +146,7 @@ gatherUsageStats = false
 ENV OPENAI_API_KEY=${OPENAI_API_KEY}
 ENV OPENAI_MODEL=gpt-4
 ENV LOG_LEVEL=INFO
-ENV STREAMLIT_PORT=8501
+ENV STREAMLIT_PORT=${STREAMLIT_PORT:-8501}
 ```
 
 ### Docker Compose Configuration
@@ -158,7 +158,7 @@ services:
   comment-analyzer:
     build: .
     ports:
-      - "8501:8501"
+      - "${STREAMLIT_PORT:-8501}:${STREAMLIT_PORT:-8501}"
     environment:
       - OPENAI_API_KEY=${OPENAI_API_KEY}
       - OPENAI_MODEL=gpt-4
@@ -313,7 +313,7 @@ The application validates configuration on startup:
 ### Health Check Endpoint
 
 ```bash
-curl http://localhost:8501/_stcore/health
+curl http://localhost:${STREAMLIT_PORT:-8501}/_stcore/health
 ```
 
 Response:

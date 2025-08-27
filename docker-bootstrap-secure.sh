@@ -367,13 +367,13 @@ main() {
     
     # Start the application with security restrictions
     echo -e "\n${BLUE}Starting Streamlit application (secure mode)...${NC}"
-    echo "Access URL: http://${STREAMLIT_SERVER_ADDRESS:-127.0.0.1}:8501"
+    echo "Access URL: http://${STREAMLIT_SERVER_ADDRESS:-127.0.0.1}:${STREAMLIT_PORT:-8501}"
     echo "================================================"
     
     # Security: Use exec to replace shell process (prevents shell injection)
     # Add security headers and restrictions
     exec streamlit run /app/src/main.py \
-        --server.port=8501 \
+        --server.port=${STREAMLIT_PORT:-8501} \
         --server.address="${STREAMLIT_SERVER_ADDRESS:-127.0.0.1}" \
         --server.headless=true \
         --server.runOnSave=false \

@@ -10,7 +10,7 @@ Welcome to the comprehensive documentation for the Personal Paraguay Comment Ana
 **Last Updated**: December 27, 2024  
 **Primary Technology**: Streamlit + Python 3.12  
 **AI Integration**: OpenAI GPT-4  
-**Default Port**: 8501 (not 8503)  
+**Default Port**: 8501 (configurable via STREAMLIT_PORT environment variable)  
 
 ## 📁 Documentation Structure
 
@@ -138,7 +138,7 @@ OPENAI_MODEL=gpt-4
 OPENAI_MAX_TOKENS=4000
 OPENAI_TEMPERATURE=0.7
 LOG_LEVEL=INFO
-STREAMLIT_PORT=8501  # Note: Default is 8501, not 8503
+STREAMLIT_PORT=8501  # Port is now configurable via environment variable
 ```
 
 ### Directory Structure
@@ -163,7 +163,7 @@ The application follows a 7-phase bootstrap process:
 4. **Initialization** → Directory creation
 5. **Services** → AI adapter with fallbacks
 6. **UI Setup** → Theme and components
-7. **Ready** → Listening on port 8501
+7. **Ready** → Listening on configured port (default 8501)
 
 ## 📊 Key Features
 
@@ -192,7 +192,7 @@ The application follows a 7-phase bootstrap process:
 - **Docker Setup** → See Deployment & Operations
 - **Error Messages** → Check CRITICAL_FIXES_QUICKSTART
 - **Excel Export** → Review EXCEL_PIPELINE_TRACE
-- **Port Configuration** → Default is 8501 (config.py)
+- **Port Configuration** → Configurable via STREAMLIT_PORT (default 8501)
 - **Security** → Check validators.py documentation
 - **Testing** → See test suite in /tests
 
@@ -222,7 +222,7 @@ When updating documentation:
 
 ### Internal Resources
 - Error logs: `/logs/comment_analyzer_*.log`
-- Health check: `http://localhost:8501/_stcore/health`
+- Health check: `http://localhost:{STREAMLIT_PORT}/_stcore/health`
 - Test suite: `pytest tests/`
 
 ### External Resources

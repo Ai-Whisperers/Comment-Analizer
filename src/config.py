@@ -50,7 +50,7 @@ class Config:
     
     # Dashboard Settings
     DASHBOARD_TITLE = "Personal Paraguay - Customer Comments Analysis"
-    DASHBOARD_PORT = 8501
+    DASHBOARD_PORT = int(os.getenv("STREAMLIT_PORT", "8501"))
     
     # Logging
     LOG_LEVEL = "INFO"

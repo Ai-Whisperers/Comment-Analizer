@@ -195,14 +195,30 @@ El sistema realiza las siguientes validaciones:
    
    Crear archivo `.env` en la raíz del proyecto:
    ```env
-   # Requerido: Clave API de OpenAI
+   # =============================================
+   # CONFIGURACIÓN ANALIZADOR DE COMENTARIOS
+   # =============================================
+   
+   # REQUERIDO: Clave API de OpenAI (reemplazar con clave real)
    OPENAI_API_KEY=tu_clave_api_aqui
    
-   # Opcional: Configuración adicional
+   # CONFIGURACIÓN IA (Opcional - valores por defecto recomendados)
    OPENAI_MODEL=gpt-4
    OPENAI_MAX_TOKENS=4000
    OPENAI_TEMPERATURE=0.7
+   
+   # CONFIGURACIÓN APLICACIÓN (Opcional)
+   APP_ENV=production
+   DEBUG_MODE=False
    LOG_LEVEL=INFO
+   
+   # LÍMITES DE PROCESAMIENTO (Opcional)
+   MAX_FILE_SIZE_MB=10
+   MAX_COMMENTS_PER_BATCH=100
+   CACHE_TTL_SECONDS=900
+   
+   # PUERTO DEL SERVIDOR (Configurable - por defecto 8501)
+   STREAMLIT_PORT=8501
    ```
 
 ## 🎯 Uso Rápido
@@ -217,11 +233,11 @@ streamlit run src/main.py
 python run.py
 ```
 
-La aplicación se abrirá automáticamente en tu navegador en `http://localhost:8501`
+La aplicación se abrirá automáticamente en tu navegador. El puerto por defecto es `http://localhost:8501` (configurable con STREAMLIT_PORT)
 
 ### Cómo Usar la Aplicación
 
-1. **Acceder a la interfaz**: Navegar a http://localhost:8501
+1. **Acceder a la interfaz**: Navegar a http://localhost:8501 (o el puerto configurado en STREAMLIT_PORT)
 2. **Cargar archivo**: Usar el cargador para subir Excel con comentarios
 3. **Analizar**: Hacer clic en "🚀 Análisis Rápido"
 4. **Ver resultados**: Explorar el panel interactivo con métricas y gráficos
@@ -322,6 +338,191 @@ Para soporte, solicitudes de funcionalidades o reportes de errores:
 
 Software Propietario - Personal Paraguay (Núcleo S.A.)  
 Todos los derechos reservados.
+
+## 🧪 GUÍA ESPECÍFICA PARA TESTERS
+
+### 📦 Archivos Críticos Incluidos en el Bundle
+
+Para ejecutar el sistema correctamente, asegúrate de que el bundle incluya:
+
+#### ✅ Archivos Obligatorios
+- **`.env`** - Archivo de configuración con clave API (MÁS IMPORTANTE)
+- **`README.md`** - Esta guía de instalación
+- **`requirements.txt`** - Lista de dependencias Python
+- **`run.py`** - Script para iniciar la aplicación
+- **`src/`** - Carpeta completa del código fuente
+
+#### ✅ Archivos Recomendados
+- **`test_data.xlsx`** - Archivo de muestra para pruebas
+- **`documentation/`** - Documentación técnica adicional
+
+### 🔧 Configuración del Archivo .env
+
+**CRÍTICO**: El archivo `.env` debe estar en la raíz del proyecto y contener una clave API válida de OpenAI.
+
+#### Plantilla Completa del .env
+```env
+# =============================================
+# CONFIGURACIÓN PARA TESTERS
+# =============================================
+
+# REQUERIDO: Clave API de OpenAI - REEMPLAZAR CON CLAVE REAL
+OPENAI_API_KEY=sk-proj-TU-CLAVE-REAL-AQUI
+
+# CONFIGURACIÓN RECOMENDADA PARA PRUEBAS
+OPENAI_MODEL=gpt-4
+OPENAI_MAX_TOKENS=2000
+OPENAI_TEMPERATURE=0.7
+
+# CONFIGURACIÓN DE PRUEBAS
+APP_ENV=testing
+DEBUG_MODE=True
+LOG_LEVEL=DEBUG
+
+# LÍMITES PARA PRUEBAS (Más conservadores)
+MAX_FILE_SIZE_MB=5
+MAX_COMMENTS_PER_BATCH=50
+CACHE_TTL_SECONDS=600
+
+# PUERTO (Cambiar si hay conflicto)
+STREAMLIT_PORT=8501
+```
+
+### 📋 Lista de Verificación Pre-Prueba
+
+Antes de comenzar las pruebas:
+
+1. **Verificar Python**
+   ```bash
+   python --version  # Debe ser 3.9 o superior
+   ```
+
+2. **Verificar archivo .env**
+   - [ ] Existe en la raíz del proyecto
+   - [ ] Contiene OPENAI_API_KEY con clave válida
+   - [ ] Sin espacios extra alrededor del signo =
+
+3. **Instalar dependencias**
+   ```bash
+   pip install -r requirements.txt
+   ```
+
+4. **Prueba rápida de configuración**
+   ```bash
+   python -c "from src.config import Config; print('✅ API configurada' if Config.OPENAI_API_KEY else '❌ API no configurada')"
+   ```
+
+### 🚀 Pasos de Ejecución para Testers
+
+#### Opción 1: Inicio Rápido
+```bash
+python run.py
+```
+
+#### Opción 2: Inicio con Streamlit
+```bash
+streamlit run src/main.py
+```
+
+#### Opción 3: Puerto Personalizado
+```bash
+streamlit run src/main.py --server.port 8502
+```
+
+### 🔍 Casos de Prueba Básicos
+
+#### 1. Prueba de Conectividad
+- Abrir http://localhost:8501
+- Verificar que la interfaz carga correctamente
+- Confirmar que no hay errores en la consola
+
+#### 2. Prueba de Carga de Archivos
+- Usar archivo `test_data.xlsx` (si se incluye)
+- O crear archivo Excel simple con columna "Comentario Final"
+- Verificar que acepta el archivo sin errores
+
+#### 3. Prueba de Análisis
+- Hacer clic en "🚀 Análisis Rápido"
+- Esperar procesamiento (puede tomar 30-60 segundos)
+- Verificar que se muestran gráficos y métricas
+
+#### 4. Prueba de Exportación
+- Hacer clic en "Descargar Reporte Excel"
+- Verificar que se genera y descarga archivo .xlsx
+- Abrir archivo y confirmar múltiples hojas de cálculo
+
+### ⚠️ Solución de Problemas Comunes
+
+#### Error: "OPENAI_API_KEY not found"
+**Causa**: Archivo .env no existe o clave API no configurada
+**Solución**: 
+1. Verificar que .env existe en la raíz
+2. Confirmar que contiene `OPENAI_API_KEY=sk-...`
+3. Reiniciar la aplicación
+
+#### Error: "Port 8501 is already in use"
+**Causa**: Puerto ocupado por otra aplicación
+**Solución**:
+```bash
+# Cambiar puerto en .env
+STREAMLIT_PORT=8502
+
+# O ejecutar con puerto específico
+STREAMLIT_PORT=8502 streamlit run src/main.py
+```
+
+#### Error: "ModuleNotFoundError"
+**Causa**: Dependencias no instaladas
+**Solución**:
+```bash
+pip install -r requirements.txt
+```
+
+#### Error: "API quota exceeded"
+**Causa**: Límite de API de OpenAI alcanzado
+**Solución**: Verificar créditos en cuenta OpenAI
+
+### 📊 Datos de Prueba
+
+#### Archivo Excel Mínimo (crear como test_data.xlsx)
+```
+| Comentario Final |
+|------------------|
+| Excelente servicio de Internet |
+| Muy lenta la conexión por las mañanas |
+| Buena atención al cliente |
+| Precio demasiado alto |
+| Instalación rápida y eficiente |
+```
+
+#### Archivo Excel Completo
+```
+| Comentario Final | Fecha | Nota | NPS |
+|------------------|-------|------|-----|
+| Excelente servicio | 01/08/2024 | 9 | Promotor |
+| Internet muy lento | 02/08/2024 | 3 | Detractor |
+| Servicio regular | 03/08/2024 | 7 | Pasivo |
+```
+
+### 📞 Contacto de Soporte para Testers
+
+Si encuentran problemas durante las pruebas:
+1. Revisar esta sección de solución de problemas
+2. Verificar logs en carpeta `logs/`
+3. Contactar al equipo de desarrollo con:
+   - Descripción del error
+   - Captura de pantalla
+   - Archivo de log (si existe)
+
+### ✅ Criterios de Éxito para Pruebas
+
+La prueba es exitosa si:
+- [ ] La aplicación inicia sin errores
+- [ ] Se puede cargar un archivo Excel
+- [ ] El análisis se ejecuta y muestra resultados
+- [ ] Se pueden ver gráficos y métricas
+- [ ] Se puede descargar reporte Excel
+- [ ] El reporte contiene múltiples hojas con datos
 
 ## 🚀 Estado del Proyecto
 

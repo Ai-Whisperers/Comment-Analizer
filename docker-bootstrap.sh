@@ -147,12 +147,12 @@ main() {
     
     # Start the application
     echo -e "\n${YELLOW}Starting Streamlit application...${NC}"
-    echo "Access the application at: http://localhost:8501"
+    echo "Access the application at: http://localhost:${STREAMLIT_PORT:-8501}"
     echo "================================================"
     
     # Execute streamlit with proper configuration
     exec streamlit run /app/src/main.py \
-        --server.port=8501 \
+        --server.port=${STREAMLIT_PORT:-8501} \
         --server.address=0.0.0.0 \
         --server.headless=true \
         --browser.gatherUsageStats=false \
