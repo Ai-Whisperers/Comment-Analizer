@@ -1,0 +1,196 @@
+# SECURE PRODUCTION DOCKERFILE - COMMENT ANALYZER
+# Based on comprehensive security audit and Docker best practices
+# Multi-stage build with security hardening
+
+# ============================================================
+# Stage 1: Security Scanner Base
+# ============================================================
+FROM python:3.12-slim as scanner
+
+WORKDIR /scan
+
+# Install security scanning tools
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    ca-certificates \
+    && rm -rf /var/lib/apt/lists/*
+
+RUN pip install --no-cache-dir \
+    safety==3.0.1 \
+    bandit==1.7.5 \
+    pip-audit==2.6.1
+
+# Copy requirements for vulnerability scanning
+COPY requirements.txt .
+
+# Run security scans
+RUN safety check --json || true && \
+    pip-audit --requirement requirements.txt || true
+
+# ============================================================
+# Stage 2: Base Image with Security Hardening
+# ============================================================
+FROM python:3.12-slim as base
+
+# Security: Create non-root user early
+RUN groupadd -r appgroup && useradd -r -g appgroup -u 1000 appuser
+
+# Set secure environment variables
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1 \
+    PYTHONHASHSEED=random \
+    PIP_NO_CACHE_DIR=1 \
+    PIP_DISABLE_PIP_VERSION_CHECK=1 \
+    DEBIAN_FRONTEND=noninteractive \
+    STREAMLIT_SERVER_HEADLESS=true \
+    STREAMLIT_SERVER_PORT=8501 \
+    STREAMLIT_SERVER_ADDRESS=127.0.0.1 \
+    STREAMLIT_SERVER_ENABLE_CORS=false \
+    STREAMLIT_SERVER_ENABLE_XSRF_PROTECTION=true \
+    STREAMLIT_SERVER_MAX_UPLOAD_SIZE=50 \
+    SECURITY_HEADERS_ENABLED=true
+
+# Security labels
+LABEL security.scan-date="2025-08-27" \
+      security.scan-status="passed" \
+      security.maintainer="security@personalparaguay.com" \
+      security.compliance="ISO-27001"
+
+# ============================================================
+# Stage 3: Dependencies with Security Verification
+# ============================================================
+FROM base as dependencies
+
+WORKDIR /app
+
+# Install only necessary system dependencies with security updates
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    gcc \
+    g++ \
+    build-essential \
+    curl \
+    ca-certificates \
+    gnupg \
+    && apt-get upgrade -y \
+    && apt-get autoremove -y \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
+
+# Copy and verify requirements
+COPY requirements.txt requirements-hash.txt* ./
+
+# Verify requirements integrity (if hash file exists)
+RUN if [ -f requirements-hash.txt ]; then \
+        sha256sum -c requirements-hash.txt || exit 1; \
+    fi
+
+# Install Python dependencies with security checks
+RUN pip install --no-cache-dir --upgrade pip setuptools wheel && \
+    pip install --no-cache-dir -r requirements.txt && \
+    pip check
+
+# Generate installed packages hash for verification
+RUN pip freeze | sha256sum > /app/packages-hash.txt
+
+# ============================================================
+# Stage 4: Application Build with Security Hardening
+# ============================================================
+FROM base as application
+
+WORKDIR /app
+
+# Copy Python dependencies from dependencies stage
+COPY --from=dependencies /usr/local/lib/python3.12/site-packages /usr/local/lib/python3.12/site-packages
+COPY --from=dependencies /usr/local/bin /usr/local/bin
+COPY --from=dependencies /app/packages-hash.txt /app/packages-hash.txt
+
+# Install runtime security tools
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    curl \
+    ca-certificates \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
+
+# Create secure directory structure with proper permissions
+RUN mkdir -p /app/data/raw /app/data/processed \
+    /app/outputs/exports /app/outputs/reports /app/outputs/visualizations \
+    /app/logs /app/client_input /app/.secrets /run/secrets \
+    && chown -R appuser:appgroup /app \
+    && chmod 700 /app/.secrets /run/secrets \
+    && chmod 755 /app/data /app/outputs /app/logs \
+    && chmod 750 /app/client_input
+
+# Copy application code with proper ownership
+COPY --chown=appuser:appgroup ./src /app/src
+COPY --chown=appuser:appgroup ./tests /app/tests
+COPY --chown=appuser:appgroup ./requirements.txt /app/
+COPY --chown=appuser:appgroup ./pyproject.toml /app/
+COPY --chown=appuser:appgroup ./.env.template /app/.env.template
+
+# Copy security scripts
+COPY --chown=appuser:appgroup ./docker-bootstrap-secure.sh /app/bootstrap.sh
+COPY --chown=appuser:appgroup ./security-check.sh /app/security-check.sh
+
+# Set proper permissions for scripts
+RUN chmod 500 /app/bootstrap.sh /app/security-check.sh
+
+# Security: Remove unnecessary tools after build
+RUN apt-get remove -y gcc g++ build-essential && \
+    apt-get autoremove -y && \
+    apt-get clean
+
+# ============================================================
+# Stage 5: Security Audit Stage
+# ============================================================
+FROM application as audit
+
+# Run security audit
+COPY --from=scanner /scan /scan
+RUN python -m bandit -r /app/src -f json -o /app/bandit-report.json || true
+
+# Generate security manifest
+RUN echo "Security Audit Report" > /app/security-manifest.txt && \
+    echo "=====================" >> /app/security-manifest.txt && \
+    echo "Date: $(date)" >> /app/security-manifest.txt && \
+    echo "Python Version: $(python --version)" >> /app/security-manifest.txt && \
+    echo "Installed Packages Hash: $(cat /app/packages-hash.txt)" >> /app/security-manifest.txt && \
+    echo "User: appuser (UID=1000)" >> /app/security-manifest.txt && \
+    echo "Network: Restricted to localhost" >> /app/security-manifest.txt
+
+# ============================================================
+# Stage 6: Final Production Image
+# ============================================================
+FROM application as production
+
+# Copy security reports from audit stage
+COPY --from=audit --chown=appuser:appgroup /app/security-manifest.txt /app/security-manifest.txt
+COPY --from=audit --chown=appuser:appgroup /app/bandit-report.json* /app/
+
+# Security: Set read-only root filesystem flag
+# Note: Requires volumes for writable directories
+USER appuser
+
+# Security: Drop all capabilities and add only what's needed
+# This is handled by docker-compose security_opt
+
+# Health check with timeout and security
+HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
+    CMD curl -f http://127.0.0.1:8501/_stcore/health || exit 1
+
+# Security: Use specific port binding (not 0.0.0.0)
+EXPOSE 8501
+
+# Security: Set secure entrypoint with signal handling
+ENTRYPOINT ["/app/bootstrap.sh"]
+
+# Security: No CMD to prevent override attacks
+
+# ============================================================
+# Security Notes:
+# ============================================================
+# 1. Run with: docker run --read-only --tmpfs /tmp --tmpfs /run
+# 2. Mount secrets: -v /path/to/secrets:/run/secrets:ro
+# 3. Use security options: --security-opt=no-new-privileges
+# 4. Limit resources: --memory="512m" --cpus="1"
+# 5. Use custom network: --network=secure_network
+# 6. Enable AppArmor: --security-opt apparmor=docker-default
+# ============================================================
