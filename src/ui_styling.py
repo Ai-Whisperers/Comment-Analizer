@@ -453,6 +453,39 @@ class ThemeManager:
             opacity: 1;
         }
         
+        /* Fix for file uploader browse button */
+        [data-testid="stFileUploader"] button {
+            z-index: 10 !important;
+            position: relative !important;
+            pointer-events: auto !important;
+            cursor: pointer !important;
+            background: var(--primary) !important;
+            color: white !important;
+        }
+        
+        /* Ensure dropzone is clickable */
+        [data-testid="stFileUploadDropzone"] {
+            position: relative !important;
+            z-index: 5 !important;
+            pointer-events: auto !important;
+        }
+        
+        /* Fix for upload button hover */
+        [data-testid="stFileUploader"] button:hover {
+            background: var(--primary-dark) !important;
+            transform: scale(1.05);
+            transition: all 0.2s;
+        }
+        
+        /* Ensure file input is accessible */
+        [data-testid="stFileUploader"] input[type="file"] {
+            position: absolute !important;
+            opacity: 0 !important;
+            pointer-events: auto !important;
+            z-index: 15 !important;
+            cursor: pointer !important;
+        }
+        
         /* Metrics with coherent styling */
         [data-testid="metric-container"] {
             background: var(--glass-bg);

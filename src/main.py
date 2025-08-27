@@ -13,8 +13,33 @@ import numpy as np
 from collections import Counter
 import re
 from io import BytesIO
+import os
+import logging
+from logging.handlers import RotatingFileHandler
 from src.ai_overseer import apply_ai_oversight
 from src.ui_styling import inject_styles, UIComponents, ThemeManager
+
+# Ensure required directories exist
+REQUIRED_DIRS = ['data', 'data/raw', 'data/processed', 'outputs', 'logs']
+for dir_path in REQUIRED_DIRS:
+    os.makedirs(dir_path, exist_ok=True)
+
+# Configure file logging
+log_file = Path('logs') / f'comment_analyzer_{datetime.now().strftime("%Y%m%d")}.log'
+file_handler = RotatingFileHandler(
+    log_file, maxBytes=10*1024*1024, backupCount=5  # 10MB per file, keep 5 backups
+)
+file_handler.setFormatter(
+    logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+)
+
+# Configure root logger
+logger = logging.getLogger()
+logger.setLevel(logging.INFO)
+logger.addHandler(file_handler)
+
+# Log startup
+logger.info("Comment Analyzer started")
 
 
 # Page config
@@ -160,14 +185,42 @@ def extract_themes_simple(texts):
 def process_file_simple(uploaded_file):
     """Process uploaded file and extract comments"""
     try:
-        # Read file
-        if uploaded_file.name.endswith('.csv'):
-            df = pd.read_csv(uploaded_file)
-        else:
-            df = pd.read_excel(uploaded_file)
+        # Validate file size (limit to 10MB)
+        MAX_FILE_SIZE_MB = 10
+        if hasattr(uploaded_file, 'size') and uploaded_file.size > MAX_FILE_SIZE_MB * 1024 * 1024:
+            st.error(f"Archivo demasiado grande. Máximo permitido: {MAX_FILE_SIZE_MB}MB")
+            return None
         
-        # Find comment column
-        comment_cols = ['comentario final', 'comment', 'comments', 'feedback', 'texto', 'comentario']
+        # Read file with validation
+        try:
+            if uploaded_file.name.endswith('.csv'):
+                df = pd.read_csv(uploaded_file, encoding='utf-8', on_bad_lines='skip')
+            else:
+                df = pd.read_excel(uploaded_file)
+        except UnicodeDecodeError:
+            # Try latin-1 encoding as fallback
+            uploaded_file.seek(0)
+            if uploaded_file.name.endswith('.csv'):
+                df = pd.read_csv(uploaded_file, encoding='latin-1', on_bad_lines='skip')
+            else:
+                st.error("Error de codificación en el archivo Excel")
+                return None
+        except Exception as e:
+            st.error(f"Error leyendo archivo: {str(e)}")
+            return None
+        
+        # Validate dataframe
+        if df.empty:
+            st.error("El archivo está vacío")
+            return None
+        
+        if len(df.columns) == 0:
+            st.error("No se encontraron columnas en el archivo")
+            return None
+        
+        # Find comment column with improved detection
+        comment_cols = ['comentario final', 'comment', 'comments', 'feedback', 'texto', 'comentario', 
+                       'observacion', 'observaciones', 'opinion', 'mensaje', 'respuesta']
         comment_col = None
         
         for col in df.columns:
@@ -267,6 +320,15 @@ def process_file_simple(uploaded_file):
 
 def create_simple_excel(results):
     """Create enhanced Excel report with complete analysis results and formatting"""
+    # Validate data size for Excel export
+    MAX_COMMENTS = 10000  # Excel row limit for performance
+    if len(results.get('comments', [])) > MAX_COMMENTS:
+        st.warning(f"Limitando exportación a {MAX_COMMENTS} comentarios para mantener rendimiento")
+        # Truncate data for Excel
+        results = results.copy()
+        results['comments'] = results['comments'][:MAX_COMMENTS]
+        results['sentiments'] = results['sentiments'][:MAX_COMMENTS]
+    
     output = BytesIO()
     
     with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
@@ -554,15 +616,26 @@ st.markdown(
 # Add floating particles effect
 st.markdown(ui.floating_particles(), unsafe_allow_html=True)
 
-# Upload section with glass container
-st.markdown(ui.upload_section(), unsafe_allow_html=True)
+# Upload section header with theme colors
+st.markdown(f"""
+<div style="margin: 2rem 0;">
+    <h3 style="text-align: center; background: linear-gradient(135deg, {theme['primary']}, {theme['secondary']}); 
+        -webkit-background-clip: text; -webkit-text-fill-color: transparent; 
+        background-clip: text; color: transparent;
+        font-size: 1.5rem; font-weight: 600;">
+        Cargar Archivo de Datos
+    </h3>
+</div>
+""", unsafe_allow_html=True)
 
-uploaded_file = st.file_uploader(
-    "",
-    type=['csv', 'xlsx', 'xls'],
-    help="Drag and drop or click to upload Excel/CSV files",
-    label_visibility="collapsed"
-)
+# File uploader with proper container
+with st.container():
+    uploaded_file = st.file_uploader(
+        "Selecciona o arrastra un archivo Excel/CSV",
+        type=['csv', 'xlsx', 'xls'],
+        help="Formatos soportados: Excel (.xlsx, .xls) o CSV (.csv)",
+        label_visibility="visible"
+    )
 
 # Analysis button
 if uploaded_file:

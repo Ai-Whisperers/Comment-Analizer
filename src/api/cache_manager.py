@@ -22,7 +22,19 @@ class CacheManager:
     def __init__(self, cache_duration_hours: int = 24):
         self.cache_duration = timedelta(hours=cache_duration_hours)
         self.cache_dir = Path("data") / "cache"
-        self.cache_dir.mkdir(parents=True, exist_ok=True)
+        
+        # Ensure cache directory exists with proper error handling
+        try:
+            self.cache_dir.mkdir(parents=True, exist_ok=True)
+            logger.info(f"Cache directory ensured at: {self.cache_dir}")
+        except OSError as e:
+            logger.error(f"Failed to create cache directory: {e}")
+            # Use temp directory as fallback
+            import tempfile
+            self.cache_dir = Path(tempfile.gettempdir()) / "comment_analyzer_cache"
+            self.cache_dir.mkdir(parents=True, exist_ok=True)
+            logger.warning(f"Using fallback cache directory: {self.cache_dir}")
+        
         self.db_path = self.cache_dir / "api_cache.db"
         self._init_database()
     

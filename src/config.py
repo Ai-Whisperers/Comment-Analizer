@@ -26,6 +26,12 @@ class Config:
     OPENAI_MAX_TOKENS = int(os.getenv("OPENAI_MAX_TOKENS", "4000"))
     OPENAI_TEMPERATURE = float(os.getenv("OPENAI_TEMPERATURE", "0.7"))
     
+    # API Timeout Settings (in seconds)
+    API_TIMEOUT_SHORT = int(os.getenv("API_TIMEOUT_SHORT", "10"))  # For quick operations
+    API_TIMEOUT_MEDIUM = int(os.getenv("API_TIMEOUT_MEDIUM", "30"))  # For standard operations
+    API_TIMEOUT_LONG = int(os.getenv("API_TIMEOUT_LONG", "60"))  # For batch operations
+    API_TIMEOUT_MAX = int(os.getenv("API_TIMEOUT_MAX", "120"))  # Maximum allowed timeout
+    
     # Language Settings
     PRIMARY_LANGUAGE = "es"  # Spanish
     SECONDARY_LANGUAGE = "gn"  # Guarani

@@ -1,0 +1,379 @@
+# Configuration file for Comment Analyzer System
+# FIX #006, #007, #008: Externalize hardcoded values
+
+# Column detection configuration
+columns:
+  # Spanish and English column names to search for comments
+  comment:
+    - 'comentario final'
+    - 'comentario'
+    - 'comment'
+    - 'comentarios'
+    - 'comments'
+    - 'feedback'
+    - 'review'
+    - 'texto'
+    - 'text'
+    - 'respuesta'
+    - 'opinion'
+    - 'observacion'
+    - 'observaciones'
+    - 'nota'  # Sometimes used for comments
+    - 'notas'
+  
+  # Column names for ratings/scores
+  rating:
+    - 'nota'
+    - 'score'
+    - 'puntuacion'
+    - 'puntuación'
+    - 'calificacion'
+    - 'calificación'
+    - 'rating'
+    - 'evaluacion'
+    - 'evaluación'
+  
+  # Column names for NPS categories
+  nps:
+    - 'nps'
+    - 'net_promoter_score'
+    - 'promoter_score'
+    - 'categoria_nps'
+    - 'categoría_nps'
+
+# Competitor configuration for Paraguay telecom market
+competitors:
+  # Main competitors
+  primary:
+    - 'tigo'
+    - 'claro'
+    - 'copaco'
+    - 'vox'
+    - 'telecel'
+  
+  # Alternative names and variations
+  variations:
+    tigo:
+      - 'tigo'
+      - 'millicom'
+    claro:
+      - 'claro'
+      - 'america movil'
+      - 'américa móvil'
+    copaco:
+      - 'copaco'
+      - 'copaco s.a.'
+    vox:
+      - 'vox'
+      - 'hola paraguay'
+    telecel:
+      - 'telecel'
+      - 'nucleo'
+      - 'núcleo'
+
+# Emotion intensity mapping (Spanish emotions)
+emotions:
+  intensities:
+    # High intensity negative emotions
+    'frustración': 2.0
+    'frustracion': 2.0
+    'enojo': 2.5
+    'ira': 2.5
+    'furia': 3.0
+    'indignación': 2.5
+    'indignacion': 2.5
+    
+    # Medium intensity negative emotions
+    'decepción': 1.8
+    'decepcion': 1.8
+    'tristeza': 1.5
+    'disgusto': 1.5
+    'molestia': 1.3
+    
+    # Low intensity negative emotions
+    'preocupación': 1.2
+    'preocupacion': 1.2
+    'inquietud': 1.0
+    'duda': 0.8
+    
+    # Positive emotions
+    'satisfacción': 1.8
+    'satisfaccion': 1.8
+    'alegría': 1.5
+    'alegria': 1.5
+    'felicidad': 1.5
+    'contento': 1.3
+    'esperanza': 1.0
+    'optimismo': 1.2
+    
+    # Neutral
+    'neutral': 1.0
+    'indiferencia': 0.5
+
+  # Emotion translations (English to Spanish)
+  translations:
+    'frustration': 'frustración'
+    'anger': 'enojo'
+    'angry': 'enojo'
+    'rage': 'ira'
+    'fury': 'furia'
+    'disappointment': 'decepción'
+    'sadness': 'tristeza'
+    'sad': 'tristeza'
+    'worry': 'preocupación'
+    'worried': 'preocupado'
+    'concern': 'preocupación'
+    'satisfaction': 'satisfacción'
+    'satisfied': 'satisfecho'
+    'happiness': 'felicidad'
+    'happy': 'feliz'
+    'joy': 'alegría'
+    'joyful': 'alegre'
+    'hope': 'esperanza'
+    'hopeful': 'esperanzado'
+    'optimism': 'optimismo'
+    'optimistic': 'optimista'
+    'neutral': 'neutral'
+
+# Urgency level thresholds
+urgency:
+  thresholds:
+    P0: 6  # Critical - immediate response required
+    P1: 4  # High - response within hours
+    P2: 2  # Medium - response within day
+    P3: 0  # Low - standard response time
+  
+  # Keywords for urgency detection (Spanish)
+  keywords:
+    P0_critical:
+      - 'sin servicio'
+      - 'no funciona'
+      - 'completamente caído'
+      - 'emergencia'
+      - 'urgente'
+      - 'crítico'
+      - 'no hay internet'
+      - 'sin conexión'
+      - 'cortado'
+    
+    P1_high:
+      - 'muy lento'
+      - 'casi no funciona'
+      - 'problemas graves'
+      - 'no puedo trabajar'
+      - 'afecta trabajo'
+      - 'necesito urgente'
+      - 'intermitencias constantes'
+    
+    P2_medium:
+      - 'lento'
+      - 'problema'
+      - 'falla'
+      - 'intermitente'
+      - 'a veces'
+      - 'molesto'
+      - 'inconveniente'
+    
+    P3_low:
+      - 'podría mejorar'
+      - 'sería bueno'
+      - 'sugerencia'
+      - 'me gustaría'
+      - 'recomiendo'
+
+# Theme detection configuration
+themes:
+  # Service-related themes
+  service:
+    keywords:
+      - 'servicio'
+      - 'atención'
+      - 'atencion'
+      - 'soporte'
+      - 'ayuda'
+      - 'asistencia'
+      - 'técnico'
+      - 'tecnico'
+  
+  # Speed/Performance themes
+  speed:
+    keywords:
+      - 'velocidad'
+      - 'lento'
+      - 'lenta'
+      - 'rápido'
+      - 'rapido'
+      - 'demora'
+      - 'tarda'
+      - 'despacio'
+  
+  # Connection/Stability themes
+  connection:
+    keywords:
+      - 'conexión'
+      - 'conexion'
+      - 'cae'
+      - 'corta'
+      - 'intermitencia'
+      - 'inestable'
+      - 'interrumpe'
+      - 'desconecta'
+  
+  # Pricing themes
+  pricing:
+    keywords:
+      - 'precio'
+      - 'caro'
+      - 'costoso'
+      - 'tarifa'
+      - 'pago'
+      - 'factura'
+      - 'cobro'
+      - 'costo'
+  
+  # Coverage themes
+  coverage:
+    keywords:
+      - 'cobertura'
+      - 'señal'
+      - 'alcance'
+      - 'zona'
+      - 'área'
+      - 'area'
+      - 'llega'
+  
+  # Installation themes
+  installation:
+    keywords:
+      - 'instalación'
+      - 'instalacion'
+      - 'instalar'
+      - 'configurar'
+      - 'setup'
+      - 'activar'
+      - 'activación'
+      - 'activacion'
+
+# API Configuration
+api:
+  models:
+    primary: 'gpt-4o-mini'
+    fallback:
+      - 'gpt-3.5-turbo'
+      - 'gpt-3.5-turbo-16k'
+  
+  timeouts:
+    default: 30
+    large_batch: 60
+    max: 120
+  
+  batch_sizes:
+    small: 10
+    medium: 25
+    large: 50
+    max: 100
+  
+  confidence_thresholds:
+    high: 0.8
+    medium: 0.6
+    low: 0.4
+    min_acceptable: 0.3
+
+# File processing limits
+file_processing:
+  max_file_size_mb: 50
+  max_rows: 20000
+  chunk_size_large_files: 1000
+  memory_limit_mb: 512
+
+# Quality thresholds
+quality:
+  comment_min_words: 3
+  comment_min_chars: 10
+  comment_max_chars: 5000
+  
+  # Quality scoring
+  high_quality_threshold: 6
+  medium_quality_threshold: 4
+  
+  # Confidence levels for hybrid processing
+  ai_confidence_for_hybrid: 0.7
+  min_ai_coverage_for_full: 0.8
+
+# NPS Configuration
+nps:
+  # Score ranges
+  promoter_min: 9
+  passive_min: 7
+  passive_max: 8
+  detractor_max: 6
+  
+  # Spanish category names
+  categories:
+    promoter: 'Promotor'
+    passive: 'Pasivo'
+    detractor: 'Detractor'
+
+# Customer value segments
+customer_segments:
+  vip:
+    keywords:
+      - 'empresarial'
+      - 'corporativo'
+      - 'negocio'
+      - 'empresa'
+      - 'años con ustedes'
+      - 'cliente fiel'
+      - 'cliente antiguo'
+  
+  growth:
+    keywords:
+      - 'más servicios'
+      - 'upgrade'
+      - 'plan familiar'
+      - 'más velocidad'
+      - 'necesito más'
+      - 'ampliar'
+  
+  budget:
+    keywords:
+      - 'muy caro'
+      - 'no puedo pagar'
+      - 'precio alto'
+      - 'costoso'
+      - 'económico'
+      - 'barato'
+  
+  standard:
+    keywords: []  # Default segment
+
+# Export configuration
+export:
+  excel:
+    max_comment_length: 32767  # Excel cell limit
+    sheets:
+      - 'Portada'
+      - 'Resumen Ejecutivo'
+      - 'Metodología'
+      - 'KPIs Dashboard'
+      - 'Análisis NPS'
+      - 'Análisis de Sentimientos'
+      - 'Análisis de Emociones'
+      - 'Análisis de Temas'
+      - 'Problemas de Servicio'
+      - 'Análisis Competitivo'
+      - 'Riesgo de Churn'
+      - 'Plan de Acción'
+      - 'Comentarios Detallados'
+      - 'Estadísticas'
+      - 'Glosario'
+      - 'Anexos'
+
+# Logging configuration
+logging:
+  level: 'INFO'
+  ai_pipeline_level: 'DEBUG'
+  format: '[%(asctime)s] %(name)s - %(levelname)s - %(message)s'
+  file: 'logs/comment_analyzer.log'
+  max_size_mb: 10
+  backup_count: 5
