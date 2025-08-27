@@ -10,7 +10,7 @@ from datetime import datetime
 from typing import Dict, List, Any
 import io
 import base64
-from config import Config
+from src.config import Config
 
 class ExportManager:
     """Class to handle exporting analysis results"""

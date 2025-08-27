@@ -9,7 +9,7 @@ from pathlib import Path
 from datetime import datetime, timedelta
 from typing import Dict, List, Any, Optional
 import logging
-from config import Config
+from src.config import Config
 
 # Set up logging
 logging.basicConfig(level=getattr(logging, Config.LOG_LEVEL))

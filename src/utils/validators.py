@@ -294,6 +294,178 @@ class SecurityLogger:
         """Log suspicious user activity"""
         logger.error(f"SECURITY ALERT: {activity} - {details} - User: {user_info}")
 
+class Validators:
+    """Simplified validator class for backward compatibility"""
+    
+    def __init__(self):
+        self.validator = InputValidator()
+    
+    def validate_file_extension(self, filename: str) -> bool:
+        """Validate file extension"""
+        try:
+            ext = Path(filename).suffix.lower()
+            return ext in InputValidator.ALLOWED_EXTENSIONS
+        except Exception as e:
+            logger.error(f"Error validating file extension for '{filename}': {str(e)}")
+            return False
+    
+    def validate_dataframe(self, df) -> bool:
+        """Validate DataFrame"""
+        if df is None or not isinstance(df, pd.DataFrame):
+            return False
+        return len(df) > 0
+    
+    def validate_comment(self, comment) -> bool:
+        """Validate comment text"""
+        if not comment or not isinstance(comment, str):
+            return False
+        return len(comment.strip()) > 0
+    
+    def validate_comment_content(self, comment: str) -> bool:
+        """Validate comment content for security and appropriateness"""
+        if not comment or not isinstance(comment, str):
+            return False
+        
+        # Check basic length requirements
+        if len(comment.strip()) == 0 or len(comment) > 10000:
+            return False
+        
+        # Check for potential SQL injection patterns
+        sql_patterns = [
+            r'\bselect\b.*\bfrom\b',
+            r'\binsert\b.*\binto\b',
+            r'\bupdate\b.*\bset\b',
+            r'\bdelete\b.*\bfrom\b',
+            r'\bdrop\b.*\btable\b',
+            r'\bunion\b.*\bselect\b',
+            r';\s*--',
+            r'/\*.*\*/'
+        ]
+        
+        comment_lower = comment.lower()
+        for pattern in sql_patterns:
+            if re.search(pattern, comment_lower, re.IGNORECASE):
+                logger.warning(f"Potential SQL injection detected: {pattern}")
+                return False
+        
+        # Check for script injection patterns
+        script_patterns = [
+            r'<script[^>]*>',
+            r'</script>',
+            r'javascript:',
+            r'on\w+\s*=',
+            r'eval\s*\(',
+            r'document\.',
+            r'window\.',
+            r'<iframe',
+            r'<object',
+            r'<embed'
+        ]
+        
+        for pattern in script_patterns:
+            if re.search(pattern, comment, re.IGNORECASE):
+                logger.warning(f"Potential script injection detected: {pattern}")
+                return False
+        
+        # Check for excessive repeated characters (spam detection)
+        if len(set(comment.lower())) < 3 and len(comment) > 50:
+            logger.warning("Potential spam detected: too few unique characters")
+            return False
+        
+        # Check for excessive capitalization
+        if len(comment) > 20:
+            caps_ratio = sum(1 for c in comment if c.isupper()) / len(comment)
+            if caps_ratio > 0.7:
+                logger.warning("Excessive capitalization detected")
+                # Don't reject, just log
+        
+        return True
+    
+    def validate_language_code(self, code: str) -> bool:
+        """Validate ISO language code"""
+        valid_codes = ['es', 'en', 'pt', 'fr', 'de', 'it', 'ru', 'ja', 'ko', 'zh']
+        return code in valid_codes if code else False
+    
+    def validate_sentiment_label(self, label: str) -> bool:
+        """Validate sentiment label"""
+        if not label or not isinstance(label, str):
+            return False
+        valid = ['positive', 'negative', 'neutral', 'positivo', 'negativo']
+        return label.lower() in valid
+    
+    def validate_nps_score(self, score) -> bool:
+        """Validate NPS score (0-10)"""
+        try:
+            # Handle both int and float, convert to int for validation
+            score_num = int(float(score)) if score is not None else None
+            return score_num is not None and 0 <= score_num <= 10
+        except (ValueError, TypeError, OverflowError) as e:
+            logger.warning(f"Invalid NPS score format '{score}': {str(e)}")
+            return False
+    
+    def validate_email(self, email: str) -> bool:
+        """Validate email format"""
+        if not email or not isinstance(email, str):
+            return False
+        pattern = r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$'
+        return bool(re.match(pattern, email))
+    
+    def validate_date_format(self, date: str) -> bool:
+        """Validate date in YYYY-MM-DD format"""
+        if not date or not isinstance(date, str):
+            return False
+        pattern = r'^\d{4}-\d{2}-\d{2}$'
+        if not re.match(pattern, date):
+            return False
+        try:
+            from datetime import datetime
+            datetime.strptime(date, '%Y-%m-%d')
+            return True
+        except ValueError as e:
+            logger.warning(f"Invalid date format '{date}': {str(e)}")
+            return False
+        except Exception as e:
+            logger.error(f"Unexpected error validating date '{date}': {str(e)}")
+            return False
+    
+    def sanitize_input(self, text: str) -> str:
+        """Sanitize input text"""
+        if not text:
+            return ""
+        # Remove HTML tags
+        text = re.sub(r'<[^>]+>', '', text)
+        # Remove extra spaces
+        text = re.sub(r'\s+', ' ', text).strip()
+        return text
+    
+    def validate_file_size(self, size, max_size_mb: int = 50) -> bool:
+        """Validate file size"""
+        if size is None or size < 0:
+            return False
+        max_size_bytes = max_size_mb * 1024 * 1024
+        return 0 < size <= max_size_bytes
+    
+    def validate_column_names(self, df: pd.DataFrame) -> bool:
+        """Validate DataFrame column names"""
+        if not isinstance(df, pd.DataFrame):
+            return False
+        for col in df.columns:
+            if not col or not isinstance(col, str) or col.strip() == '':
+                return False
+        return True
+    
+    def validate_percentage(self, value) -> bool:
+        """Validate percentage value (0-100)"""
+        try:
+            num_value = float(value)
+            return 0 <= num_value <= 100
+        except (ValueError, TypeError) as e:
+            logger.warning(f"Invalid percentage value '{value}': {str(e)}")
+            return False
+        except Exception as e:
+            logger.error(f"Unexpected error validating percentage '{value}': {str(e)}")
+            return False
+
 # Example usage and testing
 if __name__ == "__main__":
     # Test comment validation

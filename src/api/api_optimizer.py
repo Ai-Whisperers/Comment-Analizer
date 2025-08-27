@@ -359,16 +359,28 @@ class APICallOptimizer:
             logger.info("API cache cleared")
 
 
-# Global optimizer instance
+# Global optimizer instance with thread safety
+import threading
 _global_optimizer = None
+_optimizer_lock = threading.Lock()
 
 
 def get_global_api_optimizer() -> APICallOptimizer:
-    """Get global API optimizer instance"""
+    """Get global API optimizer instance (thread-safe)"""
     global _global_optimizer
     if _global_optimizer is None:
-        _global_optimizer = APICallOptimizer()
+        with _optimizer_lock:
+            # Double-check locking pattern
+            if _global_optimizer is None:
+                _global_optimizer = APICallOptimizer()
     return _global_optimizer
+
+
+def reset_global_optimizer():
+    """Reset global optimizer (useful for testing)"""
+    global _global_optimizer
+    with _optimizer_lock:
+        _global_optimizer = None
 
 
 def optimize_api_usage(items: List[str], 

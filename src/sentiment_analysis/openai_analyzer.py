@@ -9,12 +9,12 @@ import json
 import logging
 from typing import List, Dict, Optional, Tuple, Any
 from openai import OpenAI
-from config import Config
-from api.cache_manager import CacheManager
-from api.api_client import RobustAPIClient, get_global_client, get_api_monitor, timeout_handler
-from api.api_optimizer import get_global_api_optimizer, optimize_api_usage, estimate_api_cost
-from data_processing.language_detector import LanguageDetector
-from utils.exceptions import (
+from src.config import Config
+from src.api.cache_manager import CacheManager
+from src.api.api_client import RobustAPIClient, get_global_client, get_api_monitor, timeout_handler
+from src.api.api_optimizer import get_global_api_optimizer, optimize_api_usage, estimate_api_cost
+from src.data_processing.language_detector import LanguageDetector
+from src.utils.exceptions import (
     APIConnectionError, APITimeoutError, APIRateLimitError,
     AnalysisProcessingError, ErrorHandler
 )

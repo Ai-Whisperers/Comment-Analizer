@@ -45,6 +45,27 @@ ENV/
 .DS_Store
 Thumbs.db
 
+# Environment Variables - CRITICAL: Never commit these!
+.env
+.env.local
+.env.development
+.env.development.local
+.env.test
+.env.test.local
+.env.production
+.env.production.local
+.env.staging
+.env.build
+*.env
+
+# API Keys and Secrets
+secrets.toml
+.streamlit/secrets.toml
+config/secrets.json
+*.key
+*.pem
+*.cert
+
 # Project specific
 data/cache/*.db
 data/monitoring/*.db
@@ -62,8 +83,31 @@ outputs/reports/*
 outputs/visualizations/*
 !outputs/visualizations/.gitkeep
 *.log
-.env
-.env.local
 
 # Streamlit
-.streamlit/secrets.toml
+.streamlit/
+!.streamlit/config.toml
+
+# Archives and backups
+archived_modules/
+*.zip
+*.tar
+*.gz
+*.bak
+*.backup
+
+# Coverage reports
+coverage.xml
+*.cover
+
+# Cloud provider configs
+.aws/
+.gcp/
+.azure/
+terraform.tfstate
+terraform.tfstate.backup
+.terraform/
+
+# Docker
+docker-compose.override.yml
+.dockerignore

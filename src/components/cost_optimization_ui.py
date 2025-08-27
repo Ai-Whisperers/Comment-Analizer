@@ -9,8 +9,8 @@ import time
 from collections import Counter
 from typing import Dict, List, Optional
 
-from theme import theme
-from services.session_manager import SessionManager
+from src.theme import theme
+from src.services.session_manager import SessionManager
 
 
 class CostOptimizationUI:

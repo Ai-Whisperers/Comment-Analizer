@@ -12,17 +12,18 @@ import queue
 import logging
 from typing import List, Dict
 
-from sentiment_analysis.openai_analyzer import OpenAIAnalyzer
-from sentiment_analysis.basic_analyzer import BasicAnalysisMethod
-from sentiment_analysis.enhanced_analyzer import EnhancedAnalyzer
-from utils.validators import InputValidator, SecurityLogger
-from utils.exceptions import (
+from src.sentiment_analysis.openai_analyzer import OpenAIAnalyzer
+from src.sentiment_analysis.enhanced_analyzer import EnhancedAnalyzer
+from src.sentiment_analysis.enhanced_analyzer import EnhancedAnalyzer as BasicAnalysisMethod
+from src.ai_analysis_adapter import AIAnalysisAdapter
+from src.utils.validators import InputValidator, SecurityLogger
+from src.utils.exceptions import (
     ErrorHandler,
     APIConnectionError,
     AnalysisProcessingError,
 )
-from services.session_manager import SessionManager
-from utils.memory_manager import MemoryManager, BatchProcessor, optimize_session_state, log_memory_status
+from src.services.session_manager import SessionManager
+from src.utils.memory_manager import MemoryManager, BatchProcessor, optimize_session_state, log_memory_status
 
 
 class AnalysisService:
@@ -161,76 +162,91 @@ class AnalysisService:
                     with col4:
                         st.metric("Status", "Analyzing...")
                 
-                # Use Enhanced Analyzer for comprehensive analysis
-                st.info("🚀 Using Enhanced Analysis mode with NPS segmentation and advanced insights.")
-                analyzer = EnhancedAnalyzer()
-                analyzer_type = "Enhanced Analysis"
+                # Use AI Adapter for comprehensive AI-powered analysis
+                st.info("🤖 Using AI-powered analysis with OpenAI GPT-4 and automatic fallback.")
+                ai_adapter = AIAnalysisAdapter()
+                analyzer_type = "AI Analysis with Fallback" if ai_adapter.ai_available else "Rule-based Analysis"
                 
-                # If DataFrame available, use it for enhanced analysis
+                # Create a temporary uploaded file object from the DataFrame data
                 if 'comments_data' in st.session_state:
                     comments_df = st.session_state['comments_data']
-                    # Run comprehensive analysis
-                    enhanced_results = analyzer.analyze_batch(comments_df.head(sample_size))
                     
-                    # Store enhanced results
-                    st.session_state['nps_analysis'] = enhanced_results.get('nps_analysis', {})
-                    st.session_state['enhanced_insights'] = enhanced_results
+                    # Create a BytesIO object from the DataFrame to simulate uploaded file
+                    import io
+                    from io import BytesIO
+                    
+                    # Create Excel file in memory
+                    excel_buffer = BytesIO()
+                    with pd.ExcelWriter(excel_buffer, engine='xlsxwriter') as writer:
+                        comments_df.head(sample_size).to_excel(writer, index=False, sheet_name='Comentarios')
+                    excel_buffer.seek(0)
+                    
+                    # Create mock uploaded file object
+                    class MockUploadedFile:
+                        def __init__(self, content, name):
+                            self.name = name
+                            self.size = len(content.getvalue())
+                            self._content = content
+                        
+                        def read(self, size=-1):
+                            return self._content.read(size)
+                        
+                        def seek(self, offset, whence=0):
+                            return self._content.seek(offset, whence)
+                    
+                    mock_file = MockUploadedFile(excel_buffer, "analysis_data.xlsx")
+                    
+                    # Use AI adapter to process the data
+                    st.info(f"🔄 Processing {sample_size} comments with AI adapter...")
+                    ai_results = ai_adapter.process_uploaded_file_with_ai(mock_file)
+                    
+                    if ai_results:
+                        # Store AI results in session state
+                        st.session_state['analysis_results'] = ai_results
+                        st.session_state['enhanced_insights'] = ai_results
+                        
+                        # Convert to the expected format for this function
+                        results = []
+                        sentiments = ai_results.get('sentiments', [])
+                        for i, comment in enumerate(sample_comments):
+                            sentiment = sentiments[i] if i < len(sentiments) else 'neutral'
+                            results.append({
+                                "comment_number": i + 1,
+                                "sentiment": sentiment,
+                                "confidence": ai_results.get('ai_confidence_avg', 0.8),
+                                "language": "es",
+                                "translation": comment,
+                                "themes": ["ai_detected"],
+                                "pain_points": [],
+                                "emotions": ["ai_analyzed"]
+                            })
+                    else:
+                        st.error("AI analysis failed - no results returned")
+                        return
+                
+                else:
+                    st.error("No comments data available in session state")
+                    return
 
-                # Update UI to show which analyzer is being used
+                # Update UI to show which analyzer was used
                 with metrics_display:
                     col1, col2, col3, col4 = st.columns(4)
                     with col1:
                         st.metric("Comments to Analyze", f"{len(sample_comments):,}")
                     with col2:
-                        st.metric("AI Model", analyzer_type)
+                        analysis_method = ai_results.get('analysis_method', 'Unknown')
+                        if analysis_method == 'AI_POWERED':
+                            st.metric("AI Model", "🤖 GPT-4 Active")
+                        elif analysis_method == 'RULE_BASED_FALLBACK':
+                            st.metric("AI Model", "🔄 Fallback Mode")
+                        else:
+                            st.metric("AI Model", analyzer_type)
                     with col3:
-                        st.metric("Processing", "In Progress...")
+                        st.metric("Processing", "Completed")
                     with col4:
-                        st.metric("Status", "Analyzing...")
+                        st.metric("Status", "✅ Done")
 
-                # Analyze comments with progress updates
-                try:
-                    # For enhanced analyzer, create a temporary DataFrame
-                    if isinstance(analyzer, EnhancedAnalyzer):
-                        temp_df = pd.DataFrame({
-                            'Comentario Final': sample_comments,
-                            'Nota': [5] * len(sample_comments)  # Default score if not available
-                        })
-                        enhanced_results = analyzer.analyze_batch(temp_df)
-                        
-                        # Convert to standard results format
-                        results = []
-                        for i, comment in enumerate(sample_comments, 1):
-                            results.append({
-                                "comment_number": i,
-                                "sentiment": "neutral",  # Will be overridden by insights
-                                "confidence": 0.8,
-                                "language": "es",
-                                "translation": comment,
-                                "themes": ["general"],
-                                "pain_points": [],
-                                "emotions": ["neutral"]
-                            })
-                        
-                        # Store enhanced insights
-                        st.session_state['enhanced_insights'] = enhanced_results
-                    else:
-                        results = analyzer.analyze_batch(sample_comments)
-                except Exception as e:
-                    st.error(f"Analysis failed: {str(e)}")
-                    # Create minimal fallback results
-                    results = []
-                    for i, comment in enumerate(sample_comments, 1):
-                        results.append({
-                            "comment_number": i,
-                            "sentiment": "neutral",
-                            "confidence": 0.5,
-                            "language": "es",
-                            "translation": comment,
-                            "themes": ["general"],
-                            "pain_points": [],
-                            "emotions": ["neutral"]
-                        })
+                # Results are already set above in the AI processing block
                 progress_bar.progress(0.7)
 
                 # Step 4: Generating Insights
@@ -473,6 +489,50 @@ class AnalysisService:
         self, batch_comments: List[str], batch_num: int, max_retries: int = 3
     ) -> List[Dict]:
         """Process a batch of comments with retry logic"""
+        
+        # Input validation
+        if not batch_comments:
+            raise ValueError("Comments list cannot be empty")
+        
+        if not isinstance(batch_comments, list):
+            raise TypeError("Comments must be provided as a list")
+        
+        if len(batch_comments) > 1000:
+            logging.warning(f"Large batch size {len(batch_comments)} detected, processing first 1000 comments")
+            batch_comments = batch_comments[:1000]
+        
+        # Validate each comment
+        validator = InputValidator()
+        valid_comments = []
+        
+        for i, comment in enumerate(batch_comments):
+            if not isinstance(comment, str):
+                logging.warning(f"Skipping non-string comment at position {i}: {type(comment)}")
+                continue
+            
+            if not comment or len(comment.strip()) == 0:
+                logging.warning(f"Skipping empty comment at position {i}")
+                continue
+                
+            if len(comment) > 5000:
+                logging.warning(f"Truncating overly long comment at position {i} (length: {len(comment)})")
+                comment = comment[:5000]
+            
+            # Basic security validation
+            if not validator.validate_comment_content(comment):
+                logging.warning(f"Skipping potentially malicious comment at position {i}")
+                continue
+            
+            valid_comments.append(comment.strip())
+        
+        if not valid_comments:
+            raise ValueError("No valid comments found in batch after validation")
+        
+        if len(valid_comments) < len(batch_comments):
+            logging.info(f"Filtered batch: {len(batch_comments)} -> {len(valid_comments)} valid comments")
+        
+        # Update batch_comments to use only valid ones
+        batch_comments = valid_comments
         retry_delay = 2
 
         for retry in range(max_retries):

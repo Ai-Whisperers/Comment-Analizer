@@ -8,11 +8,11 @@ import pandas as pd
 from pathlib import Path
 from typing import Dict, Optional, Tuple
 
-from theme import theme
-from services.file_upload_service import FileUploadService
-from services.session_manager import SessionManager
-from data_processing.comment_reader import CommentReader
-from utils.exceptions import ErrorHandler, FileProcessingError
+from src.theme import theme
+from src.services.file_upload_service import FileUploadService
+from src.services.session_manager import SessionManager
+from src.data_processing.comment_reader import CommentReader
+from src.utils.exceptions import ErrorHandler, FileProcessingError
 
 
 class OptimizedFileUploadUI:

@@ -8,6 +8,9 @@ import numpy as np
 from datetime import datetime
 from io import BytesIO
 import xlsxwriter
+import logging
+
+logger = logging.getLogger(__name__)
 
 class ProfessionalExcelExporter:
     def __init__(self):
@@ -47,64 +50,85 @@ class ProfessionalExcelExporter:
 
     def create_professional_excel(self, results):
         """Create a professional Excel report with all analyses"""
-        output = BytesIO()
-        
-        # Create Excel writer with xlsxwriter engine for advanced formatting
-        with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
-            workbook = writer.book
+        try:
+            # Input validation
+            if not results:
+                raise ValueError("No analysis results provided for Excel export")
+                
+            if not isinstance(results, dict):
+                raise TypeError("Results must be a dictionary")
+                
+            output = BytesIO()
             
-            # Define professional formats
-            formats = self._create_formats(workbook)
+            # Create Excel writer with xlsxwriter engine for advanced formatting
+            with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
+                workbook = writer.book
+                
+                # Define professional formats
+                formats = self._create_formats(workbook)
+                
+                # Sheet 00: Cover Page
+                self._create_cover_sheet(writer, workbook, formats, results)
+                
+                # Sheet 01: Executive Summary
+                self._create_executive_summary(writer, workbook, formats, results)
+                
+                # Sheet 02: Methodology
+                self._create_methodology_sheet(writer, workbook, formats)
+                
+                # Sheet 03: KPIs Dashboard
+                self._create_kpi_dashboard(writer, workbook, formats, results)
+                
+                # Sheet 04: NPS Analysis
+                self._create_nps_analysis(writer, workbook, formats, results)
+                
+                # Sheet 05: Sentiment Analysis
+                self._create_sentiment_analysis(writer, workbook, formats, results)
+                
+                # Sheet 06: Emotion Analysis
+                self._create_emotion_analysis(writer, workbook, formats, results)
+                
+                # Sheet 07: Main Themes
+                self._create_themes_analysis(writer, workbook, formats, results)
+                
+                # Sheet 08: Service Problems
+                self._create_service_problems(writer, workbook, formats, results)
+                
+                # Sheet 09: Competition Analysis
+                self._create_competition_analysis(writer, workbook, formats, results)
+                
+                # Sheet 10: Churn Analysis
+                self._create_churn_analysis(writer, workbook, formats, results)
+                
+                # Sheet 11: Action Plan
+                self._create_action_plan(writer, workbook, formats, results)
+                
+                # Sheet 12: Detailed Comments
+                self._create_detailed_comments(writer, workbook, formats, results)
+                
+                # Sheet 13: Data Cleaning Statistics
+                self._create_cleaning_stats(writer, workbook, formats, results)
+                
+                # Sheet 14: Glossary
+                self._create_glossary(writer, workbook, formats)
+                
+                # Sheet 15: Appendix
+                self._create_appendix(writer, workbook, formats, results)
+                
+            return output.getvalue()
             
-            # Sheet 00: Cover Page
-            self._create_cover_sheet(writer, workbook, formats, results)
-            
-            # Sheet 01: Executive Summary
-            self._create_executive_summary(writer, workbook, formats, results)
-            
-            # Sheet 02: Methodology
-            self._create_methodology_sheet(writer, workbook, formats)
-            
-            # Sheet 03: KPIs Dashboard
-            self._create_kpi_dashboard(writer, workbook, formats, results)
-            
-            # Sheet 04: NPS Analysis
-            self._create_nps_analysis(writer, workbook, formats, results)
-            
-            # Sheet 05: Sentiment Analysis
-            self._create_sentiment_analysis(writer, workbook, formats, results)
-            
-            # Sheet 06: Emotion Analysis
-            self._create_emotion_analysis(writer, workbook, formats, results)
-            
-            # Sheet 07: Main Themes
-            self._create_themes_analysis(writer, workbook, formats, results)
-            
-            # Sheet 08: Service Problems
-            self._create_service_problems(writer, workbook, formats, results)
-            
-            # Sheet 09: Competition Analysis
-            self._create_competition_analysis(writer, workbook, formats, results)
-            
-            # Sheet 10: Churn Analysis
-            self._create_churn_analysis(writer, workbook, formats, results)
-            
-            # Sheet 11: Action Plan
-            self._create_action_plan(writer, workbook, formats, results)
-            
-            # Sheet 12: Detailed Comments
-            self._create_detailed_comments(writer, workbook, formats, results)
-            
-            # Sheet 13: Data Cleaning Statistics
-            self._create_cleaning_stats(writer, workbook, formats, results)
-            
-            # Sheet 14: Glossary
-            self._create_glossary(writer, workbook, formats)
-            
-            # Sheet 15: Appendix
-            self._create_appendix(writer, workbook, formats, results)
-            
-        return output.getvalue()
+        except ValueError as e:
+            logger.error(f"Invalid input data for Excel export: {str(e)}")
+            raise ValueError(f"Invalid input data for Excel export: {str(e)}")
+        except TypeError as e:
+            logger.error(f"Data type error in Excel export: {str(e)}")
+            raise TypeError(f"Data type error in Excel export: {str(e)}")
+        except MemoryError as e:
+            logger.error(f"Not enough memory to create Excel report: {str(e)}")
+            raise MemoryError(f"Not enough memory to create Excel report: {str(e)}")
+        except Exception as e:
+            logger.error(f"Excel export failed: {str(e)}")
+            raise RuntimeError(f"Excel export failed: {str(e)}")
     
     def _create_formats(self, workbook):
         """Create professional cell formats"""

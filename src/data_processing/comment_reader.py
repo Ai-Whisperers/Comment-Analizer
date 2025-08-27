@@ -9,8 +9,8 @@ import json
 import logging
 from pathlib import Path
 from typing import List, Dict, Optional, Union
-from config import Config
-from utils.memory_manager import MemoryManager, ChunkedDataProcessor, OptimizedDataFrame
+from src.config import Config
+from src.utils.memory_manager import MemoryManager, ChunkedDataProcessor, OptimizedDataFrame
 
 # Set up logging
 logging.basicConfig(level=getattr(logging, Config.LOG_LEVEL))
@@ -106,11 +106,20 @@ class CommentReader:
                 else:
                     raise ValueError(f"No text columns found in Excel sheet '{sheet_name}'")
             
-            # Create standardized DataFrame
+            # Create standardized DataFrame with pipeline-compatible column names
             result_df = pd.DataFrame()
-            result_df['comment'] = df[comment_col].astype(str)
+            result_df['Comentario Final'] = df[comment_col].astype(str)
             result_df['source'] = f'excel-{sheet_name}'
             result_df['file_name'] = file_path.name
+            
+            # Check for score column for NPS
+            score_columns = ['nota', 'score', 'puntuacion', 'calificacion', 'rating', 'nps']
+            for col_name in score_columns:
+                matching_cols = [col for col in actual_columns if col_name in col]
+                if matching_cols:
+                    score_col = df.columns[actual_columns.get_loc(matching_cols[0])]
+                    result_df['Nota'] = pd.to_numeric(df[score_col], errors='coerce')
+                    break
             
             # Add other available columns
             for col in df.columns:
@@ -118,8 +127,8 @@ class CommentReader:
                     result_df[f'metadata_{col.lower()}'] = df[col]
             
             # Remove empty comments
-            result_df = result_df[result_df['comment'].str.strip() != '']
-            result_df = result_df[result_df['comment'] != 'nan']
+            result_df = result_df[result_df['Comentario Final'].str.strip() != '']
+            result_df = result_df[result_df['Comentario Final'] != 'nan']
             
             logger.info(f"Successfully read {len(result_df)} comments from sheet '{sheet_name}'")
             self.data = result_df.reset_index(drop=True)
@@ -168,11 +177,20 @@ class CommentReader:
                     else:
                         raise ValueError("No text columns found in Excel file")
                 
-                # Create standardized DataFrame
+                # Create standardized DataFrame with pipeline-compatible column names
                 result_df = pd.DataFrame()
-                result_df['comment'] = df[comment_col].astype(str)
+                result_df['Comentario Final'] = df[comment_col].astype(str)
                 result_df['source'] = 'excel'
                 result_df['file_name'] = file_path.name
+                
+                # Check for score column for NPS
+                score_columns = ['nota', 'score', 'puntuacion', 'calificacion', 'rating', 'nps']
+                for col_name in score_columns:
+                    matching_cols = [col for col in actual_columns if col_name in col]
+                    if matching_cols:
+                        score_col = df.columns[actual_columns.get_loc(matching_cols[0])]
+                        result_df['Nota'] = pd.to_numeric(df[score_col], errors='coerce')
+                        break
                 
                 # Add other available columns
                 for col in df.columns:
@@ -180,8 +198,8 @@ class CommentReader:
                         result_df[f'metadata_{col.lower()}'] = df[col]
                 
                 # Remove empty comments
-                result_df = result_df[result_df['comment'].str.strip() != '']
-                result_df = result_df[result_df['comment'] != 'nan']
+                result_df = result_df[result_df['Comentario Final'].str.strip() != '']
+                result_df = result_df[result_df['Comentario Final'] != 'nan']
                 
                 # Optimize DataFrame memory usage
                 result_df = OptimizedDataFrame.optimize_dtypes(result_df)
@@ -252,11 +270,21 @@ class CommentReader:
                 else:
                     return None
             
-            # Create result DataFrame for chunk
+            # Create result DataFrame for chunk with pipeline-compatible column names
             result_chunk = pd.DataFrame()
-            result_chunk['comment'] = chunk_df[comment_col].astype(str)
+            result_chunk['Comentario Final'] = chunk_df[comment_col].astype(str)
             result_chunk['source'] = 'excel'
             result_chunk['file_name'] = file_path.name
+            
+            # Check for score column
+            actual_cols = chunk_df.columns.str.lower()
+            score_columns = ['nota', 'score', 'puntuacion', 'calificacion', 'rating', 'nps']
+            for col_name in score_columns:
+                matching_cols = [col for col in actual_cols if col_name in col]
+                if matching_cols:
+                    score_col = chunk_df.columns[actual_cols.get_loc(matching_cols[0])]
+                    result_chunk['Nota'] = pd.to_numeric(chunk_df[score_col], errors='coerce')
+                    break
             
             # Add metadata columns
             for col in chunk_df.columns:
@@ -264,8 +292,8 @@ class CommentReader:
                     result_chunk[f'metadata_{col.lower()}'] = chunk_df[col]
             
             # Remove empty comments
-            result_chunk = result_chunk[result_chunk['comment'].str.strip() != '']
-            result_chunk = result_chunk[result_chunk['comment'] != 'nan']
+            result_chunk = result_chunk[result_chunk['Comentario Final'].str.strip() != '']
+            result_chunk = result_chunk[result_chunk['Comentario Final'] != 'nan']
             
             return result_chunk
             
@@ -331,7 +359,7 @@ class CommentReader:
             comments = [line.strip() for line in lines if line.strip()]
             
             df = pd.DataFrame({
-                'comment': comments,
+                'Comentario Final': comments,  # Pipeline-compatible column name
                 'source': 'text',
                 'file_name': file_path.name,
                 'line_number': range(1, len(comments) + 1)
@@ -368,20 +396,32 @@ class CommentReader:
             else:
                 raise ValueError(f"No text columns found in {source} file")
         
-        # Create result DataFrame
+        # Create result DataFrame with standardized column names for pipeline
         result_df = pd.DataFrame()
-        result_df['comment'] = df[comment_col].astype(str)
+        result_df['Comentario Final'] = df[comment_col].astype(str)  # Changed from 'comment' to 'Comentario Final'
         result_df['source'] = source
         result_df['file_name'] = file_path.name
         
+        # Check for Nota/score columns for NPS analysis
+        score_columns = ['nota', 'score', 'puntuacion', 'calificacion', 'rating', 'nps']
+        score_col = None
+        
+        for col_name in score_columns:
+            matching_cols = [col for col in actual_columns if col_name in col]
+            if matching_cols:
+                score_col = df.columns[actual_columns.get_loc(matching_cols[0])]
+                result_df['Nota'] = pd.to_numeric(df[score_col], errors='coerce')
+                logger.info(f"Found score column '{score_col}' mapped to 'Nota'")
+                break
+        
         # Add metadata columns
         for col in df.columns:
-            if col != comment_col:
+            if col != comment_col and col != score_col:
                 result_df[f'metadata_{col.lower()}'] = df[col]
         
         # Clean data
-        result_df = result_df[result_df['comment'].str.strip() != '']
-        result_df = result_df[result_df['comment'] != 'nan']
+        result_df = result_df[result_df['Comentario Final'].str.strip() != '']
+        result_df = result_df[result_df['Comentario Final'] != 'nan']
         
         return result_df.reset_index(drop=True)
     
@@ -390,15 +430,18 @@ class CommentReader:
         if self.data is None:
             return {"status": "No data loaded"}
         
+        # Handle both old and new column names for backward compatibility
+        comment_col = 'Comentario Final' if 'Comentario Final' in self.data.columns else 'comment'
+        
         return {
             "total_comments": len(self.data),
             "columns": list(self.data.columns),
-            "sample_comment": self.data['comment'].iloc[0] if len(self.data) > 0 else None,
+            "sample_comment": self.data[comment_col].iloc[0] if len(self.data) > 0 and comment_col in self.data.columns else None,
             "sources": self.data['source'].value_counts().to_dict() if 'source' in self.data.columns else {},
             "data_types": self.data.dtypes.to_dict()
         }
     
-    def deduplicate_comments(self, df: pd.DataFrame, comment_column: str = 'comment', 
+    def deduplicate_comments(self, df: pd.DataFrame, comment_column: str = 'Comentario Final', 
                            method: str = 'exact') -> tuple[pd.DataFrame, Dict]:
         """
         Deduplicate comments in the DataFrame

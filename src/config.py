@@ -3,16 +3,28 @@ Configuration settings for Personal Paraguay Fiber Comments Analysis System
 """
 
 import os
+from pathlib import Path
 from dotenv import load_dotenv
+import logging
 
-# Load environment variables
-load_dotenv()
+# Load environment variables from .env file
+env_path = Path(__file__).parent.parent / '.env'
+load_dotenv(dotenv_path=env_path)
+
+# Configure logging based on environment
+logging.basicConfig(
+    level=os.getenv("LOG_LEVEL", "INFO"),
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+)
 
 class Config:
     """Configuration class for API keys and settings"""
     
-    # API Configuration
+    # API Configuration - Loaded from .env file, NEVER hardcoded
     OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
+    OPENAI_MODEL = os.getenv("OPENAI_MODEL", "gpt-4")
+    OPENAI_MAX_TOKENS = int(os.getenv("OPENAI_MAX_TOKENS", "4000"))
+    OPENAI_TEMPERATURE = float(os.getenv("OPENAI_TEMPERATURE", "0.7"))
     
     # Language Settings
     PRIMARY_LANGUAGE = "es"  # Spanish

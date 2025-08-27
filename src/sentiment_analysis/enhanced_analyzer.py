@@ -102,6 +102,19 @@ class EnhancedAnalyzer:
         Returns:
             Comprehensive analysis results dictionary
         """
+        # Check if NPS data is available and validate
+        has_nps_data = 'Nota' in comments_df.columns
+        if not has_nps_data:
+            logger.warning("'Nota' column not found - NPS-related analysis will be limited")
+        else:
+            # Validate NPS scores are in valid range (0-10)
+            invalid_scores = comments_df[
+                comments_df['Nota'].notna() & 
+                ((comments_df['Nota'] < 0) | (comments_df['Nota'] > 10))
+            ]
+            if len(invalid_scores) > 0:
+                logger.warning(f"Found {len(invalid_scores)} invalid NPS scores (outside 0-10 range)")
+        
         results = {
             'nps_analysis': self._analyze_nps(comments_df),
             'sentiment_emotion': self._analyze_sentiment_emotion(comments_df),
@@ -110,7 +123,8 @@ class EnhancedAnalyzer:
             'language_insights': self._analyze_language(comments_df),
             'improvement_opportunities': self._identify_improvements(comments_df),
             'correlation_analysis': self._analyze_correlations(comments_df),
-            'summary_metrics': self._calculate_summary_metrics(comments_df)
+            'summary_metrics': self._calculate_summary_metrics(comments_df),
+            'has_nps_data': has_nps_data  # Add flag for consumers
         }
         
         return results
@@ -126,10 +140,24 @@ class EnhancedAnalyzer:
         }
         
         if 'Nota' in df.columns:
+            # Count valid NPS scores for accurate percentage calculation
+            valid_scores_df = df[df['Nota'].notna()]
+            total_valid_scores = len(valid_scores_df)
+            
+            if total_valid_scores == 0:
+                logger.warning("No valid NPS scores found in 'Nota' column")
+                nps_results['error'] = "No valid NPS scores available"
+                return nps_results
+            
             # Segment by NPS category
-            for index, row in df.iterrows():
+            for index, row in valid_scores_df.iterrows():
                 try:
                     score = float(row['Nota'])
+                    # Validate score is in acceptable range
+                    if not (0 <= score <= 10):
+                        logger.warning(f"Invalid NPS score {score} at index {index}, skipping")
+                        continue
+                        
                     comment = str(row.get('Comentario Final', ''))
                     
                     if 9 <= score <= 10:
@@ -144,28 +172,41 @@ class EnhancedAnalyzer:
                             'score': score,
                             'comment': comment[:200]
                         })
-                    else:
+                    else:  # 0 <= score <= 6
                         nps_results['detractors']['count'] += 1
                         nps_results['detractors']['comments'].append({
                             'score': score,
                             'comment': comment[:200]
                         })
-                except (ValueError, TypeError):
+                except (ValueError, TypeError) as e:
+                    logger.warning(f"Error processing NPS score at index {index}: {e}")
                     continue
             
-            total = len(df)
-            if total > 0:
-                # Calculate percentages
-                nps_results['promoters']['percentage'] = (nps_results['promoters']['count'] / total) * 100
-                nps_results['passives']['percentage'] = (nps_results['passives']['count'] / total) * 100
-                nps_results['detractors']['percentage'] = (nps_results['detractors']['count'] / total) * 100
+            if total_valid_scores > 0:
+                # Calculate percentages based on valid scores only
+                nps_results['promoters']['percentage'] = (nps_results['promoters']['count'] / total_valid_scores) * 100
+                nps_results['passives']['percentage'] = (nps_results['passives']['count'] / total_valid_scores) * 100
+                nps_results['detractors']['percentage'] = (nps_results['detractors']['count'] / total_valid_scores) * 100
                 
                 # Calculate NPS score
                 nps_results['nps_score'] = nps_results['promoters']['percentage'] - nps_results['detractors']['percentage']
                 
-                # Score distribution
-                score_counts = df['Nota'].value_counts().sort_index()
+                # Score distribution from valid scores only
+                score_counts = valid_scores_df['Nota'].value_counts().sort_index()
                 nps_results['distribution'] = score_counts.to_dict()
+                
+                # Add metadata about data quality
+                nps_results['data_quality'] = {
+                    'total_comments': len(df),
+                    'valid_scores': total_valid_scores,
+                    'missing_scores': len(df) - total_valid_scores,
+                    'completion_rate': (total_valid_scores / len(df)) * 100 if len(df) > 0 else 0
+                }
+        else:
+            # When no Nota column is available, provide informative response
+            nps_results['error'] = "NPS analysis unavailable - 'Nota' column not found"
+            nps_results['message'] = "To enable NPS analysis, ensure your data includes a 'Nota' column with scores 0-10"
+            logger.info("NPS analysis skipped - no 'Nota' column in data")
         
         return nps_results
     
@@ -183,7 +224,8 @@ class EnhancedAnalyzer:
         
         for index, row in df.iterrows():
             comment = str(row.get('Comentario Final', '')).lower()
-            score = row.get('Nota', 5)
+            # Use actual score if available, None otherwise for proper handling
+            score = row.get('Nota') if 'Nota' in df.columns and pd.notna(row.get('Nota')) else None
             
             # Sentiment analysis
             sentiment = self._detect_sentiment(comment)
@@ -203,8 +245,9 @@ class EnhancedAnalyzer:
                         'sentiment': sentiment,
                         'comment': comment[:100]
                     })
-            except (ValueError, TypeError):
-                pass
+            except (ValueError, TypeError) as e:
+                # Expected when score is None or invalid - this is normal behavior
+                logger.debug(f"Skipping misalignment check for invalid score '{score}': {str(e)}")
         
         # Calculate percentages
         total = len(df)
@@ -239,7 +282,8 @@ class EnhancedAnalyzer:
         # Analyze each comment
         for index, row in df.iterrows():
             comment = str(row.get('Comentario Final', '')).lower()
-            score = row.get('Nota', 5)
+            # Use actual score if available for correlation analysis
+            score = row.get('Nota') if 'Nota' in df.columns and pd.notna(row.get('Nota')) else None
             
             # Detect topics
             detected_topics = self._detect_topics(comment)
@@ -257,8 +301,10 @@ class EnhancedAnalyzer:
                         count = topic_results['main_topics'][topic]['count']
                         prev_avg = topic_results['main_topics'][topic]['avg_score']
                         topic_results['main_topics'][topic]['avg_score'] = ((prev_avg * (count - 1)) + score_val) / count
-                except (ValueError, TypeError):
-                    pass
+                except (ValueError, TypeError) as e:
+                    # Expected when score is None or invalid - skip score averaging for this topic
+                    logger.debug(f"Skipping score averaging for topic '{topic}' due to invalid score '{score}': {str(e)}")
+                    continue
         
         # Calculate percentages and limit samples
         total = len(df)
@@ -284,7 +330,8 @@ class EnhancedAnalyzer:
         
         for index, row in df.iterrows():
             comment = str(row.get('Comentario Final', '')).lower()
-            score = row.get('Nota', 5)
+            # Use actual score if available for pain point correlation
+            score = row.get('Nota') if 'Nota' in df.columns and pd.notna(row.get('Nota')) else None
             
             # Detect pain points
             detected_pains = self._detect_pain_points(comment)
@@ -297,8 +344,9 @@ class EnhancedAnalyzer:
                     pain_point_scores[pain] = []
                 try:
                     pain_point_scores[pain].append(float(score))
-                except (ValueError, TypeError):
-                    pass
+                except (ValueError, TypeError) as e:
+                    # Expected when score is None or invalid - pain point tracking continues without score
+                    logger.debug(f"Skipping score tracking for pain point '{pain}' due to invalid score '{score}': {str(e)}")
         
         # High frequency pain points
         pain_points['high_frequency'] = dict(pain_point_counter.most_common(10))
@@ -499,13 +547,15 @@ class EnhancedAnalyzer:
             scores = []
             for index, row in df.iterrows():
                 comment = str(row.get('Comentario Final', '')).lower()
-                score = row.get('Nota', 5)
+                # Only use actual scores for correlation analysis
+                score = row.get('Nota') if 'Nota' in df.columns and pd.notna(row.get('Nota')) else None
                 
-                if self._detect_sentiment(comment) == sentiment:
+                if score is not None and self._detect_sentiment(comment) == sentiment:
                     try:
                         scores.append(float(score))
-                    except (ValueError, TypeError):
-                        pass
+                    except (ValueError, TypeError) as e:
+                        # Expected when score is None or invalid - skip this score in correlation analysis
+                        logger.debug(f"Skipping correlation analysis for sentiment '{sentiment}' due to invalid score '{score}': {str(e)}")
             
             if scores:
                 correlations['score_sentiment_correlation'][sentiment] = {

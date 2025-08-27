@@ -8,9 +8,9 @@ from pathlib import Path
 from typing import Tuple, Dict, Optional
 import streamlit as st
 
-from data_processing.comment_reader import CommentReader
-from utils.validators import InputValidator
-from utils.exceptions import FileProcessingError, DataValidationError
+from src.data_processing.comment_reader import CommentReader
+from src.utils.validators import InputValidator
+from src.utils.exceptions import FileProcessingError, DataValidationError
 
 
 class FileUploadService:

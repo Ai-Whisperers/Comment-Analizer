@@ -8,9 +8,10 @@ from pathlib import Path
 
 # Fix encoding for Windows
 sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8')
-sys.path.insert(0, str(Path(__file__).parent / 'src'))
 
-from enhanced_analysis import EnhancedAnalysis
+# Import from installed package
+# Install with: pip install -e .
+from src.enhanced_analysis import EnhancedAnalysis
 
 def test_enhanced_features():
     """Test all enhanced analysis features"""

@@ -14,8 +14,8 @@ from openai import OpenAI
 from openai._exceptions import APITimeoutError, APIConnectionError, RateLimitError
 import requests.exceptions
 
-from config import Config
-from utils.exceptions import (
+from src.config import Config
+from src.utils.exceptions import (
     APIConnectionError as CustomAPIConnectionError,
     APITimeoutError as CustomAPITimeoutError, 
     APIRateLimitError,
@@ -282,6 +282,18 @@ class ConnectionHealthChecker:
 
 def timeout_handler(timeout_seconds: int = TimeoutConfig.TOTAL_TIMEOUT):
     """Decorator for adding timeout to any function"""
+    # Input validation for timeout_seconds
+    if not isinstance(timeout_seconds, (int, float)):
+        raise TypeError("timeout_seconds must be a number")
+    
+    if timeout_seconds <= 0:
+        raise ValueError("timeout_seconds must be positive")
+    
+    if timeout_seconds < 1:
+        logger.warning(f"Very short timeout ({timeout_seconds}s) may cause frequent timeouts")
+    elif timeout_seconds > 3600:  # 1 hour
+        logger.warning(f"Very long timeout ({timeout_seconds}s) may cause hanging")
+    
     def decorator(func):
         @wraps(func)
         def wrapper(*args, **kwargs):
@@ -364,17 +376,29 @@ class APIMonitor:
         }
 
 
-# Global instances
+# Global instances with thread safety
+import threading
 _api_monitor = APIMonitor()
 _robust_client = None
+_client_lock = threading.Lock()
 
 
 def get_global_client() -> RobustAPIClient:
-    """Get global robust API client instance"""
+    """Get global robust API client instance (thread-safe)"""
     global _robust_client
     if _robust_client is None:
-        _robust_client = create_robust_client()
+        with _client_lock:
+            # Double-check locking pattern
+            if _robust_client is None:
+                _robust_client = create_robust_client()
     return _robust_client
+
+
+def reset_global_client():
+    """Reset global client (useful for testing)"""
+    global _robust_client
+    with _client_lock:
+        _robust_client = None
 
 
 def get_api_monitor() -> APIMonitor:
