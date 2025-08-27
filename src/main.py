@@ -13,31 +13,47 @@ import numpy as np
 from collections import Counter
 import re
 from io import BytesIO
+from src.ai_overseer import apply_ai_oversight
+from src.ui_styling import inject_styles, UIComponents, ThemeManager
 
 
 # Page config
 st.set_page_config(
     page_title="Personal Paraguay — Análisis de Comentarios",
-    page_icon="🔬",
+    page_icon="P",
     layout="wide",
     initial_sidebar_state="collapsed"
 )
 
-# Custom CSS styles
-st.markdown("""
-<style>
-    .main { padding: 1rem; }
-    .metric-card {
-        background: linear-gradient(135deg, #1e2a3a 0%, #2d3748 100%);
-        padding: 1rem; margin: 0.5rem; border-radius: 10px;
-        border-left: 4px solid #4299e1; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-    }
-    .metric-value { font-size: 2rem; font-weight: bold; }
-    .metric-label { color: #a0aec0; font-size: 0.875rem; margin-bottom: 0.25rem; }
-    .progress-bar { width: 100%; height: 4px; background: #2d3748; border-radius: 2px; margin-top: 0.5rem; }
-    .progress-fill { height: 100%; border-radius: 2px; transition: width 0.3s ease; }
-</style>
-""", unsafe_allow_html=True)
+# Initialize theme state
+if 'dark_mode' not in st.session_state:
+    st.session_state.dark_mode = True  # Default to dark mode for web3 aesthetics
+
+# Initialize UI components helper
+ui = UIComponents()
+theme_manager = ThemeManager()
+
+# Theme toggle in sidebar
+with st.sidebar:
+    col1, col2 = st.columns([1, 3])
+    with col1:
+        if st.button("◐", key="theme_toggle", help="Toggle Dark/Light Mode"):
+            st.session_state.dark_mode = not st.session_state.dark_mode
+            st.rerun()
+    with col2:
+        st.markdown(f"**{'Dark' if st.session_state.dark_mode else 'Light'} Mode**")
+    st.markdown("---")
+
+# Inject all styles
+st.markdown(inject_styles(st.session_state.dark_mode), unsafe_allow_html=True)
+
+# Color system is now handled by ui_styling module
+
+# Get current theme colors from theme manager
+theme = theme_manager.get_theme(st.session_state.dark_mode)
+
+# All CSS is now handled by the ui_styling module
+# Old CSS blocks have been completely removed
 
 @st.cache_data
 def analyze_sentiment_simple(text):
@@ -227,6 +243,24 @@ def process_file_simple(uploaded_file):
             'analysis_method': 'SIMPLE_RULE_BASED'
         }
         
+        # Apply AI Oversight for quality validation
+        try:
+            enhanced_results = apply_ai_oversight(results, strict=False, language='es')
+            
+            # Show AI validation status
+            if 'overseer_validation' in enhanced_results:
+                validation = enhanced_results['overseer_validation']
+                if validation.get('ai_enhanced'):
+                    st.info(f"Validación IA aplicada - Confianza: {validation.get('confidence', 0):.1%}")
+                else:
+                    st.info("Validación basada en reglas aplicada")
+            
+            return enhanced_results
+        except Exception as ai_error:
+            st.warning(f"Validación IA no disponible: {str(ai_error)}")
+            # Return original results if AI oversight fails
+            return results
+        
     except Exception as e:
         st.error(f"Error procesando archivo: {str(e)}")
         return None
@@ -269,47 +303,116 @@ def create_simple_excel(results):
 if 'analysis_results' not in st.session_state:
     st.session_state.analysis_results = None
 
-# Main UI
-st.title("🔬 Análisis de Comentarios - Personal Paraguay")
-st.markdown("*Análisis de sentimientos*")
+# Web3 Animated Header using clean UI component
+st.markdown(
+    ui.animated_header(
+        title="Análisis de Comentarios",
+        subtitle="Personal Paraguay | Sentiment Analysis Platform"
+    ),
+    unsafe_allow_html=True
+)
 
-# Upload section
+# Add floating particles effect
+st.markdown(ui.floating_particles(), unsafe_allow_html=True)
+
+# Upload section with glass container
+st.markdown(ui.upload_section(), unsafe_allow_html=True)
+
 uploaded_file = st.file_uploader(
-    "📁 Subir archivo de comentarios",
+    "",
     type=['csv', 'xlsx', 'xls'],
-    help="Sube un archivo Excel o CSV con comentarios de clientes"
+    help="Drag and drop or click to upload Excel/CSV files",
+    label_visibility="collapsed"
 )
 
 # Analysis button
 if uploaded_file:
-    st.info(f"📄 Archivo cargado: {uploaded_file.name}")
+    st.info(f"Archivo cargado: {uploaded_file.name}")
     
-    if st.button("🚀 Analizar Comentarios", type="primary", use_container_width=True):
-        with st.spinner("Procesando comentarios..."):
-            results = process_file_simple(uploaded_file)
-            if results:
-                st.session_state.analysis_results = results
-                st.success("✅ Análisis completado!")
-                st.rerun()
+    # Animated analyze button
+    col1, col2, col3 = st.columns([1, 2, 1])
+    with col2:
+        if st.button("Analizar Comentarios", type="primary", use_container_width=True):
+            with st.spinner("Procesando comentarios..."):
+                results = process_file_simple(uploaded_file)
+                if results:
+                    st.session_state.analysis_results = results
+                    st.success("Análisis completado!")
+                    # Add success animation
+                    st.balloons()
+                    st.rerun()
 
 # Results display
 if st.session_state.analysis_results:
     results = st.session_state.analysis_results
     
-    # Summary metrics
+    # Display AI Oversight Report if available
+    if 'oversight_report' in results:
+        with st.expander("Reporte de Validación IA", expanded=False):
+            st.text(results['oversight_report'])
+    
+    # Display quality metrics if available
+    if 'overseer_validation' in results:
+        validation_data = results['overseer_validation']
+        quality_score = validation_data.get('quality_score', 0)
+        
+        # Show quality badge
+        if quality_score >= 0.8:
+            st.success(f"Calidad de Análisis: {quality_score:.1%} - Excelente")
+        elif quality_score >= 0.6:
+            st.warning(f"Calidad de Análisis: {quality_score:.1%} - Mejorable")
+        else:
+            st.error(f"Calidad de Análisis: {quality_score:.1%} - Requiere Revisión")
+    
+    # Enhanced metrics header
+    st.markdown(ui.results_header(), unsafe_allow_html=True)
+    
+    # Summary metrics with animations
     col1, col2, col3, col4 = st.columns(4)
     
     with col1:
-        st.metric("📊 Total", results['total'])
+        st.markdown(
+            ui.metric_card(icon="▣", title="Total", value=str(results['total'])),
+            unsafe_allow_html=True
+        )
+        
     with col2:
-        st.metric("😊 Positivos", f"{results['positive_pct']}%", 
-                 delta=f"{results['positive_count']} comentarios")
+        st.markdown(
+            ui.metric_card(
+                icon="+",
+                title="Positivos",
+                value=f"{results['positive_pct']}%",
+                delta=f"{results['positive_count']} comentarios",
+                card_type="positive"
+            ),
+            unsafe_allow_html=True
+        )
+        
     with col3:
-        st.metric("😐 Neutrales", f"{results['neutral_pct']}%",
-                 delta=f"{results['neutral_count']} comentarios")
+        st.markdown(
+            ui.metric_card(
+                icon="=",
+                title="Neutrales",
+                value=f"{results['neutral_pct']}%",
+                delta=f"{results['neutral_count']} comentarios",
+                card_type="neutral"
+            ),
+            unsafe_allow_html=True
+        )
+        
     with col4:
-        st.metric("😞 Negativos", f"{results['negative_pct']}%",
-                 delta=f"{results['negative_count']} comentarios")
+        st.markdown(
+            ui.metric_card(
+                icon="-",
+                title="Negativos",
+                value=f"{results['negative_pct']}%",
+                delta=f"{results['negative_count']} comentarios",
+                card_type="negative"
+            ),
+            unsafe_allow_html=True
+        )
+    
+    # All metric card CSS is now in ui_styling module
     
     # Charts
     col1, col2 = st.columns(2)
@@ -320,12 +423,20 @@ if st.session_state.analysis_results:
             go.Bar(
                 x=['Positivo', 'Neutral', 'Negativo'],
                 y=[results['positive_count'], results['neutral_count'], results['negative_count']],
-                marker_color=['#10b981', '#f59e0b', '#ef4444'],
+                marker_color=[theme['positive'], theme['neutral'], theme['negative']],
                 text=[f"{results['positive_pct']}%", f"{results['neutral_pct']}%", f"{results['negative_pct']}%"],
                 textposition='auto'
             )
         ])
-        fig_bar.update_layout(title="Distribución de Sentimientos", height=400)
+        fig_bar.update_layout(
+            title="Distribución de Sentimientos",
+            height=400,
+            plot_bgcolor='rgba(0, 0, 0, 0)',
+            paper_bgcolor='rgba(0, 0, 0, 0)',
+            font=dict(color='#a0aec0'),
+            showlegend=False,
+            margin=dict(l=0, r=0, t=40, b=0)
+        )
         st.plotly_chart(fig_bar, use_container_width=True)
     
     with col2:
@@ -333,14 +444,21 @@ if st.session_state.analysis_results:
         fig_pie = go.Figure(data=[go.Pie(
             labels=['Positivo', 'Neutral', 'Negativo'],
             values=[results['positive_count'], results['neutral_count'], results['negative_count']],
-            marker_colors=['#10b981', '#f59e0b', '#ef4444']
+            marker_colors=[theme['positive'], theme['neutral'], theme['negative']]
         )])
-        fig_pie.update_layout(title="Proporción de Sentimientos", height=400)
+        fig_pie.update_layout(
+            title="Proporción de Sentimientos",
+            height=400,
+            plot_bgcolor='rgba(0, 0, 0, 0)',
+            paper_bgcolor='rgba(0, 0, 0, 0)',
+            font=dict(color='#a0aec0'),
+            margin=dict(l=0, r=0, t=40, b=0)
+        )
         st.plotly_chart(fig_pie, use_container_width=True)
     
     # Themes section
     if any(count > 0 for count in results['theme_counts'].values()):
-        st.subheader("📋 Temas Principales")
+        st.subheader("Temas Principales")
         theme_col1, theme_col2 = st.columns(2)
         
         with theme_col1:
@@ -354,22 +472,22 @@ if st.session_state.analysis_results:
                 if examples:
                     with st.expander(f"Ejemplos: {theme.replace('_', ' ').title()}"):
                         for example in examples:
-                            st.write(f"• {example}")
+                            st.write(f"- {example}")
     
     # Data quality info
-    st.subheader("📈 Información del Procesamiento")
+    st.subheader("Información del Procesamiento")
     info_col1, info_col2, info_col3 = st.columns(3)
     
     with info_col1:
-        st.metric("📄 Comentarios Originales", results['raw_total'])
+        st.metric("Comentarios Originales", results['raw_total'])
     with info_col2:
-        st.metric("🗑️ Duplicados Eliminados", results['duplicates_removed'])
+        st.metric("Duplicados Eliminados", results['duplicates_removed'])
     with info_col3:
         reduction = round((results['duplicates_removed'] / results['raw_total'] * 100), 1) if results['raw_total'] > 0 else 0
-        st.metric("📉 Reducción", f"{reduction}%")
+        st.metric("Reducción", f"{reduction}%")
     
     # Download section
-    st.subheader("📥 Descargar Resultados")
+    st.subheader("Descargar Resultados")
     
     try:
         excel_data = create_simple_excel(results)
@@ -377,7 +495,7 @@ if st.session_state.analysis_results:
         filename = f"analisis_comentarios_{timestamp}.xlsx"
         
         st.download_button(
-            label="📊 Descargar Reporte Excel",
+            label="Descargar Reporte Excel",
             data=excel_data,
             file_name=filename,
             mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
@@ -387,6 +505,11 @@ if st.session_state.analysis_results:
     except Exception as e:
         st.error(f"Error creando Excel: {e}")
 
-# Footer
-st.markdown("---")
-st.markdown("*Análisis de comentarios - Personal Paraguay*")
+# Enhanced footer using clean UI component
+st.markdown(
+    ui.gradient_footer(
+        primary_text="Análisis de Comentarios | Personal Paraguay",
+        secondary_text="Powered by Advanced Analytics"
+    ),
+    unsafe_allow_html=True
+)
