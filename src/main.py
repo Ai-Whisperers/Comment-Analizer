@@ -526,7 +526,6 @@ def extract_themes_simple(texts):
     
     return theme_counts, theme_examples
 
-@st.cache_data(ttl=180, max_entries=10)  # 3 min TTL, cache last 10 files
 def process_file_simple(uploaded_file):
     """Process uploaded file and extract comments with memory optimization"""
     try:
