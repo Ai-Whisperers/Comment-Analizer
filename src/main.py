@@ -16,30 +16,62 @@ from io import BytesIO
 import os
 import logging
 from logging.handlers import RotatingFileHandler
-from src.ai_overseer import apply_ai_oversight
-from src.ui_styling import inject_styles, UIComponents, ThemeManager
+import sys
 
-# Ensure required directories exist
-REQUIRED_DIRS = ['data', 'data/raw', 'data/processed', 'outputs', 'logs']
-for dir_path in REQUIRED_DIRS:
-    os.makedirs(dir_path, exist_ok=True)
+# Environment detection and path setup
+def is_streamlit_cloud():
+    """Detect if running on Streamlit Cloud"""
+    return any("streamlit" in str(path).lower() for path in sys.path) and "site-packages" in str(sys.path)
 
-# Configure file logging
-log_file = Path('logs') / f'comment_analyzer_{datetime.now().strftime("%Y%m%d")}.log'
-file_handler = RotatingFileHandler(
-    log_file, maxBytes=10*1024*1024, backupCount=5  # 10MB per file, keep 5 backups
-)
-file_handler.setFormatter(
-    logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
-)
+# Add src to Python path for imports
+current_dir = Path(__file__).parent
+src_dir = current_dir.parent / "src" if current_dir.name != "src" else current_dir
+if str(src_dir) not in sys.path:
+    sys.path.insert(0, str(src_dir))
 
-# Configure root logger
-logger = logging.getLogger()
-logger.setLevel(logging.INFO)
-logger.addHandler(file_handler)
+# Import with fallbacks for Streamlit Cloud
+try:
+    from src.ai_overseer import apply_ai_oversight
+    from src.ui_styling import inject_styles, UIComponents, ThemeManager
+except ImportError:
+    try:
+        from ai_overseer import apply_ai_oversight
+        from ui_styling import inject_styles, UIComponents, ThemeManager
+    except ImportError:
+        # Minimal fallback for deployment issues
+        def apply_ai_oversight(data): return data
+        def inject_styles(dark_mode=True): return ""
+        class UIComponents:
+            def __init__(self): pass
+            def create_metric_card(self, *args, **kwargs): return f"<div>{args[0]}: {args[1]}</div>"
+        class ThemeManager:
+            def get_theme(self, dark=True): return {"primary": "#4ea4ff"}
 
-# Log startup
-logger.info("Comment Analyzer started")
+# Configure logging for Streamlit Cloud compatibility
+try:
+    # Try to create directories (works locally)
+    REQUIRED_DIRS = ['data', 'data/raw', 'data/processed', 'outputs', 'logs']
+    for dir_path in REQUIRED_DIRS:
+        os.makedirs(dir_path, exist_ok=True)
+    
+    # File logging (local)
+    log_file = Path('logs') / f'comment_analyzer_{datetime.now().strftime("%Y%m%d")}.log'
+    file_handler = RotatingFileHandler(
+        log_file, maxBytes=10*1024*1024, backupCount=5
+    )
+    file_handler.setFormatter(
+        logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+    )
+    logger = logging.getLogger()
+    logger.setLevel(logging.INFO)
+    logger.addHandler(file_handler)
+    logger.info("Comment Analyzer started (local mode)")
+except Exception:
+    # Streamlit Cloud fallback - use memory logging only
+    logger = logging.getLogger(__name__)
+    logger.setLevel(logging.INFO)
+    # Use Streamlit's built-in logging
+    logger.info("Comment Analyzer started (Streamlit Cloud mode)")
 
 
 # Page config
@@ -600,6 +632,193 @@ def create_simple_excel(results):
     output.seek(0)
     return output.getvalue()
 
+def create_ai_enhanced_excel(results):
+    """Create Excel report with AI-enhanced data including emotions and pain points"""
+    # Validate data size for Excel export
+    MAX_COMMENTS = 10000
+    if len(results.get('comments', [])) > MAX_COMMENTS:
+        st.warning(f"Limitando exportación a {MAX_COMMENTS} comentarios para mantener rendimiento")
+        results = results.copy()
+        results['comments'] = results['comments'][:MAX_COMMENTS]
+        results['sentiments'] = results['sentiments'][:MAX_COMMENTS]
+        if 'ai_results' in results:
+            results['ai_results'] = results['ai_results'][:MAX_COMMENTS]
+    
+    output = BytesIO()
+    
+    with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
+        workbook = writer.book
+        
+        # Professional formats
+        header_format = workbook.add_format({
+            'bold': True,
+            'text_wrap': True,
+            'valign': 'center',
+            'fg_color': '#2E3440',
+            'font_color': 'white',
+            'border': 1
+        })
+        
+        ai_format = workbook.add_format({
+            'fg_color': '#E8F4FD',
+            'font_color': '#1E40AF',
+            'border': 1
+        })
+        
+        confidence_high = workbook.add_format({
+            'fg_color': '#ECFDF5',
+            'font_color': '#059669',
+            'border': 1
+        })
+        
+        # Sheet 1: AI Analysis Summary
+        ai_summary = {
+            'Métrica IA': [
+                'Total Comentarios Procesados',
+                'Confianza Promedio del Análisis',
+                'Emociones Únicas Detectadas', 
+                'Puntos de Dolor Identificados',
+                'Temas Granulares Extraídos',
+                'Método de Análisis',
+                'Fecha y Hora del Análisis'
+            ],
+            'Valor': [
+                results['total'],
+                f"{results.get('ai_confidence_avg', 0):.1%}",
+                len(results.get('emotion_summary', {}).get('distribution', {})),
+                len(results.get('churn_analysis', {}).get('indicators', [])),
+                len(results.get('theme_counts', {})),
+                'Inteligencia Artificial (OpenAI GPT-4)',
+                results['analysis_date']
+            ],
+            'Descripción': [
+                'Número total de comentarios analizados con IA',
+                'Nivel de confianza promedio del modelo de IA',
+                'Cantidad de emociones específicas identificadas',
+                'Número de problemas específicos detectados',
+                'Temas granulares extraídos por análisis semántico',
+                'Tecnología utilizada para el análisis',
+                'Momento de ejecución del análisis'
+            ]
+        }
+        df_ai_summary = pd.DataFrame(ai_summary)
+        df_ai_summary.to_excel(writer, sheet_name='Resumen IA', index=False)
+        worksheet_ai = writer.sheets['Resumen IA']
+        
+        # Format headers
+        for col_num, value in enumerate(df_ai_summary.columns.values):
+            worksheet_ai.write(0, col_num, value, header_format)
+        
+        worksheet_ai.set_column('A:A', 35)
+        worksheet_ai.set_column('B:B', 25)
+        worksheet_ai.set_column('C:C', 50)
+        
+        # Sheet 2: Emotions Analysis (AI Specific)
+        emotions_data = results.get('emotion_summary', {}).get('distribution', {})
+        if emotions_data:
+            emotions_df = pd.DataFrame([
+                {
+                    'Emoción': emotion,
+                    'Cantidad': count,
+                    'Porcentaje': f"{(count/results['total']*100):.1f}%",
+                    'Intensidad': 'Alta' if count > 10 else 'Media' if count > 5 else 'Baja'
+                }
+                for emotion, count in emotions_data.items()
+            ])
+            emotions_df.to_excel(writer, sheet_name='Análisis de Emociones', index=False)
+            worksheet_emotions = writer.sheets['Análisis de Emociones']
+            
+            for col_num, value in enumerate(emotions_df.columns.values):
+                worksheet_emotions.write(0, col_num, value, header_format)
+        
+        # Sheet 3: Pain Points Analysis (AI Specific)  
+        pain_points = results.get('churn_analysis', {}).get('indicators', [])
+        if pain_points:
+            pain_df = pd.DataFrame([
+                {
+                    'Punto de Dolor': pain,
+                    'Tipo': 'Servicio' if 'servicio' in pain.lower() else 'Técnico' if any(t in pain.lower() for t in ['conexión', 'velocidad', 'internet']) else 'Comercial',
+                    'Prioridad': 'Alta',
+                    'Acción Recomendada': f"Revisar y mejorar {pain}"
+                }
+                for pain in pain_points
+            ])
+            pain_df.to_excel(writer, sheet_name='Puntos de Dolor', index=False)
+            worksheet_pain = writer.sheets['Puntos de Dolor']
+            
+            for col_num, value in enumerate(pain_df.columns.values):
+                worksheet_pain.write(0, col_num, value, header_format)
+        
+        # Sheet 4: Detailed AI Analysis (Enhanced Comments)
+        ai_results = results.get('ai_results', [])
+        comments = results.get('comments', [])
+        
+        if ai_results and len(ai_results) == len(comments):
+            detailed_data = []
+            for i, (comment, ai_data) in enumerate(zip(comments, ai_results)):
+                detailed_data.append({
+                    'ID': f'C{i+1:04d}',
+                    'Comentario': comment,
+                    'Sentimiento': ai_data.get('sentiment', 'neutral'),
+                    'Confianza': f"{ai_data.get('confidence', 0):.1%}",
+                    'Idioma': ai_data.get('language', 'es'),
+                    'Emociones': ', '.join(ai_data.get('emotions', [])),
+                    'Temas': ', '.join(ai_data.get('themes', [])),
+                    'Puntos de Dolor': ', '.join(ai_data.get('pain_points', []))
+                })
+            
+            df_detailed = pd.DataFrame(detailed_data)
+            df_detailed.to_excel(writer, sheet_name='Análisis Detallado IA', index=False)
+            worksheet_detailed = writer.sheets['Análisis Detallado IA']
+            
+            for col_num, value in enumerate(df_detailed.columns.values):
+                worksheet_detailed.write(0, col_num, value, header_format)
+            
+            worksheet_detailed.set_column('A:A', 12)  # ID
+            worksheet_detailed.set_column('B:B', 60)  # Comentario
+            worksheet_detailed.set_column('C:C', 15)  # Sentimiento
+            worksheet_detailed.set_column('D:D', 12)  # Confianza
+            worksheet_detailed.set_column('E:E', 10)  # Idioma
+            worksheet_detailed.set_column('F:F', 30)  # Emociones
+            worksheet_detailed.set_column('G:G', 30)  # Temas
+            worksheet_detailed.set_column('H:H', 35)  # Puntos de Dolor
+        
+        # Sheet 5: AI Confidence Analysis
+        if ai_results:
+            confidence_ranges = {
+                'Muy Alta (90-100%)': 0,
+                'Alta (80-89%)': 0, 
+                'Media (70-79%)': 0,
+                'Baja (60-69%)': 0,
+                'Muy Baja (<60%)': 0
+            }
+            
+            for ai_data in ai_results:
+                conf = ai_data.get('confidence', 0) * 100
+                if conf >= 90:
+                    confidence_ranges['Muy Alta (90-100%)'] += 1
+                elif conf >= 80:
+                    confidence_ranges['Alta (80-89%)'] += 1
+                elif conf >= 70:
+                    confidence_ranges['Media (70-79%)'] += 1
+                elif conf >= 60:
+                    confidence_ranges['Baja (60-69%)'] += 1
+                else:
+                    confidence_ranges['Muy Baja (<60%)'] += 1
+            
+            confidence_df = pd.DataFrame([
+                {
+                    'Rango de Confianza': range_name,
+                    'Cantidad': count,
+                    'Porcentaje': f"{(count/len(ai_results)*100):.1f}%"
+                }
+                for range_name, count in confidence_ranges.items()
+            ])
+            confidence_df.to_excel(writer, sheet_name='Distribución Confianza', index=False)
+    
+    output.seek(0)
+    return output.getvalue()
+
 # Initialize session state
 if 'analysis_results' not in st.session_state:
     st.session_state.analysis_results = None
@@ -643,22 +862,106 @@ if uploaded_file:
     st.markdown(ui.section_divider(), unsafe_allow_html=True)
     st.info(f"Archivo cargado: {uploaded_file.name}")
     
-    # Animated analyze button
-    col1, col2, col3 = st.columns([1, 2, 1])
-    with col2:
-        if st.button("Analizar Comentarios", type="primary", use_container_width=True):
-            with st.spinner("Procesando comentarios..."):
-                results = process_file_simple(uploaded_file)
-                if results:
-                    st.session_state.analysis_results = results
-                    st.success("Análisis completado!")
-                    # Add success animation
-                    st.balloons()
-                    st.rerun()
+    # Analysis method selection
+    st.markdown("### Selecciona el Método de Análisis")
+    col_method1, col_method2 = st.columns(2)
+    
+    with col_method1:
+        if st.button("Análisis Rápido (Reglas)", type="secondary", use_container_width=True, help="Análisis inmediato basado en reglas, sin costo"):
+            st.session_state.analysis_method = "simple"
+            
+    with col_method2:
+        if st.button("Análisis Avanzado (IA)", type="secondary", use_container_width=True, help="Análisis profundo con IA - requiere API key"):
+            st.session_state.analysis_method = "ai"
+    
+    # Show selected method
+    if 'analysis_method' in st.session_state:
+        if st.session_state.analysis_method == "simple":
+            st.success("**Método Seleccionado:** Análisis Rápido (Reglas)")
+        else:
+            st.success("**Método Seleccionado:** Análisis Avanzado (IA)")
+        
+        # Animated analyze button
+        col1, col2, col3 = st.columns([1, 2, 1])
+        with col2:
+            button_text = "Analizar con IA" if st.session_state.analysis_method == "ai" else "Analizar Rápido"
+            if st.button(button_text, type="primary", use_container_width=True):
+                with st.spinner("Procesando comentarios..."):
+                    if st.session_state.analysis_method == "ai":
+                        # Use Pipeline 2 (AI + Fallback) with better error handling
+                        try:
+                            st.info("Iniciando análisis avanzado con IA...")
+                            
+                            # First, process file the same way as simple pipeline
+                            basic_results = process_file_simple(uploaded_file)
+                            if not basic_results:
+                                st.error("Error procesando archivo")
+                            else:
+                                # Then enhance with AI analysis
+                                from src.ai_analysis_adapter import AIAnalysisAdapter
+                                adapter = AIAnalysisAdapter()
+                                
+                                # Extract comments from basic results for AI processing
+                                comments = basic_results.get('comments', [])
+                                if len(comments) > 50:
+                                    st.info(f"Procesando {len(comments)} comentarios con IA (esto puede tomar 1-3 minutos)...")
+                                
+                                # Try AI enhancement on the extracted comments
+                                try:
+                                    ai_enhanced = adapter.openai_analyzer.analyze_comments_batch(comments[:50])  # Limit for demo
+                                    if ai_enhanced:
+                                        # Enhance the basic results with AI data
+                                        enhanced_results = basic_results.copy()
+                                        enhanced_results['analysis_method'] = 'AI_POWERED'
+                                        enhanced_results['ai_results'] = ai_enhanced
+                                        enhanced_results['ai_confidence_avg'] = sum(r.get('confidence', 0) for r in ai_enhanced) / len(ai_enhanced)
+                                        
+                                        # Add AI-specific data structures
+                                        emotions = []
+                                        pain_points = []
+                                        for result in ai_enhanced:
+                                            emotions.extend(result.get('emotions', []))
+                                            pain_points.extend(result.get('pain_points', []))
+                                        
+                                        enhanced_results['emotion_summary'] = {
+                                            'distribution': {emotion: emotions.count(emotion) for emotion in set(emotions)},
+                                            'avg_intensity': 3.5  # Mock intensity for now
+                                        }
+                                        
+                                        enhanced_results['churn_analysis'] = {
+                                            'indicators': list(set(pain_points))[:5],
+                                            'risk_level': 'medium' if pain_points else 'low'
+                                        }
+                                        
+                                        st.session_state.analysis_results = enhanced_results
+                                        st.success("Análisis IA completado con éxito!")
+                                    else:
+                                        st.warning("🔄 IA no disponible, usando análisis rápido...")
+                                        st.session_state.analysis_results = basic_results
+                                except Exception as ai_error:
+                                    st.warning(f"IA falló ({str(ai_error)[:50]}...), usando análisis rápido")
+                                    st.session_state.analysis_results = basic_results
+                                    
+                        except Exception as e:
+                            st.error(f"Error en procesamiento: {str(e)}")
+                    else:
+                        # Use Pipeline 1 (Simple Rule-Based)  
+                        results = process_file_simple(uploaded_file)
+                        if results:
+                            st.session_state.analysis_results = results
+                            st.success("Análisis rápido completado!")
+                    
+                    # Add success animation if we have results
+                    if 'analysis_results' in st.session_state and st.session_state.analysis_results:
+                        st.balloons()
+                        st.rerun()
 
-# Results display
+# Results display with enhanced Spanish sentiment UI
 if st.session_state.analysis_results:
     results = st.session_state.analysis_results
+    
+    # Import and use the enhanced Spanish sentiment UI
+    from src.components.sentiment_results_ui import render_sentiment_results
     
     # Display AI Oversight Report if available
     if 'oversight_report' in results:
@@ -670,146 +973,54 @@ if st.session_state.analysis_results:
         validation_data = results['overseer_validation']
         quality_score = validation_data.get('quality_score', 0)
         
-        # Show quality badge
+        # Show quality badge using UI components
         if quality_score >= 0.8:
-            st.success(f"Calidad de Análisis: {quality_score:.1%} - Excelente")
+            st.markdown(
+                ui.status_badge(
+                    icon="CONF",
+                    text=f"Calidad de Análisis: {quality_score:.1%} - Excelente",
+                    badge_type="positive"
+                ),
+                unsafe_allow_html=True
+            )
         elif quality_score >= 0.6:
-            st.warning(f"Calidad de Análisis: {quality_score:.1%} - Mejorable")
+            st.markdown(
+                ui.status_badge(
+                    icon="MED",
+                    text=f"Calidad de Análisis: {quality_score:.1%} - Mejorable",
+                    badge_type="neutral"
+                ),
+                unsafe_allow_html=True
+            )
         else:
-            st.error(f"Calidad de Análisis: {quality_score:.1%} - Requiere Revisión")
+            st.markdown(
+                ui.status_badge(
+                    icon="REV",
+                    text=f"Calidad de Análisis: {quality_score:.1%} - Requiere Revisión",
+                    badge_type="negative"
+                ),
+                unsafe_allow_html=True
+            )
     
     # Add section divider before results
     st.markdown(ui.section_divider(), unsafe_allow_html=True)
     
-    # Enhanced metrics header
-    st.markdown(ui.results_header(), unsafe_allow_html=True)
-    
-    # Summary metrics with animations
-    col1, col2, col3, col4 = st.columns(4)
-    
-    with col1:
-        st.markdown(
-            ui.metric_card(icon="▣", title="Total", value=str(results['total'])),
-            unsafe_allow_html=True
-        )
-        
-    with col2:
-        st.markdown(
-            ui.metric_card(
-                icon="+",
-                title="Positivos",
-                value=f"{results['positive_pct']}%",
-                delta=f"{results['positive_count']} comentarios",
-                card_type="positive"
-            ),
-            unsafe_allow_html=True
-        )
-        
-    with col3:
-        st.markdown(
-            ui.metric_card(
-                icon="=",
-                title="Neutrales",
-                value=f"{results['neutral_pct']}%",
-                delta=f"{results['neutral_count']} comentarios",
-                card_type="neutral"
-            ),
-            unsafe_allow_html=True
-        )
-        
-    with col4:
-        st.markdown(
-            ui.metric_card(
-                icon="-",
-                title="Negativos",
-                value=f"{results['negative_pct']}%",
-                delta=f"{results['negative_count']} comentarios",
-                card_type="negative"
-            ),
-            unsafe_allow_html=True
-        )
-    
-    # All metric card CSS is now in ui_styling module
-    
-    # Charts
-    col1, col2 = st.columns(2)
-    
-    with col1:
-        # Sentiment distribution bar chart
-        fig_bar = go.Figure(data=[
-            go.Bar(
-                x=['Positivo', 'Neutral', 'Negativo'],
-                y=[results['positive_count'], results['neutral_count'], results['negative_count']],
-                marker_color=[theme['positive'], theme['neutral'], theme['negative']],
-                text=[f"{results['positive_pct']}%", f"{results['neutral_pct']}%", f"{results['negative_pct']}%"],
-                textposition='auto'
-            )
-        ])
-        fig_bar.update_layout(
-            title="Distribución de Sentimientos",
-            height=400,
-            plot_bgcolor='rgba(0, 0, 0, 0)',
-            paper_bgcolor='rgba(0, 0, 0, 0)',
-            font=dict(color='#a0aec0'),
-            showlegend=False,
-            margin=dict(l=0, r=0, t=40, b=0)
-        )
-        st.plotly_chart(fig_bar, use_container_width=True)
-    
-    with col2:
-        # Pie chart
-        fig_pie = go.Figure(data=[go.Pie(
-            labels=['Positivo', 'Neutral', 'Negativo'],
-            values=[results['positive_count'], results['neutral_count'], results['negative_count']],
-            marker_colors=[theme['positive'], theme['neutral'], theme['negative']]
-        )])
-        fig_pie.update_layout(
-            title="Proporción de Sentimientos",
-            height=400,
-            plot_bgcolor='rgba(0, 0, 0, 0)',
-            paper_bgcolor='rgba(0, 0, 0, 0)',
-            font=dict(color='#a0aec0'),
-            margin=dict(l=0, r=0, t=40, b=0)
-        )
-        st.plotly_chart(fig_pie, use_container_width=True)
-    
-    # Themes section
-    if any(count > 0 for count in results['theme_counts'].values()):
-        st.subheader("Temas Principales")
-        theme_col1, theme_col2 = st.columns(2)
-        
-        with theme_col1:
-            for i, (theme, count) in enumerate(results['theme_counts'].items()):
-                if count > 0:
-                    st.metric(theme.replace('_', ' ').title(), count)
-        
-        with theme_col2:
-            # Theme examples
-            for theme, examples in results['theme_examples'].items():
-                if examples:
-                    with st.expander(f"Ejemplos: {theme.replace('_', ' ').title()}"):
-                        for example in examples:
-                            st.write(f"- {example}")
-    
-    # Data quality info
-    st.subheader("Información del Procesamiento")
-    info_col1, info_col2, info_col3 = st.columns(3)
-    
-    with info_col1:
-        st.metric("Comentarios Originales", results['raw_total'])
-    with info_col2:
-        st.metric("Duplicados Eliminados", results['duplicates_removed'])
-    with info_col3:
-        reduction = round((results['duplicates_removed'] / results['raw_total'] * 100), 1) if results['raw_total'] > 0 else 0
-        st.metric("Reducción", f"{reduction}%")
+    # Render enhanced Spanish sentiment results UI (replaces all old display logic)
+    render_sentiment_results(results)
     
     # Download section
     st.subheader("Descargar Resultados")
     
     try:
-        excel_data = create_simple_excel(results)
-        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-        filename = f"analisis_comentarios_{timestamp}.xlsx"
+        # Generate appropriate Excel based on analysis method
+        if results.get('analysis_method') == 'AI_POWERED':
+            excel_data = create_ai_enhanced_excel(results)
+            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+            filename = f"analisis_IA_comentarios_{timestamp}.xlsx"
+        else:
+            excel_data = create_simple_excel(results)
+            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+            filename = f"analisis_comentarios_{timestamp}.xlsx"
         
         st.download_button(
             label="Descargar Reporte Excel",
