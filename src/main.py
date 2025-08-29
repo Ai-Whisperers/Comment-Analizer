@@ -659,6 +659,11 @@ def process_file_simple(uploaded_file):
                     
                     # Clear chunk from memory
                     del chunk
+                    
+                    # Force garbage collection every 200 comments for memory efficiency
+                    if i > 0 and i % 200 == 0:
+                        optimize_memory()
+                        print(f"🧹 Memory cleanup at {i} comments processed")
                 
                 if not cleaned_comments:
                     st.error("No se encontraron comentarios válidos después de la limpieza")
@@ -696,10 +701,18 @@ def process_file_simple(uploaded_file):
                     
                     sentiments.extend(batch_sentiments)
                     
-                    # Progress indicator for large datasets
+                    # Clear batch memory immediately
+                    del batch, batch_sentiments
+                    
+                    # Progress indicator for large datasets  
                     if len(unique_comments) > SENTIMENT_BATCH_SIZE:
                         progress = min(i + SENTIMENT_BATCH_SIZE, len(unique_comments))
                         st.progress(progress / len(unique_comments))
+                        
+                        # Additional memory cleanup every few batches
+                        if (i // SENTIMENT_BATCH_SIZE) % 3 == 0:
+                            optimize_memory()
+                            print(f"🧹 Sentiment analysis memory cleanup at batch {i // SENTIMENT_BATCH_SIZE}")
                         
                 st.success(f"✅ Análisis de sentimientos completado")
                 
@@ -765,14 +778,22 @@ def process_file_simple(uploaded_file):
                 else:
                     st.info("Validación basada en reglas aplicada")
             
+            # Final memory cleanup for enhanced results
+            print("🧹 Final memory cleanup for AI-enhanced results")  
+            optimize_memory()
             return enhanced_results
         except Exception as ai_error:
             st.warning(f"Validación IA no disponible: {str(ai_error)}")
             # Return original results if AI oversight fails
+            print("🧹 Final memory cleanup for standard results")
+            optimize_memory()
             return results
         
     except Exception as e:
         st.error(f"Error procesando archivo: {str(e)}")
+        # Clean up memory even on error
+        print("🧹 Emergency memory cleanup after processing error")
+        optimize_memory()
         return None
 
 @st.cache_data(ttl=300, max_entries=3)  # Cache Excel generation for cloud
