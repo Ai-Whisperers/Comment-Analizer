@@ -66,22 +66,45 @@ if str(src_dir) not in sys.path:
     sys.path.insert(0, str(src_dir))
 
 # Import with fallbacks for Streamlit Cloud
+import_issues = []
+
 try:
     from src.ai_overseer import apply_ai_oversight
-    from src.ui_styling import inject_styles, UIComponents, ThemeManager
-except ImportError:
+    print("✅ ai_overseer import successful")
+except ImportError as e:
+    import_issues.append(f"ai_overseer: {e}")
     try:
         from ai_overseer import apply_ai_oversight
-        from ui_styling import inject_styles, UIComponents, ThemeManager
+        print("✅ ai_overseer fallback successful")
     except ImportError:
-        # Minimal fallback for deployment issues
         def apply_ai_oversight(data): return data
+        print("⚠️ ai_overseer using fallback function")
+
+try:
+    from src.ui_styling import inject_styles, UIComponents, ThemeManager
+    print("✅ ui_styling import successful")
+except ImportError as e:
+    import_issues.append(f"ui_styling: {e}")
+    try:
+        from ui_styling import inject_styles, UIComponents, ThemeManager
+        print("✅ ui_styling fallback successful")
+    except ImportError:
+        print("⚠️ ui_styling using fallback classes")
         def inject_styles(dark_mode=True): return ""
         class UIComponents:
             def __init__(self): pass
             def create_metric_card(self, *args, **kwargs): return f"<div>{args[0]}: {args[1]}</div>"
+            def results_header(self, **kwargs): return "<div>Results Header</div>"
+            def section_divider(self): return "<hr>"
         class ThemeManager:
             def get_theme(self, dark=True): return {"primary": "#4ea4ff"}
+
+if import_issues:
+    print(f"Import issues detected: {len(import_issues)}")
+    for issue in import_issues:
+        print(f"  - {issue}")
+else:
+    print("✅ All imports successful")
 
 # Configure logging based on environment detection
 if is_streamlit_cloud():
@@ -119,18 +142,79 @@ else:
 # Page config
 st.set_page_config(
     page_title="Personal Paraguay — Análisis de Comentarios",
-    page_icon="P",
+    page_icon="📊",
     layout="wide",
     initial_sidebar_state="collapsed"
 )
+
+# Critical: Check for API key configuration early
+def check_api_configuration():
+    """Check if OpenAI API key is properly configured"""
+    api_key = None
+    
+    # Check Streamlit secrets first (cloud deployment)
+    try:
+        api_key = st.secrets.get("OPENAI_API_KEY")
+        if api_key:
+            print("✅ OpenAI API key found in Streamlit secrets")
+            return True
+    except Exception:
+        print("⚠️ No Streamlit secrets available")
+    
+    # Check environment variable
+    api_key = os.getenv("OPENAI_API_KEY")
+    if api_key:
+        print("✅ OpenAI API key found in environment")
+        return True
+    
+    # Check .env file
+    try:
+        from dotenv import load_dotenv
+        load_dotenv()
+        api_key = os.getenv("OPENAI_API_KEY")
+        if api_key:
+            print("✅ OpenAI API key found in .env file")
+            return True
+    except Exception:
+        pass
+    
+    print("❌ No OpenAI API key found")
+    return False
+
+# Show API configuration status
+api_configured = check_api_configuration()
+if not api_configured and is_streamlit_cloud():
+    st.warning("⚠️ OpenAI API key no configurada. Algunas funciones estarán limitadas.")
+    st.info("Administradores: Configura OPENAI_API_KEY en Streamlit Cloud secrets.")
+
+# Test basic Streamlit rendering
+print("🧪 Testing basic Streamlit rendering...")
+
+# Early rendering test - this should appear immediately
+st.success("✅ Streamlit Cloud App Successfully Loaded!")
+st.info("🔄 Initializing Comment Analyzer...")
 
 # Initialize theme state
 if 'dark_mode' not in st.session_state:
     st.session_state.dark_mode = True  # Default to dark mode for web3 aesthetics
 
-# Initialize UI components helper
-ui = UIComponents()
-theme_manager = ThemeManager()
+# Initialize UI components helper with error handling
+try:
+    ui = UIComponents()
+    theme_manager = ThemeManager()
+    print("✅ UI components initialized successfully")
+except Exception as ui_error:
+    print(f"❌ UI components failed: {ui_error}")
+    # Create minimal fallbacks
+    class MinimalUI:
+        def section_divider(self): return "<hr>"
+        def results_header(self, **kwargs): return "<h2>Results</h2>"
+        def create_metric_card(self, *args, **kwargs): return f"<div>{args[0]}: {args[1]}</div>"
+    
+    ui = MinimalUI()
+    class MinimalTheme:
+        def get_theme(self, dark=True): return {"primary": "#4ea4ff"}
+    theme_manager = MinimalTheme()
 
 # Theme toggle and system monitoring in sidebar
 with st.sidebar:
@@ -158,16 +242,39 @@ with st.sidebar:
         
     st.markdown("---")
 
-# Inject all styles
-st.markdown(inject_styles(st.session_state.dark_mode), unsafe_allow_html=True)
-
-# Color system is now handled by ui_styling module
+# Inject all styles with error handling
+try:
+    st.markdown(inject_styles(st.session_state.dark_mode), unsafe_allow_html=True)
+    print("✅ Styles injected successfully")
+except Exception as style_error:
+    print(f"⚠️ Style injection failed: {style_error}")
 
 # Get current theme colors from theme manager
-theme = theme_manager.get_theme(st.session_state.dark_mode)
+try:
+    theme = theme_manager.get_theme(st.session_state.dark_mode)
+    print("✅ Theme loaded successfully")
+except Exception as theme_error:
+    print(f"⚠️ Theme loading failed: {theme_error}")
+    theme = {"primary": "#4ea4ff"}  # Fallback theme
 
-# All CSS is now handled by the ui_styling module
-# Old CSS blocks have been completely removed
+# Add visible title and test UI elements
+st.title("📊 Personal Paraguay — Análisis de Comentarios")
+st.markdown("### Sistema de análisis de sentimientos para comentarios de clientes")
+
+# Test UI rendering
+st.success("✅ UI rendering successful - App is working!")
+
+# Environment status display
+if is_streamlit_cloud():
+    st.info("🌐 Running on Streamlit Cloud")
+else:
+    st.info("🖥️ Running locally")
+    
+# API status display
+if api_configured:
+    st.success("🔑 OpenAI API configurada - Análisis completo disponible")
+else:
+    st.warning("⚠️ OpenAI API no configurada - Solo análisis básico disponible")
 
 @st.cache_data(ttl=300, max_entries=1000)  # 5 min TTL, max 1000 entries
 def analyze_sentiment_simple(text):
