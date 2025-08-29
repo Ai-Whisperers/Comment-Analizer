@@ -23,7 +23,15 @@ import psutil  # For memory monitoring
 # Environment detection and path setup
 def is_streamlit_cloud():
     """Detect if running on Streamlit Cloud"""
-    return any("streamlit" in str(path).lower() for path in sys.path) and "site-packages" in str(sys.path)
+    # Multiple detection methods for accuracy
+    cloud_indicators = [
+        "/mount/src/" in str(Path.cwd()),  # Streamlit Cloud mount path
+        os.getenv("STREAMLIT_SHARING") == "true",  # Streamlit Cloud env var
+        "adminuser" in str(Path.home()),  # Streamlit Cloud user
+        not os.access(".", os.W_OK),  # Read-only filesystem
+        "/home/adminuser/venv" in str(sys.executable)  # Streamlit Cloud Python path
+    ]
+    return any(cloud_indicators)
 
 @st.cache_data(ttl=60)  # Cache memory checks for 1 minute
 def get_memory_usage():
@@ -75,31 +83,35 @@ except ImportError:
         class ThemeManager:
             def get_theme(self, dark=True): return {"primary": "#4ea4ff"}
 
-# Configure logging for Streamlit Cloud compatibility
-try:
-    # Try to create directories (works locally)
-    REQUIRED_DIRS = ['data', 'data/raw', 'data/processed', 'outputs', 'logs']
-    for dir_path in REQUIRED_DIRS:
-        os.makedirs(dir_path, exist_ok=True)
-    
-    # File logging (local)
-    log_file = Path('logs') / f'comment_analyzer_{datetime.now().strftime("%Y%m%d")}.log'
-    file_handler = RotatingFileHandler(
-        log_file, maxBytes=10*1024*1024, backupCount=5
-    )
-    file_handler.setFormatter(
-        logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
-    )
-    logger = logging.getLogger()
-    logger.setLevel(logging.INFO)
-    logger.addHandler(file_handler)
-    logger.info("Comment Analyzer started (local mode)")
-except Exception:
-    # Streamlit Cloud fallback - use memory logging only
+# Configure logging based on environment detection
+if is_streamlit_cloud():
+    # Streamlit Cloud - use memory logging only
     logger = logging.getLogger(__name__)
     logger.setLevel(logging.INFO)
-    # Use Streamlit's built-in logging
     logger.info("Comment Analyzer started (Streamlit Cloud mode)")
+else:
+    # Local development - use file logging
+    try:
+        REQUIRED_DIRS = ['data', 'data/raw', 'data/processed', 'outputs', 'logs']
+        for dir_path in REQUIRED_DIRS:
+            os.makedirs(dir_path, exist_ok=True)
+        
+        log_file = Path('logs') / f'comment_analyzer_{datetime.now().strftime("%Y%m%d")}.log'
+        file_handler = RotatingFileHandler(
+            log_file, maxBytes=10*1024*1024, backupCount=5
+        )
+        file_handler.setFormatter(
+            logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+        )
+        logger = logging.getLogger()
+        logger.setLevel(logging.INFO)
+        logger.addHandler(file_handler)
+        logger.info("Comment Analyzer started (local mode)")
+    except Exception:
+        # Fallback to basic logging
+        logger = logging.getLogger(__name__)
+        logger.setLevel(logging.INFO)
+        logger.info("Comment Analyzer started (fallback mode)")
 
 
 # Page config
