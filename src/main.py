@@ -390,9 +390,9 @@ def extract_themes_simple(texts):
 def process_file_simple(uploaded_file):
     """Process uploaded file and extract comments with memory optimization"""
     try:
-        # Streamlit Cloud memory optimization - stricter limits
-        MAX_FILE_SIZE_MB = 5  # Reduced for cloud deployment
-        MAX_COMMENTS = 2000   # Limit comments for memory management
+        # Streamlit Cloud memory optimization - ultra strict limits
+        MAX_FILE_SIZE_MB = 3    # Ultra conservative for 690MB limit
+        MAX_COMMENTS = 500      # Drastically reduce for cloud stability
         
         if hasattr(uploaded_file, 'size') and uploaded_file.size > MAX_FILE_SIZE_MB * 1024 * 1024:
             st.error(f"Archivo demasiado grande para Streamlit Cloud. Máximo: {MAX_FILE_SIZE_MB}MB")
@@ -636,10 +636,16 @@ def process_file_simple(uploaded_file):
         st.error(f"Error procesando archivo: {str(e)}")
         return None
 
+@st.cache_data(ttl=300, max_entries=3)  # Cache Excel generation for cloud
 def create_simple_excel(results):
-    """Create enhanced Excel report with complete analysis results and formatting"""
-    # Validate data size for Excel export
-    MAX_COMMENTS = 10000  # Excel row limit for performance
+    """Create enhanced Excel report optimized for Streamlit Cloud memory limits"""
+    # Cloud-specific memory optimization
+    if is_streamlit_cloud():
+        MAX_COMMENTS = 500  # Ultra conservative for 690MB cloud limit
+        st.info("🌐 Optimizando Excel para Streamlit Cloud (máximo 500 comentarios)")
+    else:
+        MAX_COMMENTS = 10000  # Local can handle more
+    
     if len(results.get('comments', [])) > MAX_COMMENTS:
         st.warning(f"Limitando exportación a {MAX_COMMENTS} comentarios para mantener rendimiento")
         # Truncate data for Excel
@@ -1105,9 +1111,22 @@ def create_ai_enhanced_excel(results):
     output.seek(0)
     return output.getvalue()
 
-# Initialize session state
-if 'analysis_results' not in st.session_state:
-    st.session_state.analysis_results = None
+# Initialize session state with cloud compatibility check
+try:
+    if 'analysis_results' not in st.session_state:
+        st.session_state.analysis_results = None
+    
+    # Session state health check for cloud deployment
+    if is_streamlit_cloud():
+        test_key = 'cloud_session_test'
+        if test_key not in st.session_state:
+            st.session_state[test_key] = True
+            print("✅ Session state working on Streamlit Cloud")
+        
+except Exception as session_error:
+    print(f"❌ Session state issue: {session_error}")
+    st.error("⚠️ Problema con sesión. Intenta recargar la página.")
+    st.stop()
 
 # Web3 Animated Header using clean UI component
 st.markdown(
