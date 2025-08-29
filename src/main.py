@@ -196,20 +196,25 @@ else:
         sys.stdout.flush()
 
 
-# Page config - WITH ERROR PROTECTION
-try:
-    print("🔧 Setting page config...")
-    st.set_page_config(
-        page_title="Personal Paraguay — Análisis de Comentarios",
-        page_icon="📊",
-        layout="wide",
-        initial_sidebar_state="collapsed"
-    )
-    print("✅ Page config set successfully")
-except Exception as config_error:
-    print(f"🚨 Page config failed: {config_error}")
-    import traceback
-    print(f"🔍 Config traceback: {traceback.format_exc()}")
+# Page config - ONLY SET ONCE PER SESSION
+if 'page_config_set' not in st.session_state:
+    try:
+        print("🔧 Setting page config (first time)...")
+        st.set_page_config(
+            page_title="Personal Paraguay — Análisis de Comentarios",
+            page_icon="📊",
+            layout="wide",
+            initial_sidebar_state="collapsed"
+        )
+        st.session_state.page_config_set = True
+        print("✅ Page config set successfully")
+    except Exception as config_error:
+        print(f"🚨 Page config failed: {config_error}")
+        import traceback
+        print(f"🔍 Config traceback: {traceback.format_exc()}")
+        st.session_state.page_config_set = True  # Prevent retry
+else:
+    print("✅ Page config already set - skipping")
 
 # Critical: Check for API key configuration early
 def check_api_configuration():

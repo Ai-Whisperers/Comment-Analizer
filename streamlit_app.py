@@ -32,41 +32,50 @@ for path in paths_to_add:
 
 print(f"Updated Python path (first 5): {sys.path[:5]}")
 
-# Import main application with comprehensive fallback
-import_success = False
+# Prevent infinite import loops with session-based guard
+import streamlit as st
 
-# Strategy 1: Try direct src import
-try:
-    print("Attempting: from src.main import *")
-    from src.main import *
+# Initialize session state early to prevent re-imports
+if 'app_initialized' not in st.session_state:
+    st.session_state.app_initialized = False
+
+if not st.session_state.app_initialized:
+    print("🚀 First-time app initialization...")
+    
+    # Import main application with comprehensive fallback
+    import_success = False
+
+    # Strategy 1: Try direct src import
+    try:
+        print("Attempting: from src.main import *")
+        from src.main import *
+        import_success = True
+        print("✅ SUCCESS: src.main import worked")
+        print("🎯 Main module imported - setting initialization flag")
+        st.session_state.app_initialized = True
+    except ImportError as e:
+        print(f"❌ src.main import failed: {e}")
+    except Exception as e:
+        print(f"🚨 UNEXPECTED ERROR during main execution: {e}")
+        import traceback
+        print(f"🔍 Full traceback: {traceback.format_exc()}")
+else:
+    print("✅ App already initialized - skipping re-import")
     import_success = True
-    print("✅ SUCCESS: src.main import worked")
-    print("🎯 Checking if UI elements rendered...")
-    # Force a simple test to see if Streamlit is working
-    import streamlit as st
-    if hasattr(st, '_main'):
-        print("✅ Streamlit context active")
-    else:
-        print("⚠️ Streamlit context may not be active")
-except ImportError as e:
-    print(f"❌ src.main import failed: {e}")
-except Exception as e:
-    print(f"🚨 UNEXPECTED ERROR during main execution: {e}")
-    import traceback
-    print(f"🔍 Full traceback: {traceback.format_exc()}")
 
-# Strategy 2: Try without src prefix  
-if not import_success:
+# Strategy 2: Try without src prefix (only if first strategy failed)
+if not import_success and not st.session_state.app_initialized:
     try:
         print("Attempting: from main import *")
         from main import *
         import_success = True
+        st.session_state.app_initialized = True
         print("✅ SUCCESS: main import worked")
     except ImportError as e:
         print(f"❌ main import failed: {e}")
 
-# Strategy 3: Try explicit path import
-if not import_success:
+# Strategy 3: Try explicit path import (only if previous strategies failed)
+if not import_success and not st.session_state.app_initialized:
     try:
         print("Attempting: explicit path import")
         main_path = src_dir / "main.py"
@@ -74,6 +83,7 @@ if not import_success:
         main_module = __import__('importlib.util').util.module_from_spec(spec)
         spec.loader.exec_module(main_module)
         import_success = True
+        st.session_state.app_initialized = True
         print("✅ SUCCESS: explicit import worked")
     except Exception as e:
         print(f"❌ explicit import failed: {e}")
