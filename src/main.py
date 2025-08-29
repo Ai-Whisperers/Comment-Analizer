@@ -101,7 +101,7 @@ def is_streamlit_cloud():
     ]
     return any(cloud_indicators)
 
-@st.cache_data(ttl=60)  # Cache memory checks for 1 minute
+@st.cache_data(ttl=30, max_entries=5)  # Short TTL, minimal cache for memory monitoring
 def get_memory_usage():
     """Get current memory usage for optimization"""
     try:
@@ -423,7 +423,7 @@ if st.session_state.show_deployment_status:
                 st.session_state.show_deployment_status = False
                 st.info("✅ Panel cerrado. Actualiza la página si no desaparece.")
 
-@st.cache_data(ttl=300, max_entries=1000)  # 5 min TTL, max 1000 entries
+@st.cache_data(ttl=300, max_entries=500)  # 5 min TTL, reduced for cloud memory limits
 def analyze_sentiment_simple(text):
     """Analyze sentiment of text"""
     if pd.isna(text) or text == "":
@@ -455,7 +455,7 @@ def analyze_sentiment_simple(text):
     else:
         return "neutral"
 
-@st.cache_data(ttl=600, max_entries=2000)  # 10 min TTL, larger cache
+@st.cache_data(ttl=300, max_entries=1000)  # Reduced TTL and entries for cloud optimization
 def clean_text_simple(text):
     """Clean and normalize text"""
     if pd.isna(text) or text == "":
@@ -796,7 +796,6 @@ def process_file_simple(uploaded_file):
         optimize_memory()
         return None
 
-@st.cache_data(ttl=300, max_entries=3)  # Cache Excel generation for cloud
 def create_simple_excel(results):
     """Create enhanced Excel report optimized for Streamlit Cloud memory limits"""
     # Cloud-specific memory optimization
