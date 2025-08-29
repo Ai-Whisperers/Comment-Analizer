@@ -41,8 +41,19 @@ try:
     from src.main import *
     import_success = True
     print("✅ SUCCESS: src.main import worked")
+    print("🎯 Checking if UI elements rendered...")
+    # Force a simple test to see if Streamlit is working
+    import streamlit as st
+    if hasattr(st, '_main'):
+        print("✅ Streamlit context active")
+    else:
+        print("⚠️ Streamlit context may not be active")
 except ImportError as e:
     print(f"❌ src.main import failed: {e}")
+except Exception as e:
+    print(f"🚨 UNEXPECTED ERROR during main execution: {e}")
+    import traceback
+    print(f"🔍 Full traceback: {traceback.format_exc()}")
 
 # Strategy 2: Try without src prefix  
 if not import_success:

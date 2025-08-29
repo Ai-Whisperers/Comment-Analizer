@@ -254,9 +254,19 @@ except Exception as theme_error:
     print(f"⚠️ Theme loading failed: {theme_error}")
     theme = {"primary": "#4ea4ff"}  # Fallback theme
 
-# Add visible title and test UI elements
-st.title("📊 Personal Paraguay — Análisis de Comentarios")
-st.markdown("### Sistema de análisis de sentimientos para comentarios de clientes")
+# Add visible title and test UI elements - WITH ERROR PROTECTION
+try:
+    print("🎯 Starting UI rendering...")
+    st.title("📊 Personal Paraguay — Análisis de Comentarios")
+    st.markdown("### Sistema de análisis de sentimientos para comentarios de clientes")
+    print("✅ Title and header rendered successfully")
+except Exception as ui_error:
+    print(f"🚨 CRITICAL: UI rendering failed: {ui_error}")
+    import traceback
+    print(f"🔍 UI Error traceback: {traceback.format_exc()}")
+    # Fallback minimal UI
+    st.error("🚨 Error rendering main UI")
+    st.write("Debug mode - checking imports...")
 
 # Closable deployment status panel
 if st.session_state.show_deployment_status:
