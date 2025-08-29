@@ -1512,6 +1512,38 @@ st.markdown(
     unsafe_allow_html=True
 )
 
+# Smart session state cleanup for memory optimization
+if st.session_state.analysis_results:
+    # Add a subtle cleanup button for memory management
+    with st.expander("🧹 Gestión de Memoria", expanded=False):
+        col1, col2 = st.columns(2)
+        with col1:
+            if st.button("Limpiar Resultados", help="Libera memoria después del análisis"):
+                try:
+                    print("🧹 Manual session state cleanup triggered")
+                    st.session_state.analysis_results = None
+                    optimize_memory()
+                    st.success("✅ Memoria liberada. Puedes cargar un nuevo archivo.")
+                    st.rerun()
+                except Exception as cleanup_error:
+                    print(f"🚨 Session cleanup error: {cleanup_error}")
+                    st.error("Error al limpiar memoria. Actualiza la página.")
+        
+        with col2:
+            # Show current memory usage if available
+            try:
+                memory_mb = get_memory_usage()
+                if memory_mb > 0:
+                    memory_pct = (memory_mb / 690) * 100
+                    color = "🔴" if memory_pct > 80 else ("🟡" if memory_pct > 60 else "🟢")
+                    st.metric(
+                        f"{color} Uso Actual",
+                        f"{memory_mb:.0f}MB",
+                        f"{memory_pct:.1f}%"
+                    )
+            except:
+                pass
+
 # FINAL EXECUTION MARKER
 print("🎯 END OF MAIN.PY: Reached end of file - all code executed successfully")
 print("📊 If you see this message, the entire main.py file ran to completion")
