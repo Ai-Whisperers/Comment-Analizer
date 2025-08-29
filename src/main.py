@@ -223,22 +223,42 @@ def process_file_simple(uploaded_file):
             st.error(f"Archivo demasiado grande. Máximo permitido: {MAX_FILE_SIZE_MB}MB")
             return None
         
-        # Read file with validation
+        # Read file with comprehensive validation and error handling
         try:
+            st.info(f"Procesando archivo: {uploaded_file.name}")
+            
             if uploaded_file.name.endswith('.csv'):
                 df = pd.read_csv(uploaded_file, encoding='utf-8', on_bad_lines='skip')
             else:
-                df = pd.read_excel(uploaded_file)
+                # Enhanced Excel reading with openpyxl engine for better compatibility
+                try:
+                    df = pd.read_excel(uploaded_file, engine='openpyxl')
+                except Exception as excel_error:
+                    st.warning(f"Error con openpyxl, probando xlrd: {str(excel_error)}")
+                    try:
+                        uploaded_file.seek(0)
+                        df = pd.read_excel(uploaded_file, engine=None)  # Auto-detect
+                    except Exception as fallback_error:
+                        st.error(f"Error leyendo Excel con todos los engines: {str(fallback_error)}")
+                        return None
+                        
         except UnicodeDecodeError:
             # Try latin-1 encoding as fallback
-            uploaded_file.seek(0)
-            if uploaded_file.name.endswith('.csv'):
-                df = pd.read_csv(uploaded_file, encoding='latin-1', on_bad_lines='skip')
-            else:
-                st.error("Error de codificación en el archivo Excel")
+            try:
+                uploaded_file.seek(0)
+                if uploaded_file.name.endswith('.csv'):
+                    df = pd.read_csv(uploaded_file, encoding='latin-1', on_bad_lines='skip')
+                else:
+                    st.error("Error de codificación en el archivo Excel")
+                    return None
+            except Exception as fallback_error:
+                st.error(f"Error con codificación latin-1: {str(fallback_error)}")
                 return None
+                
         except Exception as e:
-            st.error(f"Error leyendo archivo: {str(e)}")
+            st.error(f"Error crítico leyendo archivo: {str(e)}")
+            st.error("Detalles del error para depuración:")
+            st.code(f"Tipo de error: {type(e).__name__}\nDescripción: {str(e)}")
             return None
         
         # Validate dataframe
@@ -250,41 +270,95 @@ def process_file_simple(uploaded_file):
             st.error("No se encontraron columnas en el archivo")
             return None
         
+        # Show file structure for debugging
+        st.success(f"✅ Archivo leído correctamente: {df.shape[0]} filas, {df.shape[1]} columnas")
+        with st.expander("🔍 Ver estructura del archivo"):
+            st.write("**Columnas encontradas:**")
+            st.write(list(df.columns))
+            st.write("**Primeras 3 filas:**")
+            st.dataframe(df.head(3))
+        
         # Find comment column with improved detection
-        comment_cols = ['comentario final', 'comment', 'comments', 'feedback', 'texto', 'comentario', 
-                       'observacion', 'observaciones', 'opinion', 'mensaje', 'respuesta']
-        comment_col = None
-        
-        for col in df.columns:
-            if any(name in col.lower() for name in comment_cols):
-                comment_col = col
-                break
-        
-        if comment_col is None:
-            # Use first text column
+        try:
+            comment_cols = ['comentario final', 'comment', 'comments', 'feedback', 'texto', 'comentario', 
+                           'observacion', 'observaciones', 'opinion', 'mensaje', 'respuesta']
+            comment_col = None
+            
+            # First try exact match
             for col in df.columns:
-                if df[col].dtype == 'object':
+                if any(name in col.lower() for name in comment_cols):
                     comment_col = col
+                    st.info(f"Columna de comentarios detectada: '{comment_col}'")
                     break
-        
-        if comment_col is None:
-            st.error("No se encontró columna de comentarios")
+            
+            if comment_col is None:
+                # Use first text column
+                for col in df.columns:
+                    if df[col].dtype == 'object':
+                        comment_col = col
+                        st.warning(f"Usando primera columna de texto como comentarios: '{comment_col}'")
+                        break
+            
+            if comment_col is None:
+                st.error("No se encontró columna de comentarios válida")
+                st.error("Columnas disponibles:")
+                for i, col in enumerate(df.columns):
+                    st.write(f"{i+1}. {col} (tipo: {df[col].dtype})")
+                return None
+                
+        except Exception as column_error:
+            st.error(f"Error detectando columnas: {str(column_error)}")
             return None
         
-        # Extract and clean comments
-        raw_comments = df[comment_col].dropna().tolist()
-        if not raw_comments:
-            st.error("No se encontraron comentarios válidos")
+        # Extract and clean comments with comprehensive error handling
+        try:
+            st.info(f"Extrayendo comentarios de la columna: '{comment_col}'")
+            raw_comments = df[comment_col].dropna().tolist()
+            
+            if not raw_comments:
+                st.error("No se encontraron comentarios válidos en la columna seleccionada")
+                return None
+            
+            st.success(f"✅ Extraídos {len(raw_comments)} comentarios")
+            
+            # Clean text with progress indication  
+            with st.spinner("Limpiando y procesando comentarios..."):
+                cleaned_comments = []
+                for comment in raw_comments:
+                    try:
+                        cleaned = clean_text_simple(comment)
+                        if cleaned and len(cleaned.strip()) > 2:  # Minimum length filter
+                            cleaned_comments.append(cleaned)
+                    except Exception:
+                        continue  # Skip problematic comments
+                
+                if not cleaned_comments:
+                    st.error("No se encontraron comentarios válidos después de la limpieza")
+                    return None
+                    
+                st.success(f"✅ Limpieza completada: {len(cleaned_comments)} comentarios válidos")
+            
+            # Remove duplicates
+            with st.spinner("Removiendo duplicados..."):
+                unique_comments, comment_frequencies = remove_duplicates_simple(cleaned_comments)
+                st.info(f"Comentarios únicos: {len(unique_comments)}")
+            
+            # Analyze sentiment with progress
+            with st.spinner("Analizando sentimientos..."):
+                sentiments = []
+                for comment in unique_comments:
+                    try:
+                        sentiment = analyze_sentiment_simple(comment)
+                        sentiments.append(sentiment)
+                    except Exception:
+                        sentiments.append('neutral')  # Default fallback
+                        
+                st.success(f"✅ Análisis de sentimientos completado")
+                
+        except Exception as processing_error:
+            st.error(f"Error durante el procesamiento: {str(processing_error)}")
+            st.code(f"Error: {type(processing_error).__name__}: {str(processing_error)}")
             return None
-        
-        # Clean text
-        cleaned_comments = [clean_text_simple(comment) for comment in raw_comments]
-        
-        # Remove duplicates
-        unique_comments, comment_frequencies = remove_duplicates_simple(cleaned_comments)
-        
-        # Analyze sentiment
-        sentiments = [analyze_sentiment_simple(comment) for comment in unique_comments]
         
         # Count sentiments
         sentiment_counts = Counter(sentiments)
