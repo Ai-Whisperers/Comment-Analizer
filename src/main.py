@@ -3,22 +3,79 @@ Comment Analyzer - Personal Paraguay
 Sentiment analysis for customer feedback
 """
 
-import streamlit as st
-import pandas as pd
-import plotly.graph_objects as go
-import plotly.express as px
-from pathlib import Path
-from datetime import datetime
-import numpy as np
-from collections import Counter
-import re
-from io import BytesIO
-import os
-import logging
-from logging.handlers import RotatingFileHandler
-import sys
-import gc  # For garbage collection and memory management
-import psutil  # For memory monitoring
+# Critical imports with comprehensive error tracking
+critical_imports = {}
+optional_imports = {}
+
+try:
+    import streamlit as st
+    critical_imports['streamlit'] = '✅'
+    print("✅ Streamlit imported successfully")
+except ImportError as e:
+    critical_imports['streamlit'] = f'❌ {e}'
+    print(f"🚨 CRITICAL: Streamlit import failed: {e}")
+
+try:
+    import pandas as pd
+    critical_imports['pandas'] = '✅'
+    print("✅ Pandas imported successfully")
+except ImportError as e:
+    critical_imports['pandas'] = f'❌ {e}'
+    print(f"🚨 CRITICAL: Pandas import failed: {e}")
+
+try:
+    import plotly.graph_objects as go
+    import plotly.express as px
+    critical_imports['plotly'] = '✅'
+    print("✅ Plotly imported successfully")
+except ImportError as e:
+    critical_imports['plotly'] = f'❌ {e}'
+    print(f"🚨 CRITICAL: Plotly import failed: {e}")
+
+try:
+    from pathlib import Path
+    from datetime import datetime
+    import numpy as np
+    from collections import Counter
+    import re
+    from io import BytesIO
+    import os
+    import logging
+    from logging.handlers import RotatingFileHandler
+    import sys
+    import gc  # For garbage collection and memory management
+    critical_imports['stdlib'] = '✅'
+    print("✅ Standard library modules imported successfully")
+except ImportError as e:
+    critical_imports['stdlib'] = f'❌ {e}'
+    print(f"🚨 CRITICAL: Standard library import failed: {e}")
+
+try:
+    import psutil  # For memory monitoring
+    optional_imports['psutil'] = '✅'
+    print("✅ psutil imported successfully")
+except ImportError as e:
+    optional_imports['psutil'] = f'❌ {e}'
+    print(f"⚠️ Optional: psutil import failed: {e}")
+
+# Report import status and handle critical failures
+failed_critical = [k for k, v in critical_imports.items() if '❌' in v]
+if failed_critical:
+    print(f"🚨 CRITICAL IMPORT FAILURES: {failed_critical}")
+    print("App may not function correctly!")
+    
+    # If Streamlit is available, show error to user
+    if 'streamlit' in critical_imports and '✅' in critical_imports['streamlit']:
+        st.error("🚨 Critical Import Failures Detected")
+        st.error(f"Failed imports: {', '.join(failed_critical)}")
+        st.info("This may prevent the app from functioning properly.")
+        st.info("Check the logs for detailed error information.")
+    
+    # Continue execution with degraded functionality
+else:
+    print("✅ All critical imports successful")
+    
+print(f"📊 Import Summary: {len(critical_imports)} critical, {len(optional_imports)} optional")
 
 # Environment detection and path setup
 def is_streamlit_cloud():
@@ -139,13 +196,20 @@ else:
         sys.stdout.flush()
 
 
-# Page config
-st.set_page_config(
-    page_title="Personal Paraguay — Análisis de Comentarios",
-    page_icon="📊",
-    layout="wide",
-    initial_sidebar_state="collapsed"
-)
+# Page config - WITH ERROR PROTECTION
+try:
+    print("🔧 Setting page config...")
+    st.set_page_config(
+        page_title="Personal Paraguay — Análisis de Comentarios",
+        page_icon="📊",
+        layout="wide",
+        initial_sidebar_state="collapsed"
+    )
+    print("✅ Page config set successfully")
+except Exception as config_error:
+    print(f"🚨 Page config failed: {config_error}")
+    import traceback
+    print(f"🔍 Config traceback: {traceback.format_exc()}")
 
 # Critical: Check for API key configuration early
 def check_api_configuration():
@@ -181,28 +245,54 @@ def check_api_configuration():
     print("❌ No OpenAI API key found")
     return False
 
-# Show API configuration status
-api_configured = check_api_configuration()
-if not api_configured and is_streamlit_cloud():
-    st.warning("⚠️ OpenAI API key no configurada. Algunas funciones estarán limitadas.")
-    st.info("Administradores: Configura OPENAI_API_KEY en Streamlit Cloud secrets.")
+# Show API configuration status - WITH ERROR PROTECTION
+try:
+    print("🔑 Checking API configuration...")
+    api_configured = check_api_configuration()
+    print(f"✅ API check completed: {api_configured}")
+    
+    if not api_configured and is_streamlit_cloud():
+        st.warning("⚠️ OpenAI API key no configurada. Algunas funciones estarán limitadas.")
+        st.info("Administradores: Configura OPENAI_API_KEY en Streamlit Cloud secrets.")
+except Exception as api_error:
+    print(f"🚨 API configuration check failed: {api_error}")
+    api_configured = False
 
-# Initialize deployment status in session state  
-if 'show_deployment_status' not in st.session_state:
-    st.session_state.show_deployment_status = True
+# Initialize session state - WITH ERROR PROTECTION
+try:
+    print("📊 Initializing session state...")
+    
+    # Initialize deployment status in session state  
+    if 'show_deployment_status' not in st.session_state:
+        st.session_state.show_deployment_status = True
+        print("✅ Deployment status state initialized")
 
-# Initialize theme state
-if 'dark_mode' not in st.session_state:
-    st.session_state.dark_mode = True  # Default to dark mode for web3 aesthetics
+    # Initialize theme state
+    if 'dark_mode' not in st.session_state:
+        st.session_state.dark_mode = True  # Default to dark mode for web3 aesthetics
+        print("✅ Theme state initialized")
+    
+    print("✅ Session state initialization completed")
+except Exception as session_error:
+    print(f"🚨 Session state initialization failed: {session_error}")
+    import traceback
+    print(f"🔍 Session traceback: {traceback.format_exc()}")
 
 # Initialize UI components helper with error handling
 try:
+    print("🎨 Initializing UI components...")
     ui = UIComponents()
+    print("✅ UIComponents created")
     theme_manager = ThemeManager()
+    print("✅ ThemeManager created")
     print("✅ UI components initialized successfully")
 except Exception as ui_error:
     print(f"❌ UI components failed: {ui_error}")
+    import traceback
+    print(f"🔍 UI init traceback: {traceback.format_exc()}")
+    
     # Create minimal fallbacks
+    print("🔄 Creating fallback UI components...")
     class MinimalUI:
         def section_divider(self): return "<hr>"
         def results_header(self, **kwargs): return "<h2>Results</h2>"
@@ -212,32 +302,41 @@ except Exception as ui_error:
     class MinimalTheme:
         def get_theme(self, dark=True): return {"primary": "#4ea4ff"}
     theme_manager = MinimalTheme()
+    print("✅ Fallback UI components created")
 
-# Theme toggle and system monitoring in sidebar
-with st.sidebar:
-    col1, col2 = st.columns([1, 3])
-    with col1:
-        if st.button("◐", key="theme_toggle", help="Toggle Dark/Light Mode"):
-            st.session_state.dark_mode = not st.session_state.dark_mode
-            st.rerun()
-    with col2:
-        st.markdown(f"**{'Dark' if st.session_state.dark_mode else 'Light'} Mode**")
-    
-    # Memory monitoring for Streamlit Cloud
-    try:
-        memory_mb = get_memory_usage()
-        if memory_mb > 0:
-            memory_pct = (memory_mb / 690) * 100  # Streamlit Cloud limit
-            color = "🔴" if memory_pct > 80 else ("🟡" if memory_pct > 60 else "🟢")
-            st.metric(
-                f"{color} Memoria",
-                f"{memory_mb:.0f}MB",
-                f"{memory_pct:.1f}% usado"
-            )
-    except:
-        pass  # Silent fail if monitoring unavailable
+# Theme toggle and system monitoring in sidebar - WITH ERROR PROTECTION
+try:
+    print("📋 Setting up sidebar...")
+    with st.sidebar:
+        col1, col2 = st.columns([1, 3])
+        with col1:
+            if st.button("◐", key="theme_toggle", help="Toggle Dark/Light Mode"):
+                st.session_state.dark_mode = not st.session_state.dark_mode
+                st.rerun()
+        with col2:
+            st.markdown(f"**{'Dark' if st.session_state.dark_mode else 'Light'} Mode**")
         
-    st.markdown("---")
+        # Memory monitoring for Streamlit Cloud
+        try:
+            memory_mb = get_memory_usage()
+            if memory_mb > 0:
+                memory_pct = (memory_mb / 690) * 100  # Streamlit Cloud limit
+                color = "🔴" if memory_pct > 80 else ("🟡" if memory_pct > 60 else "🟢")
+                st.metric(
+                    f"{color} Memoria",
+                    f"{memory_mb:.0f}MB",
+                    f"{memory_pct:.1f}% usado"
+                )
+        except:
+            pass  # Silent fail if monitoring unavailable
+            
+        st.markdown("---")
+    
+    print("✅ Sidebar setup completed")
+except Exception as sidebar_error:
+    print(f"🚨 Sidebar setup failed: {sidebar_error}")
+    import traceback
+    print(f"🔍 Sidebar traceback: {traceback.format_exc()}")
 
 # Inject all styles with error handling
 try:
