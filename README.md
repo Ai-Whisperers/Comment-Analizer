@@ -12,20 +12,36 @@ Sistema avanzado de análisis de sentimientos y detección de patrones para come
 - 5MB+ de espacio en disco disponible
 - Navegador web moderno (Chrome, Firefox, Edge)
 
-### 🚀 Instalación Rápida (3 Pasos)
+### 🚀 Instalación Automática (Windows/Linux/Mac)
 
-#### Paso 1: Instalar Dependencias
+#### 🪟 **Para Usuarios Windows** (Recomendado)
+```powershell
+# PowerShell (Recomendado)
+.\bootstrap.ps1
+
+# O usando Command Prompt
+bootstrap.bat
+```
+
+#### 🐧 **Para Linux/Mac**
+```bash
+# Método tradicional
+pip install -r requirements.txt
+python run.py
+```
+
+#### ⚙️ **Configuración Manual** (Si no usas bootstrap)
+1. **Instalar Dependencias**
 ```bash
 pip install -r requirements.txt
 ```
 
-#### Paso 2: Configurar Entorno
-Crear archivo `.env` en el directorio raíz:
+2. **Configurar Entorno** - Crear archivo `.env`:
 ```env
 # REQUERIDO: Tu clave API real de OpenAI
 OPENAI_API_KEY=sk-proj-TU-CLAVE-API-REAL-AQUI
 
-# CONFIGURACIÓN OPTIMIZADA PARA USO INMEDIATO
+# CONFIGURACIÓN OPTIMIZADA
 OPENAI_MODEL=gpt-4
 OPENAI_MAX_TOKENS=2000
 OPENAI_TEMPERATURE=0.7
@@ -33,11 +49,12 @@ STREAMLIT_PORT=8501
 LOG_LEVEL=INFO
 ```
 
-#### Paso 3: Lanzar Aplicación
+3. **Lanzar Aplicación**
 ```bash
 python run.py
 ```
-Luego abrir: **http://localhost:8501**
+
+**Acceder en:** http://localhost:8501
 
 ### 🧪 Prueba Rápida (30 segundos)
 1. Crear archivo `test_data.xlsx` con los datos de ejemplo (ver sección abajo)
@@ -46,6 +63,24 @@ Luego abrir: **http://localhost:8501**
 4. Verificar que aparezcan gráficos de sentimientos y métricas
 
 **✅ Éxito**: Si ves gráficos coloridos y métricas de sentimientos, ¡todo está listo!
+
+---
+
+## 🛠️ NOVEDADES Y MEJORAS
+
+### 🎉 **Nuevas Características v2.0**
+- ✅ **Scripts Bootstrap Windows**: Instalación automática con `bootstrap.ps1` y `bootstrap.bat`
+- ✅ **Entorno Multi-idioma Mejorado**: Soporte expandido para Español, Inglés, Guaraní y Portugués
+- ✅ **Exportación Profesional Excel**: 16 hojas con análisis completo para Personal Paraguay
+- ✅ **Detección Automática de Entorno**: Configuración inteligente según el sistema operativo
+- ✅ **Validación de Requisitos**: Verificación automática de Python, APIs y dependencias
+- ✅ **Creación Automática de Directorios**: Estructura de carpetas optimizada
+
+### 📊 **Mejoras en Análisis**
+- ✅ **Análisis de Emociones Avanzado**: Detección de hasta 15+ emociones diferentes
+- ✅ **Temas Inteligentes**: Categorización automática con IA para telecomunicaciones
+- ✅ **Exportes Profesionales**: Reportes listos para presentación ejecutiva
+- ✅ **Cache Inteligente**: Optimización de velocidad y reducción de costos API
 
 ---
 
@@ -58,6 +93,8 @@ Luego abrir: **http://localhost:8501**
 - [ ] **`README.md`** - Esta guía completa
 - [ ] **`requirements.txt`** - Todas las dependencias listadas
 - [ ] **`run.py`** - Lanzador de aplicación
+- [ ] **`bootstrap.ps1`** - Script PowerShell para Windows (NUEVO)
+- [ ] **`bootstrap.bat`** - Script CMD para Windows (NUEVO)
 - [ ] **`src/`** - Directorio completo del código fuente
 - [ ] **`test_data.xlsx`** - Archivo de datos de muestra para pruebas
 
@@ -68,6 +105,17 @@ Luego abrir: **http://localhost:8501**
 - [ ] Probaste localmente - la aplicación inicia sin errores
 
 #### Comandos de Verificación:
+
+**🪟 Windows (Automático):**
+```powershell
+# PowerShell - Incluye verificación automática
+.\bootstrap.ps1
+
+# Command Prompt - Incluye verificación automática  
+bootstrap.bat
+```
+
+**🐧 Linux/Mac (Manual):**
 ```bash
 # Verificación rápida de configuración
 python -c "from src.config import Config; print('✅ API configurada' if Config.OPENAI_API_KEY else '❌ API faltante')"
@@ -90,7 +138,14 @@ python run.py
 - **Costo API**: ~$0.02-0.04 USD por prueba
 
 ### ⚠️ Problemas Comunes y Soluciones
-- **"OPENAI_API_KEY not found"** → Verificar que existe archivo `.env` en directorio raíz
+
+**🪟 Problemas Windows:**
+- **"Scripts deshabilitados"** → Ejecutar: `Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser`
+- **"Python no reconocido"** → Instalar Python 3.11+ desde microsoft.com/store o python.org
+- **Bootstrap falla** → Usar `bootstrap.bat` en lugar de PowerShell
+
+**🌐 Problemas Generales:**
+- **"OPENAI_API_KEY not found"** → Verificar que existe archivo `.env` en directorio raíz  
 - **"Port 8501 already in use"** → Ejecutar: `streamlit run src/main.py --server.port 8502`
 - **"ModuleNotFoundError"** → Ejecutar: `pip install -r requirements.txt`
 - **Errores de análisis** → Verificar formato de datos y columnas requeridas
@@ -161,10 +216,11 @@ Crear `test_data.xlsx` con estos datos:
 ### Especificaciones Técnicas
 
 **Versión Actual**: 2.0.0  
-**Última Actualización**: 27 de Diciembre, 2024  
-**Tecnología Principal**: Streamlit + Python 3.12  
+**Última Actualización**: 29 de Agosto, 2025  
+**Tecnología Principal**: Streamlit + Python 3.11+  
 **Integración IA**: OpenAI GPT-4  
-**Puerto Predeterminado**: 8501 (configurable vía STREAMLIT_PORT)
+**Puerto Predeterminado**: 8501 (configurable vía STREAMLIT_PORT)  
+**Soporte Windows**: Scripts Bootstrap PowerShell y CMD
 
 ### Arquitectura del Sistema
 
@@ -174,6 +230,9 @@ Comment-Analizer/
 │   ├── main.py            # Punto de entrada Streamlit
 │   ├── config.py          # Configuración del sistema
 │   ├── ai_overseer.py     # Validador de IA
+│   ├── i18n/              # Sistema multi-idioma mejorado
+│   │   └── translations.py# Soporte ES/EN/PT/GN expandido
+│   ├── professional_excel_export.py # Exportación avanzada
 │   ├── api/               # Integraciones API
 │   ├── components/        # Componentes UI
 │   ├── services/          # Lógica de negocio
@@ -183,6 +242,8 @@ Comment-Analizer/
 │   └── theme/             # Sistema de temas UI
 ├── tests/                  # Suite de pruebas (92+ tests)
 ├── documentation/          # Documentación técnica
+├── bootstrap.ps1           # 🪟 Script PowerShell (NUEVO)
+├── bootstrap.bat           # 🪟 Script Command Prompt (NUEVO)
 ├── requirements.txt        # Dependencias Python
 ├── run.py                 # Lanzador de aplicación
 └── .env                   # Configuración (crear manualmente)
@@ -193,14 +254,16 @@ Comment-Analizer/
 ## 🎯 CARACTERÍSTICAS PRINCIPALES
 
 ### Capacidades Actuales
-- ✅ **Análisis de sentimientos** (Español/Guaraní)
+- ✅ **Análisis de sentimientos** (Español/Guaraní/Inglés/Portugués)
 - ✅ **Insights potenciados por IA** con GPT-4
 - ✅ **Detección de patrones** y análisis de tendencias
-- ✅ **Exportación profesional** a Excel
+- ✅ **Exportación profesional** a Excel (16 hojas especializadas)
 - ✅ **Visualizaciones interactivas** con Plotly
 - ✅ **Procesamiento por lotes** de grandes volúmenes
 - ✅ **Cache inteligente** para optimización de API
 - ✅ **Modo oscuro/claro** personalizable
+- ✅ **Bootstrap automático** para Windows (PowerShell + CMD)
+- ✅ **Configuración inteligente** de entorno multiplataforma
 
 ### Métricas Disponibles
 - Distribución de sentimientos (Positivo/Neutral/Negativo)
@@ -431,4 +494,13 @@ Para documentación técnica detallada, consultar la carpeta `documentation/`:
 
 **Sistema desarrollado para**: Personal Paraguay (Núcleo S.A.)  
 **Versión**: 2.0.0  
-**Última actualización**: 27 de Diciembre, 2024
+**Última actualización**: 29 de Agosto, 2025  
+
+---
+
+### 🆕 **CHANGELOG v2.0**
+- **NUEVO**: Scripts bootstrap para Windows (`bootstrap.ps1`, `bootstrap.bat`)
+- **MEJORADO**: Sistema de traducciones expandido (ES/EN/PT/GN)  
+- **MEJORADO**: Exportación Excel profesional con 16 hojas especializadas
+- **MEJORADO**: Detección automática y configuración de entorno Windows
+- **OPTIMIZADO**: Rendimiento general y experiencia de usuario

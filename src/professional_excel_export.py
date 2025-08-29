@@ -546,7 +546,13 @@ class ProfessionalExcelExporter:
             worksheet.insert_chart('G2', chart)
     
     def _create_sentiment_analysis(self, writer, workbook, formats, results):
-        """Create sentiment analysis sheet"""
+        """Create enhanced sentiment analysis sheet with OpenAI data"""
+        from src.i18n.translations import get_comprehensive_sentiment_labels
+        
+        # Get Spanish labels
+        labels = get_comprehensive_sentiment_labels()
+        
+        # Basic sentiment data
         sentiment_data = {
             'Sentimiento': ['Positivo', 'Neutral', 'Negativo'],
             'Cantidad': [
@@ -555,9 +561,9 @@ class ProfessionalExcelExporter:
                 results.get('negative_count', 0)
             ],
             'Porcentaje': [
-                f"{results.get('positive_pct', 0)}%",
-                f"{results.get('neutral_pct', 0)}%",
-                f"{results.get('negative_pct', 0)}%"
+                f"{results.get('positive_pct', 0):.1f}%",
+                f"{results.get('neutral_pct', 0):.1f}%",
+                f"{results.get('negative_pct', 0):.1f}%"
             ],
             'Interpretación': [
                 'Clientes satisfechos - Mantener nivel de servicio',
@@ -566,16 +572,94 @@ class ProfessionalExcelExporter:
             ]
         }
         
+        # Add AI confidence if available
+        if results.get('analysis_method') == 'AI_POWERED':
+            sentiment_data['Confianza IA'] = [
+                f"{results.get('ai_confidence_avg', 0) * 100:.1f}%",
+                f"{results.get('ai_confidence_avg', 0) * 100:.1f}%", 
+                f"{results.get('ai_confidence_avg', 0) * 100:.1f}%"
+            ]
+        
         df_sentiment = pd.DataFrame(sentiment_data)
-        df_sentiment.to_excel(writer, sheet_name='05_Análisis_Sentimientos', index=False)
+        df_sentiment.to_excel(writer, sheet_name='05_Análisis_Sentimientos', index=False, startrow=0)
         
         worksheet = writer.sheets['05_Análisis_Sentimientos']
         worksheet.set_column('A:A', 15)
-        worksheet.set_column('B:C', 15)
+        worksheet.set_column('B:E', 15)
         worksheet.set_column('D:D', 40)
         
+        # Headers
         for col_num, value in enumerate(df_sentiment.columns.values):
             worksheet.write(0, col_num, value, formats['header'])
+        
+        # Add detailed analysis if AI data is available
+        if results.get('analysis_method') == 'AI_POWERED' and 'comments' in results:
+            row_start = len(df_sentiment) + 4
+            
+            # Section header
+            worksheet.merge_range(f'A{row_start}:H{row_start}', 
+                                'ANÁLISIS DETALLADO CON IA', formats['title'])
+            row_start += 2
+            
+            # Create detailed data table
+            detailed_data = []
+            comments = results.get('comments', [])[:50]  # Limit for Excel performance
+            sentiments = results.get('sentiments', [])[:50]
+            
+            # Extract AI data from enhanced results if available
+            for i, (comment, sentiment) in enumerate(zip(comments, sentiments)):
+                row_data = {
+                    'ID': f'C{i+1:04d}',
+                    'Comentario': comment[:100] + '...' if len(comment) > 100 else comment,
+                    'Sentimiento': sentiment.title(),
+                    'Confianza': 'N/A',
+                    'Idioma': 'Español',
+                    'Temas': 'N/A',
+                    'Emociones': 'N/A',
+                    'Puntos de Dolor': 'N/A'
+                }
+                
+                # Add AI enhancement data if available
+                if 'enhanced_results' in results and i < len(results['enhanced_results']):
+                    enhanced = results['enhanced_results'][i]
+                    
+                    # Extract confidence from intensity
+                    intensity = enhanced.get('emotions', {}).get('intensity', 1.0)
+                    confidence = min(intensity / 2.5, 1.0)  # Normalize to 0-1
+                    row_data['Confianza'] = f"{confidence * 100:.1f}%"
+                    
+                    # Extract themes
+                    themes = list(enhanced.get('extended_themes', {}).keys())[:3]
+                    row_data['Temas'] = ', '.join(themes) if themes else 'N/A'
+                    
+                    # Extract emotions
+                    emotions = enhanced.get('emotions', {}).get('detected', [])[:3]
+                    row_data['Emociones'] = ', '.join(emotions) if emotions else 'N/A'
+                    
+                    # Extract pain points
+                    pain_points = enhanced.get('churn_risk', {}).get('indicators', [])[:3]
+                    row_data['Puntos de Dolor'] = ', '.join(pain_points) if pain_points else 'N/A'
+                
+                detailed_data.append(row_data)
+            
+            # Create detailed DataFrame
+            df_detailed = pd.DataFrame(detailed_data)
+            df_detailed.to_excel(writer, sheet_name='05_Análisis_Sentimientos', 
+                               index=False, startrow=row_start)
+            
+            # Format detailed table headers
+            for col_num, value in enumerate(df_detailed.columns.values):
+                worksheet.write(row_start, col_num, value, formats['header'])
+            
+            # Set column widths for detailed section
+            worksheet.set_column('A:A', 8)   # ID
+            worksheet.set_column('B:B', 50)  # Comment
+            worksheet.set_column('C:C', 12)  # Sentiment
+            worksheet.set_column('D:D', 12)  # Confidence
+            worksheet.set_column('E:E', 10)  # Language
+            worksheet.set_column('F:F', 25)  # Themes
+            worksheet.set_column('G:G', 20)  # Emotions
+            worksheet.set_column('H:H', 25)  # Pain Points
     
     def _create_emotion_analysis(self, writer, workbook, formats, results):
         """Create emotion analysis sheet"""

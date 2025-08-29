@@ -41,6 +41,79 @@ class Translations:
             'key_insights': 'Insights clave',
             'summary': 'Resumen',
             'details': 'Detalles',
+            'confidence': 'Confianza',
+            'language': 'Idioma',
+            'translation': 'Traducción',
+            'pain_points': 'Puntos de dolor',
+            'emotions': 'Emociones',
+            
+            # OpenAI Sentiment Analysis Variables
+            'sentiment_analysis': 'Análisis de Sentimientos',
+            'confidence_score': 'Nivel de Confianza',
+            'detected_language': 'Idioma Detectado',
+            'spanish_translation': 'Traducción al Español',
+            'key_themes': 'Temas Clave',
+            'customer_pain_points': 'Puntos de Dolor del Cliente',
+            'emotional_analysis': 'Análisis Emocional',
+            'comment_quality': 'Calidad del Comentario',
+            
+            # Emotions (Spanish translations for OpenAI variables)
+            'frustración': 'Frustración',
+            'satisfacción': 'Satisfacción',
+            'enojo': 'Enojo',
+            'alegría': 'Alegría',
+            'preocupación': 'Preocupación',
+            'decepción': 'Decepción',
+            'esperanza': 'Esperanza',
+            'neutral_emotion': 'Neutral',
+            'ira': 'Ira',
+            'felicidad': 'Felicidad',
+            'inquietud': 'Inquietud',
+            'tristeza': 'Tristeza',
+            'optimismo': 'Optimismo',
+            'ansiedad': 'Ansiedad',
+            'entusiasmo': 'Entusiasmo',
+            
+            # Themes (Spanish for OpenAI categories)
+            'velocidad': 'Velocidad',
+            'calidad_servicio': 'Calidad del Servicio',
+            'precio': 'Precio',
+            'soporte_tecnico': 'Soporte Técnico',
+            'cobertura': 'Cobertura',
+            'facturacion': 'Facturación',
+            'instalacion': 'Instalación',
+            'conectividad': 'Conectividad',
+            'atencion_cliente': 'Atención al Cliente',
+            'disponibilidad': 'Disponibilidad',
+            'mantenimiento': 'Mantenimiento',
+            'equipos': 'Equipos',
+            'promociones': 'Promociones',
+            'sin_clasificar': 'Sin Clasificar',
+            
+            # Pain Points Categories
+            'conexion_lenta': 'Conexión Lenta',
+            'servicio_interrumpido': 'Servicio Interrumpido',
+            'mala_atencion': 'Mala Atención',
+            'precio_alto': 'Precio Alto',
+            'instalacion_demora': 'Demora en Instalación',
+            'falta_cobertura': 'Falta de Cobertura',
+            'problemas_facturacion': 'Problemas de Facturación',
+            'equipos_defectuosos': 'Equipos Defectuosos',
+            
+            # Quality Indicators
+            'high_quality': 'Alta Calidad',
+            'medium_quality': 'Calidad Media',
+            'low_quality': 'Baja Calidad',
+            'informative': 'Informativo',
+            'detailed': 'Detallado',
+            'brief': 'Breve',
+            
+            # AI Analysis Metadata
+            'ai_powered': 'Con IA',
+            'rule_based': 'Basado en Reglas',
+            'analysis_method': 'Método de Análisis',
+            'ai_confidence_avg': 'Confianza Promedio IA',
+            'ai_model_used': 'Modelo IA Utilizado',
             
             # Errors
             'error': 'Error',
@@ -230,3 +303,117 @@ def t(key: str, default: str = None) -> str:
     """Convenience function for translations"""
     translator = get_translator()
     return translator.get(key, default)
+
+def translate_sentiment_data(openai_result: dict) -> dict:
+    """
+    Translate OpenAI sentiment analysis result to Spanish for UI display
+    
+    Args:
+        openai_result: Original OpenAI result with English keys
+        
+    Returns:
+        Dictionary with Spanish labels for UI display
+    """
+    translator = get_translator('es')
+    
+    translated = {}
+    
+    # Basic sentiment (keep English internally, translate for display)
+    if 'sentiment' in openai_result:
+        sentiment = openai_result['sentiment']
+        translated['sentimiento'] = translator.get(sentiment, sentiment)
+        translated['sentiment_original'] = sentiment  # Keep original for logic
+    
+    # Confidence score
+    if 'confidence' in openai_result:
+        translated['confianza'] = openai_result['confidence']
+        translated['confianza_porcentaje'] = f"{openai_result['confidence'] * 100:.1f}%"
+    
+    # Language
+    if 'language' in openai_result:
+        lang_map = {'es': 'Español', 'en': 'Inglés', 'gn': 'Guaraní', 'mixed': 'Mixto'}
+        translated['idioma'] = lang_map.get(openai_result['language'], openai_result['language'])
+        translated['idioma_codigo'] = openai_result['language']
+    
+    # Translation
+    if 'translation' in openai_result:
+        translated['traduccion'] = openai_result['translation']
+    
+    # Themes - translate each theme
+    if 'themes' in openai_result:
+        themes_spanish = []
+        for theme in openai_result['themes']:
+            # Try direct translation first, fallback to cleaned theme
+            spanish_theme = translator.get(theme, theme.replace('_', ' ').title())
+            themes_spanish.append(spanish_theme)
+        translated['temas'] = themes_spanish
+        translated['temas_originales'] = openai_result['themes']  # Keep originals for logic
+    
+    # Pain points - translate each pain point
+    if 'pain_points' in openai_result:
+        pain_points_spanish = []
+        for pain_point in openai_result['pain_points']:
+            spanish_pain = translator.get(pain_point.replace(' ', '_').lower(), pain_point)
+            pain_points_spanish.append(spanish_pain)
+        translated['puntos_dolor'] = pain_points_spanish
+        translated['puntos_dolor_originales'] = openai_result['pain_points']
+    
+    # Emotions - translate each emotion
+    if 'emotions' in openai_result:
+        emotions_spanish = []
+        for emotion in openai_result['emotions']:
+            spanish_emotion = translator.get(emotion, emotion.title())
+            emotions_spanish.append(spanish_emotion)
+        translated['emociones'] = emotions_spanish
+        translated['emociones_originales'] = openai_result['emotions']
+    
+    return translated
+
+def get_comprehensive_sentiment_labels() -> dict:
+    """
+    Get comprehensive sentiment analysis labels in Spanish for Excel export
+    
+    Returns:
+        Dictionary with all possible sentiment analysis labels in Spanish
+    """
+    translator = get_translator('es')
+    
+    return {
+        'columns': {
+            'comment_id': 'ID Comentario',
+            'original_comment': 'Comentario Original', 
+            'sentiment': 'Sentimiento',
+            'confidence': 'Confianza (%)',
+            'language': 'Idioma',
+            'translation': 'Traducción',
+            'themes': 'Temas Principales',
+            'pain_points': 'Puntos de Dolor',
+            'emotions': 'Emociones',
+            'quality_score': 'Puntuación Calidad',
+            'ai_enhanced': 'Mejorado con IA'
+        },
+        'values': {
+            'positive': 'Positivo',
+            'negative': 'Negativo', 
+            'neutral': 'Neutral',
+            'spanish': 'Español',
+            'english': 'Inglés',
+            'guarani': 'Guaraní',
+            'mixed': 'Mixto',
+            'high': 'Alta',
+            'medium': 'Media',
+            'low': 'Baja',
+            'yes': 'Sí',
+            'no': 'No'
+        },
+        'sections': {
+            'summary': 'Resumen de Análisis',
+            'detailed_analysis': 'Análisis Detallado',
+            'sentiment_distribution': 'Distribución de Sentimientos',
+            'theme_analysis': 'Análisis de Temas',
+            'emotion_analysis': 'Análisis Emocional',
+            'pain_point_analysis': 'Análisis de Puntos de Dolor',
+            'quality_metrics': 'Métricas de Calidad',
+            'ai_metadata': 'Metadatos de IA'
+        }
+    }
