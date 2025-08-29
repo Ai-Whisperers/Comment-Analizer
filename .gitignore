@@ -100,6 +100,11 @@ archived_modules/
 coverage.xml
 *.cover
 
+# Local reports and analysis - Generated documentation
+local-reports/
+!local-reports/.gitkeep
+!local-reports/README.md
+
 # Cloud provider configs
 .aws/
 .gcp/

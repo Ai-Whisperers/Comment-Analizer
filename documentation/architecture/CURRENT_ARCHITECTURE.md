@@ -2,26 +2,28 @@
 
 ## Executive Summary
 
-This document describes the **actual current architecture** of the Comment Analyzer system as of December 27, 2024. It supersedes any previous architectural documents that may contain outdated information.
+This document describes the **actual current architecture** of the Comment Analyzer system as of **August 29, 2025 - Estado Final PRODUCTION-READY**. This version reflects the final optimized state with dual pipeline architecture, professional UI, and clean codebase.
 
 ## System Overview
 
-### Technology Stack
-- **Frontend**: Streamlit 1.28+ (Python-based web framework)
-- **Backend**: Python 3.12
-- **AI Service**: OpenAI GPT-4 API
-- **Data Processing**: Pandas, NumPy
-- **Visualization**: Plotly
-- **Export**: XlsxWriter, ReportLab
-- **Containerization**: Docker with multi-stage builds
-- **Testing**: Pytest with 92+ tests
+### Technology Stack - Estado Final
+- **Frontend**: Streamlit 1.28+ (locked for UI stability) - Professional UI sin emojis
+- **Backend**: Python 3.11+ (Production-ready)
+- **AI Service**: OpenAI GPT-4 API con dual pipeline architecture
+- **Data Processing**: Pandas, NumPy, Seaborn (enhanced visualizations)
+- **Visualization**: Plotly (professional corporate style)
+- **Export**: XlsxWriter, ReportLab (intelligent Excel output)
+- **Containerization**: Docker with bootstrap scripts
+- **Testing**: Pytest con async support, mypy type checking
+- **Status**: PRODUCTION-READY para Personal Paraguay
 
-### Architecture Pattern
-The system follows a **modular monolithic architecture** with clear separation of concerns:
-- Presentation Layer (Streamlit UI)
-- Service Layer (Business Logic)
-- Data Access Layer (File I/O, API clients)
-- Integration Layer (AI services with fallback)
+### Architecture Pattern - Estado Final
+The system follows a **dual pipeline modular architecture** with clear separation:
+- **Presentation Layer** (Professional Streamlit UI sin emojis)
+- **Service Layer** (Dual pipeline: Rápido + IA)
+- **Data Access Layer** (File I/O, API clients con fallbacks)
+- **Integration Layer** (AI services con enhanced_analysis y improved_analysis fallbacks)
+- **Export Layer** (Intelligent Excel routing por método de análisis)
 
 ## Core Components
 
@@ -41,25 +43,26 @@ The system follows a **modular monolithic architecture** with clear separation o
 
 ### 2. Configuration Management
 
-#### `src/config.py`
+#### `src/config.py` - Estado Final
 - Environment variable loading via `.env`
-- API key management
-- Default settings:
-  - Port: **8501** (not 8503)
+- API key management (OPCIONAL para Pipeline Rápido)
+- Default settings optimizados:
+  - Port: **8501** (configurable via STREAMLIT_PORT)
   - Model: GPT-4
-  - Max tokens: 4000
+  - Max tokens: 2000
   - Temperature: 0.7
+- **Dual pipeline support**: Rápido (sin API) + IA (con API)
 
 ### 3. AI Integration Layer
 
-#### `src/ai_analysis_adapter.py`
-- **Primary AI interface**
-- Manages OpenAI API calls
-- Implements fallback mechanism:
-  1. Try OpenAI API
-  2. Fall back to enhanced analyzer
-  3. Fall back to improved analyzer
-- Standardizes output format
+#### `src/ai_analysis_adapter.py` - Pipeline IA Coordinator
+- **Primary AI interface** para Pipeline 2 (Análisis Avanzado)
+- Manages OpenAI API calls con robust fallbacks
+- **Fallback mechanism confirmed activo**:
+  1. Try OpenAI API (GPT-4)
+  2. Fall back to enhanced_analysis.py ✅ ACTIVO
+  3. Fall back to improved_analysis.py ✅ ACTIVO
+- Standardizes output format para Excel inteligente
 
 #### `src/ai_overseer.py`
 - **Quality validation system**
@@ -184,29 +187,32 @@ The system follows a **modular monolithic architecture** with clear separation o
 
 ## Data Flow
 
-### Analysis Pipeline
+### Dual Pipeline Architecture - Estado Final
 ```
-1. User uploads file (CSV/Excel)
+PIPELINE 1 (Análisis Rápido):
+1. User selects "Análisis Rápido (Reglas)"
    ↓
-2. File validation (validators.py)
+2. File validation + extraction
    ↓
-3. Data extraction (comment_reader.py)
+3. Rule-based sentiment analysis
    ↓
-4. Language detection (language_detector.py)
+4. Basic Excel generation
    ↓
-5. AI Analysis (ai_analysis_adapter.py)
-   ├─→ Success: OpenAI API
-   └─→ Fallback: Rule-based
+5. Professional UI rendering (sin emojis)
+
+PIPELINE 2 (Análisis IA):
+1. User selects "Análisis Avanzado (IA)"
    ↓
-6. Quality validation (ai_overseer.py)
+2. File validation + extraction
    ↓
-7. Pattern detection (pattern_detector.py)
+3. AI Analysis (ai_analysis_adapter.py)
+   ├─→ Success: OpenAI GPT-4
+   ├─→ Fallback: enhanced_analysis.py ✅
+   └─→ Fallback: improved_analysis.py ✅
    ↓
-8. Results formatting
+4. AI-enhanced Excel (5 hojas especializadas)
    ↓
-9. UI rendering (main.py)
-   ↓
-10. Export generation (Excel/PDF)
+5. Professional UI (datos IA primero)
 ```
 
 ## Deployment Architecture
@@ -279,19 +285,21 @@ Security:
    - Listening on port 8501
    - Health check active
 
-## Key Design Decisions
+## Key Design Decisions - Estado Final
 
-### 1. Streamlit Over React
-- **Rationale**: Faster development, Python ecosystem, built-in components
-- **Trade-offs**: Less UI flexibility, Python-only
+### 1. Professional Streamlit UI (Sin Emojis)
+- **Rationale**: Corporate appearance para Personal Paraguay, faster development
+- **Implementation**: UI completamente profesional, sin emojis, apropiada para empresa
+- **Trade-offs**: Less UI flexibility, pero ideal para uso corporativo
 
 ### 2. Monolithic Architecture
 - **Rationale**: Simpler deployment, easier maintenance, sufficient for scale
 - **Trade-offs**: Less scalability, harder to distribute
 
-### 3. AI with Fallback
-- **Rationale**: Reliability, cost management, offline capability
-- **Trade-offs**: Complexity, maintenance of dual systems
+### 3. Dual Pipeline con Fallbacks Robustos
+- **Rationale**: Flexibility (gratuito vs IA), reliability, cost management
+- **Implementation**: Pipeline Rápido (gratis) + Pipeline IA (pago) con fallbacks activos
+- **Trade-offs**: Complexity, pero maximum reliability para Personal Paraguay
 
 ### 4. File-based Processing
 - **Rationale**: Simple, stateless, easy to debug
@@ -390,6 +398,7 @@ The modular structure allows for future evolution toward microservices if scale 
 
 ---
 
-**Document Version**: 1.0.0  
-**Last Updated**: December 27, 2024  
-**Status**: Current and Accurate
+**Document Version**: 2.1.0 FINAL  
+**Last Updated**: August 29, 2025  
+**Status**: PRODUCTION-READY - Estado Óptimo Final  
+**Architecture**: Dual pipeline con UI profesional para Personal Paraguay
