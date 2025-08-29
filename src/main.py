@@ -17,11 +17,39 @@ import os
 import logging
 from logging.handlers import RotatingFileHandler
 import sys
+import gc  # For garbage collection and memory management
+import psutil  # For memory monitoring
 
 # Environment detection and path setup
 def is_streamlit_cloud():
     """Detect if running on Streamlit Cloud"""
     return any("streamlit" in str(path).lower() for path in sys.path) and "site-packages" in str(sys.path)
+
+@st.cache_data(ttl=60)  # Cache memory checks for 1 minute
+def get_memory_usage():
+    """Get current memory usage for optimization"""
+    try:
+        process = psutil.Process()
+        memory_mb = process.memory_info().rss / 1024 / 1024
+        return memory_mb
+    except:
+        return 0
+
+def optimize_memory():
+    """Force garbage collection to free memory"""
+    gc.collect()
+    
+def check_memory_limit():
+    """Check if approaching Streamlit Cloud memory limit"""
+    memory_mb = get_memory_usage()
+    CLOUD_MEMORY_LIMIT = 690  # Streamlit Cloud limit in MB
+    
+    if memory_mb > CLOUD_MEMORY_LIMIT * 0.8:  # 80% threshold
+        st.warning(f"⚠️ Uso de memoria alto: {memory_mb:.1f}MB")
+        st.info("Optimizando memoria automáticamente...")
+        optimize_memory()
+        return True
+    return False
 
 # Add src to Python path for imports
 current_dir = Path(__file__).parent
@@ -90,7 +118,7 @@ if 'dark_mode' not in st.session_state:
 ui = UIComponents()
 theme_manager = ThemeManager()
 
-# Theme toggle in sidebar
+# Theme toggle and system monitoring in sidebar
 with st.sidebar:
     col1, col2 = st.columns([1, 3])
     with col1:
@@ -99,6 +127,21 @@ with st.sidebar:
             st.rerun()
     with col2:
         st.markdown(f"**{'Dark' if st.session_state.dark_mode else 'Light'} Mode**")
+    
+    # Memory monitoring for Streamlit Cloud
+    try:
+        memory_mb = get_memory_usage()
+        if memory_mb > 0:
+            memory_pct = (memory_mb / 690) * 100  # Streamlit Cloud limit
+            color = "🔴" if memory_pct > 80 else ("🟡" if memory_pct > 60 else "🟢")
+            st.metric(
+                f"{color} Memoria",
+                f"{memory_mb:.0f}MB",
+                f"{memory_pct:.1f}% usado"
+            )
+    except:
+        pass  # Silent fail if monitoring unavailable
+        
     st.markdown("---")
 
 # Inject all styles
@@ -112,7 +155,7 @@ theme = theme_manager.get_theme(st.session_state.dark_mode)
 # All CSS is now handled by the ui_styling module
 # Old CSS blocks have been completely removed
 
-@st.cache_data
+@st.cache_data(ttl=300, max_entries=1000)  # 5 min TTL, max 1000 entries
 def analyze_sentiment_simple(text):
     """Analyze sentiment of text"""
     if pd.isna(text) or text == "":
@@ -144,6 +187,7 @@ def analyze_sentiment_simple(text):
     else:
         return "neutral"
 
+@st.cache_data(ttl=600, max_entries=2000)  # 10 min TTL, larger cache
 def clean_text_simple(text):
     """Clean and normalize text"""
     if pd.isna(text) or text == "":
@@ -214,13 +258,17 @@ def extract_themes_simple(texts):
     
     return theme_counts, theme_examples
 
+@st.cache_data(ttl=180, max_entries=10)  # 3 min TTL, cache last 10 files
 def process_file_simple(uploaded_file):
-    """Process uploaded file and extract comments"""
+    """Process uploaded file and extract comments with memory optimization"""
     try:
-        # Validate file size (limit to 10MB)
-        MAX_FILE_SIZE_MB = 10
+        # Streamlit Cloud memory optimization - stricter limits
+        MAX_FILE_SIZE_MB = 5  # Reduced for cloud deployment
+        MAX_COMMENTS = 2000   # Limit comments for memory management
+        
         if hasattr(uploaded_file, 'size') and uploaded_file.size > MAX_FILE_SIZE_MB * 1024 * 1024:
-            st.error(f"Archivo demasiado grande. Máximo permitido: {MAX_FILE_SIZE_MB}MB")
+            st.error(f"Archivo demasiado grande para Streamlit Cloud. Máximo: {MAX_FILE_SIZE_MB}MB")
+            st.info("💡 Para archivos grandes, usa la instalación local con docker o python run.py")
             return None
         
         # Read file with comprehensive validation and error handling
@@ -319,41 +367,77 @@ def process_file_simple(uploaded_file):
                 st.error("No se encontraron comentarios válidos en la columna seleccionada")
                 return None
             
+            # Memory optimization: Limit comments for Streamlit Cloud
+            if len(raw_comments) > MAX_COMMENTS:
+                st.warning(f"⚠️ Limitando a {MAX_COMMENTS} comentarios para optimizar rendimiento en Streamlit Cloud")
+                raw_comments = raw_comments[:MAX_COMMENTS]
+                
             st.success(f"✅ Extraídos {len(raw_comments)} comentarios")
             
-            # Clean text with progress indication  
+            # Clean text with progress indication and memory optimization
             with st.spinner("Limpiando y procesando comentarios..."):
                 cleaned_comments = []
-                for comment in raw_comments:
-                    try:
-                        cleaned = clean_text_simple(comment)
-                        if cleaned and len(cleaned.strip()) > 2:  # Minimum length filter
-                            cleaned_comments.append(cleaned)
-                    except Exception:
-                        continue  # Skip problematic comments
+                
+                # Process in chunks to reduce memory usage
+                CHUNK_SIZE = 100
+                for i in range(0, len(raw_comments), CHUNK_SIZE):
+                    chunk = raw_comments[i:i + CHUNK_SIZE]
+                    for comment in chunk:
+                        try:
+                            cleaned = clean_text_simple(comment)
+                            if cleaned and len(cleaned.strip()) > 2:
+                                cleaned_comments.append(cleaned)
+                        except Exception:
+                            continue
+                    
+                    # Clear chunk from memory
+                    del chunk
                 
                 if not cleaned_comments:
                     st.error("No se encontraron comentarios válidos después de la limpieza")
                     return None
                     
                 st.success(f"✅ Limpieza completada: {len(cleaned_comments)} comentarios válidos")
+                
+                # Clear raw_comments from memory
+                del raw_comments
             
             # Remove duplicates
             with st.spinner("Removiendo duplicados..."):
                 unique_comments, comment_frequencies = remove_duplicates_simple(cleaned_comments)
                 st.info(f"Comentarios únicos: {len(unique_comments)}")
+                
+                # Clear cleaned_comments from memory after deduplication
+                del cleaned_comments
             
-            # Analyze sentiment with progress
+            # Analyze sentiment with progress and memory management
             with st.spinner("Analizando sentimientos..."):
                 sentiments = []
-                for comment in unique_comments:
-                    try:
-                        sentiment = analyze_sentiment_simple(comment)
-                        sentiments.append(sentiment)
-                    except Exception:
-                        sentiments.append('neutral')  # Default fallback
+                
+                # Process sentiment in smaller batches for memory efficiency
+                SENTIMENT_BATCH_SIZE = 50
+                for i in range(0, len(unique_comments), SENTIMENT_BATCH_SIZE):
+                    batch = unique_comments[i:i + SENTIMENT_BATCH_SIZE]
+                    batch_sentiments = []
+                    
+                    for comment in batch:
+                        try:
+                            sentiment = analyze_sentiment_simple(comment)
+                            batch_sentiments.append(sentiment)
+                        except Exception:
+                            batch_sentiments.append('neutral')
+                    
+                    sentiments.extend(batch_sentiments)
+                    
+                    # Progress indicator for large datasets
+                    if len(unique_comments) > SENTIMENT_BATCH_SIZE:
+                        progress = min(i + SENTIMENT_BATCH_SIZE, len(unique_comments))
+                        st.progress(progress / len(unique_comments))
                         
                 st.success(f"✅ Análisis de sentimientos completado")
+                
+                # Memory optimization after processing
+                optimize_memory()
                 
         except Exception as processing_error:
             st.error(f"Error durante el procesamiento: {str(processing_error)}")
