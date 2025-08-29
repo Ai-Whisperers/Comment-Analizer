@@ -1,21 +1,23 @@
-# Core Dependencies - PRODUCTION READY v2.1.0 FINAL
+# Streamlit Cloud Production Requirements - v2.1.0
+# Optimized for cloud deployment - removed dev dependencies
+
+# Core Dependencies
 pandas>=2.0.0
 numpy>=1.24.0
-streamlit>=1.28.0,<2.0.0  # Locked for UI stability
+streamlit>=1.28.0,<2.0.0
 plotly>=5.17.0
 matplotlib>=3.7.0
-seaborn>=0.12.0  # Added for enhanced visualizations
 
-# API Clients - OpenAI for dual pipeline
-openai>=1.3.0,<2.0.0  # Stable version for production
-httpx>=0.24.0  # Required for async OpenAI operations
+# API Clients
+openai>=1.3.0,<2.0.0
+httpx>=0.24.0
 
 # Data Processing
 openpyxl>=3.1.0
 xlsxwriter>=3.1.0
 python-dotenv>=1.0.0
 
-# Language Processing
+# Language Processing  
 langdetect>=1.0.9
 nltk>=3.8.0
 
@@ -23,15 +25,3 @@ nltk>=3.8.0
 requests>=2.31.0
 tqdm>=4.66.0
 python-dateutil>=2.8.0
-reportlab>=4.0.0
-
-# Testing - Production validation
-pytest>=7.4.0
-pytest-cov>=4.1.0
-pytest-asyncio>=0.21.0  # For async testing
-
-# Development - Code quality
-black>=23.9.0
-flake8>=6.1.0
-mypy>=1.5.0  # Type checking for production safety
-types-requests>=2.31.0  # Type stubs
