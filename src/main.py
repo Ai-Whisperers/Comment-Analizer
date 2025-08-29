@@ -187,12 +187,9 @@ if not api_configured and is_streamlit_cloud():
     st.warning("⚠️ OpenAI API key no configurada. Algunas funciones estarán limitadas.")
     st.info("Administradores: Configura OPENAI_API_KEY en Streamlit Cloud secrets.")
 
-# Test basic Streamlit rendering
-print("🧪 Testing basic Streamlit rendering...")
-
-# Early rendering test - this should appear immediately
-st.success("✅ Streamlit Cloud App Successfully Loaded!")
-st.info("🔄 Initializing Comment Analyzer...")
+# Initialize deployment status in session state  
+if 'show_deployment_status' not in st.session_state:
+    st.session_state.show_deployment_status = True
 
 # Initialize theme state
 if 'dark_mode' not in st.session_state:
@@ -261,20 +258,30 @@ except Exception as theme_error:
 st.title("📊 Personal Paraguay — Análisis de Comentarios")
 st.markdown("### Sistema de análisis de sentimientos para comentarios de clientes")
 
-# Test UI rendering
-st.success("✅ UI rendering successful - App is working!")
-
-# Environment status display
-if is_streamlit_cloud():
-    st.info("🌐 Running on Streamlit Cloud")
-else:
-    st.info("🖥️ Running locally")
-    
-# API status display
-if api_configured:
-    st.success("🔑 OpenAI API configurada - Análisis completo disponible")
-else:
-    st.warning("⚠️ OpenAI API no configurada - Solo análisis básico disponible")
+# Closable deployment status panel
+if st.session_state.show_deployment_status:
+    with st.expander("ℹ️ Estado del Sistema (Click para cerrar)", expanded=True):
+        col1, col2 = st.columns(2)
+        
+        with col1:
+            st.success("✅ Aplicación iniciada correctamente")
+            if is_streamlit_cloud():
+                st.info("🌐 Entorno: Streamlit Cloud")
+            else:
+                st.info("🖥️ Entorno: Local")
+        
+        with col2:
+            if api_configured:
+                st.success("🔑 OpenAI API: Configurada")
+                st.success("🤖 Análisis IA: Disponible")
+            else:
+                st.warning("⚠️ OpenAI API: No configurada")
+                st.info("📊 Análisis básico: Disponible")
+        
+        # Close button
+        if st.button("🗙 Cerrar mensajes de estado", key="close_status", type="secondary"):
+            st.session_state.show_deployment_status = False
+            st.rerun()
 
 @st.cache_data(ttl=300, max_entries=1000)  # 5 min TTL, max 1000 entries
 def analyze_sentiment_simple(text):
