@@ -9,11 +9,6 @@ import os
 import subprocess
 from pathlib import Path
 
-def setup_paths():
-    """Setup Python path for imports"""
-    src_path = Path(__file__).parent / "src"
-    if str(src_path) not in sys.path:
-        sys.path.insert(0, str(src_path))
 
 def check_requirements():
     """Check if required packages are installed with user-friendly messages"""
@@ -134,8 +129,6 @@ def run_streamlit():
 
 def main():
     """Main entry point"""
-    setup_paths()
-    
     if not check_requirements():
         sys.exit(1)
     
