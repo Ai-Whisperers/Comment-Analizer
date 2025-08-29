@@ -311,8 +311,15 @@ try:
         col1, col2 = st.columns([1, 3])
         with col1:
             if st.button("◐", key="theme_toggle", help="Toggle Dark/Light Mode"):
-                st.session_state.dark_mode = not st.session_state.dark_mode
-                st.rerun()
+                try:
+                    print(f"🎨 Toggling theme mode...")
+                    st.session_state.dark_mode = not st.session_state.dark_mode
+                    print(f"✅ Theme set to: {'Dark' if st.session_state.dark_mode else 'Light'}")
+                    st.rerun()
+                except Exception as theme_error:
+                    print(f"🚨 Theme toggle error: {theme_error}")
+                    # Fallback without rerun
+                    st.session_state.dark_mode = not st.session_state.dark_mode
         with col2:
             st.markdown(f"**{'Dark' if st.session_state.dark_mode else 'Light'} Mode**")
         
@@ -387,10 +394,18 @@ if st.session_state.show_deployment_status:
                 st.warning("⚠️ OpenAI API: No configurada")
                 st.info("📊 Análisis básico: Disponible")
         
-        # Close button
+        # Close button with error protection
         if st.button("🗙 Cerrar mensajes de estado", key="close_status", type="secondary"):
-            st.session_state.show_deployment_status = False
-            st.rerun()
+            try:
+                print("🗙 Closing deployment status panel...")
+                st.session_state.show_deployment_status = False
+                print("✅ Deployment status hidden - page will refresh")
+                st.rerun()
+            except Exception as close_error:
+                print(f"🚨 Close button error: {close_error}")
+                # Fallback: just set the state without rerun
+                st.session_state.show_deployment_status = False
+                st.info("✅ Panel cerrado. Actualiza la página si no desaparece.")
 
 @st.cache_data(ttl=300, max_entries=1000)  # 5 min TTL, max 1000 entries
 def analyze_sentiment_simple(text):
@@ -1365,10 +1380,16 @@ if uploaded_file:
                             st.session_state.analysis_results = results
                             st.success("Análisis rápido completado!")
                     
-                    # Add success animation if we have results
+                    # Add success animation if we have results - with error protection
                     if 'analysis_results' in st.session_state and st.session_state.analysis_results:
-                        st.balloons()
-                        st.rerun()
+                        try:
+                            print("🎉 Showing success animation...")
+                            st.balloons()
+                            # Remove st.rerun() as it's not needed here and can cause crashes
+                            print("✅ Success animation completed")
+                        except Exception as animation_error:
+                            print(f"🚨 Animation error: {animation_error}")
+                            # Continue without animation
 
 # Results display with enhanced Spanish sentiment UI
 if st.session_state.analysis_results:
