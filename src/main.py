@@ -85,10 +85,11 @@ except ImportError:
 
 # Configure logging based on environment detection
 if is_streamlit_cloud():
-    # Streamlit Cloud - use memory logging only
+    # Streamlit Cloud - use memory logging with flush for visibility
     logger = logging.getLogger(__name__)
     logger.setLevel(logging.INFO)
-    logger.info("Comment Analyzer started (Streamlit Cloud mode)")
+    print("Comment Analyzer started (Streamlit Cloud mode)")
+    sys.stdout.flush()  # Ensure cloud logging visibility
 else:
     # Local development - use file logging
     try:
@@ -108,10 +109,11 @@ else:
         logger.addHandler(file_handler)
         logger.info("Comment Analyzer started (local mode)")
     except Exception:
-        # Fallback to basic logging
+        # Fallback to basic logging with cloud compatibility
         logger = logging.getLogger(__name__)
         logger.setLevel(logging.INFO)
-        logger.info("Comment Analyzer started (fallback mode)")
+        print("Comment Analyzer started (fallback mode)")
+        sys.stdout.flush()
 
 
 # Page config

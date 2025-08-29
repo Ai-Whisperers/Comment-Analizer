@@ -11,6 +11,13 @@ import logging
 env_path = Path(__file__).parent.parent / '.env'
 load_dotenv(dotenv_path=env_path)
 
+# Streamlit Cloud compatibility
+try:
+    import streamlit as st
+    STREAMLIT_AVAILABLE = True
+except ImportError:
+    STREAMLIT_AVAILABLE = False
+
 # Configure logging based on environment
 logging.basicConfig(
     level=os.getenv("LOG_LEVEL", "INFO"),
@@ -20,8 +27,20 @@ logging.basicConfig(
 class Config:
     """Configuration class for API keys and settings"""
     
-    # API Configuration - Loaded from .env file, NEVER hardcoded
-    OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
+    # API Configuration - Streamlit Cloud compatible
+    @staticmethod
+    def get_openai_key():
+        """Get OpenAI API key from Streamlit secrets or environment"""
+        if STREAMLIT_AVAILABLE:
+            try:
+                return st.secrets.get("OPENAI_API_KEY", os.getenv("OPENAI_API_KEY"))
+            except:
+                return os.getenv("OPENAI_API_KEY")
+        return os.getenv("OPENAI_API_KEY")
+    
+    @property 
+    def OPENAI_API_KEY(self):
+        return Config.get_openai_key()
     OPENAI_MODEL = os.getenv("OPENAI_MODEL", "gpt-4")
     OPENAI_MAX_TOKENS = int(os.getenv("OPENAI_MAX_TOKENS", "4000"))
     OPENAI_TEMPERATURE = float(os.getenv("OPENAI_TEMPERATURE", "0.7"))

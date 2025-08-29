@@ -541,12 +541,15 @@ if __name__ == "__main__":
     
     # Test with the Personal Paraguay dataset
     try:
-        data_path = Path("../../data/raw/Personal_Paraguay_Fiber_To_The_Home_Customer_Comments_Dataset.xlsx")
+        # Cloud-compatible relative path
+        data_path = Path(__file__).parent.parent.parent / "data" / "raw" / "Personal_Paraguay_Fiber_To_The_Home_Customer_Comments_Dataset.xlsx"
         if data_path.exists():
             comments_df = reader.read_file(data_path)
             print("Data loaded successfully!")
             print(reader.get_data_info())
         else:
             print("Dataset file not found. Please place the Excel file in data/raw/ directory.")
+            print(f"Expected path: {data_path}")
+            print("Note: In Streamlit Cloud, use file upload interface instead.")
     except Exception as e:
         print(f"Error: {e}")
