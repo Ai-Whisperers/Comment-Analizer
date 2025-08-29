@@ -53,7 +53,7 @@ def check_requirements():
     return True
 
 def run_streamlit():
-    """Run the Streamlit application with proper configuration"""
+    """Run the Streamlit application with simple direct configuration"""
     # Check if main.py exists
     main_path = Path(__file__).parent / "src" / "main.py"
     if not main_path.exists():
@@ -68,24 +68,15 @@ def run_streamlit():
         print("=" * 60)
         return
     
-    # Setup environment
-    os.environ.setdefault('STREAMLIT_PORT', '8501')
-    os.environ.setdefault('STREAMLIT_SERVER_ADDRESS', '0.0.0.0')
+    # Simple port configuration without environment variables
+    port = "8501"  # Fixed default port for reliable deployment
     
-    port = os.environ.get('STREAMLIT_PORT', '8501')
-    
-    # Build streamlit command
+    # Simplified streamlit command for better compatibility
     cmd = [
         sys.executable, "-m", "streamlit", "run", str(main_path),
         "--server.port", port,
-        "--server.address", os.environ.get('STREAMLIT_SERVER_ADDRESS', '0.0.0.0'),
         "--server.headless", "true",
-        "--browser.gatherUsageStats", "false",
-        "--theme.base", "dark",
-        "--theme.primaryColor", "#4ea4ff",
-        "--theme.backgroundColor", "#0f1419",
-        "--theme.secondaryBackgroundColor", "#18202a",
-        "--theme.textColor", "#e6edf3"
+        "--browser.gatherUsageStats", "false"
     ]
     
     try:
@@ -96,6 +87,8 @@ def run_streamlit():
         print("🌐 Application will be available at:")
         print(f"   http://localhost:{port}")
         print(f"   http://127.0.0.1:{port}")
+        if port != "8501":
+            print(f"   (Custom port: {port})")
         print("")
         print("✋ To stop the application: Press Ctrl+C")
         print("📁 Upload your Excel/CSV files using the web interface")
