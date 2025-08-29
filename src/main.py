@@ -77,6 +77,17 @@ else:
     
 print(f"📊 Import Summary: {len(critical_imports)} critical, {len(optional_imports)} optional")
 
+# IMMEDIATE UI TEST - Force render something to check if Streamlit is working
+try:
+    print("🧪 TESTING: Attempting immediate UI render...")
+    st.write("🧪 **UI TEST**: If you see this, Streamlit rendering works!")
+    st.success("✅ Basic UI rendering is functional")
+    print("✅ IMMEDIATE UI TEST: Success - basic rendering works")
+except Exception as immediate_ui_error:
+    print(f"🚨 IMMEDIATE UI TEST FAILED: {immediate_ui_error}")
+    import traceback
+    print(f"🔍 Immediate UI traceback: {traceback.format_exc()}")
+
 # Environment detection and path setup
 def is_streamlit_cloud():
     """Detect if running on Streamlit Cloud"""
@@ -1481,3 +1492,7 @@ st.markdown(
     ),
     unsafe_allow_html=True
 )
+
+# FINAL EXECUTION MARKER
+print("🎯 END OF MAIN.PY: Reached end of file - all code executed successfully")
+print("📊 If you see this message, the entire main.py file ran to completion")
