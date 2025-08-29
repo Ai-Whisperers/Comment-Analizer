@@ -9,7 +9,7 @@ from typing import Dict, Any
 class ThemeManager:
     """Manages color themes and CSS generation for the application"""
     
-    def __init__(self):
+    def __init__(self) -> None:
         # Coherent Web3 color system with consistent saturation and brightness
         self.color_systems = {
             'dark': {
@@ -907,6 +907,26 @@ class UIComponents:
         """
     
     @staticmethod
+    def status_badge(icon: str, text: str, badge_type: str = "neutral") -> str:
+        """Generate status badge HTML with theme colors"""
+        return f"""
+        <div class="status-badge {badge_type}">
+            <span class="badge-icon">{icon}</span>
+            <span class="badge-text">{text}</span>
+        </div>
+        """
+    
+    @staticmethod
+    def results_header(title: str = "Resultados del Análisis") -> str:
+        """Generate results section header HTML"""
+        return f"""
+        <div class="results-header animate-fade-in">
+            <h2 class="gradient-text-animated">{title}</h2>
+            <div class="header-underline"></div>
+        </div>
+        """
+    
+    @staticmethod
     def upload_section() -> str:
         """Generate upload section with glass container"""
         return """
@@ -915,16 +935,6 @@ class UIComponents:
         </div>
         """
     
-    @staticmethod
-    def results_header() -> str:
-        """Generate results section header"""
-        return """
-        <div class="animate-fade-in" style="text-align: center; margin: 3rem 0;">
-            <h2 class="holographic" style="font-size: var(--size-3xl);">
-                Sentiment Analysis Results
-            </h2>
-        </div>
-        """
     
     @staticmethod
     def gradient_footer(primary_text: str, secondary_text: str) -> str:
@@ -1007,6 +1017,70 @@ def inject_styles(dark_mode: bool) -> str:
     
     ::-webkit-scrollbar-thumb:hover {
         background: linear-gradient(135deg, var(--primary-light), var(--secondary-light));
+    }
+    
+    /* Status badges for enhanced sentiment UI */
+    .status-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        padding: 0.5rem 1rem;
+        border-radius: 24px;
+        font-size: var(--size-sm);
+        font-weight: var(--weight-medium);
+        backdrop-filter: blur(8px);
+        border: 1px solid transparent;
+        transition: all var(--duration-normal) var(--easing-default);
+    }
+    
+    .status-badge.positive {
+        background: rgba(16, 185, 129, 0.1);
+        color: var(--positive);
+        border-color: rgba(16, 185, 129, 0.3);
+    }
+    
+    .status-badge.neutral {
+        background: rgba(107, 114, 128, 0.1);
+        color: var(--neutral);
+        border-color: rgba(107, 114, 128, 0.3);
+    }
+    
+    .status-badge.negative {
+        background: rgba(239, 68, 68, 0.1);
+        color: var(--negative);
+        border-color: rgba(239, 68, 68, 0.3);
+    }
+    
+    .status-badge:hover {
+        transform: translateY(-1px);
+        box-shadow: var(--elevation-sm);
+    }
+    
+    /* Results header enhancement */
+    .results-header {
+        text-align: center;
+        margin: 2rem 0;
+    }
+    
+    .results-header h2 {
+        font-size: var(--size-2xl);
+        margin-bottom: 0.5rem;
+    }
+    
+    .header-underline {
+        width: 60px;
+        height: 3px;
+        background: linear-gradient(135deg, var(--primary), var(--secondary));
+        margin: 0 auto;
+        border-radius: 2px;
+    }
+    
+    .badge-icon {
+        font-size: 1.1em;
+    }
+    
+    .badge-text {
+        font-weight: var(--weight-medium);
     }
     """
     

@@ -18,21 +18,52 @@ class SentimentResultsUI:
         """Initialize the sentiment results UI component"""
         self.labels = get_comprehensive_sentiment_labels()
         
-        # Spanish color mapping for sentiments
-        self.sentiment_colors = {
-            'positivo': '#10B981',    # Green
-            'positive': '#10B981',
-            'neutral': '#F59E0B',     # Amber/Yellow  
-            'negativo': '#EF4444',    # Red
-            'negative': '#EF4444'
-        }
+        # Import UI styling for consistency
+        try:
+            from src.ui_styling import UIComponents, ThemeManager
+            self.ui = UIComponents()
+            self.theme_manager = ThemeManager()
+        except ImportError:
+            # Fallback if ui_styling is not available
+            self.ui = None
+            self.theme_manager = None
         
-        # AI confidence color scale
-        self.confidence_colors = {
-            'high': '#10B981',      # Green (>80%)
-            'medium': '#F59E0B',    # Yellow (60-80%)
-            'low': '#EF4444'        # Red (<60%)
-        }
+        # Use theme colors for consistency with layered CSS
+        if self.theme_manager:
+            theme_dark = self.theme_manager.get_theme(True)
+            theme_light = self.theme_manager.get_theme(False)
+            
+            # Spanish color mapping using theme colors
+            self.sentiment_colors = {
+                'positivo': theme_dark['positive'],    
+                'positive': theme_dark['positive'],
+                'neutral': theme_dark['neutral'],     
+                'negativo': theme_dark['negative'],    
+                'negative': theme_dark['negative']
+            }
+            
+            # AI confidence color scale using theme colors
+            self.confidence_colors = {
+                'high': theme_dark['positive'],      # Green (>80%)
+                'medium': theme_dark['accent'],      # Amber (60-80%)
+                'low': theme_dark['negative']        # Red (<60%)
+            }
+        else:
+            # Fallback colors
+            self.sentiment_colors = {
+                'positivo': '#10B981',    
+                'positive': '#10B981',
+                'neutral': '#6B7280',     
+                'negativo': '#EF4444',    
+                'negative': '#EF4444'
+            }
+            
+            # AI confidence color scale fallback
+            self.confidence_colors = {
+                'high': '#10B981',      # Green (>80%)
+                'medium': '#F59E0B',    # Amber (60-80%)
+                'low': '#EF4444'        # Red (<60%)
+            }
     
     def render_comprehensive_results(self, results: Dict[str, Any]):
         """
@@ -62,38 +93,101 @@ class SentimentResultsUI:
         self._render_export_options(results)
     
     def _render_analysis_header(self, results: Dict[str, Any]):
-        """Render header with analysis method and quality indicators"""
+        """Render header with analysis method and quality indicators using layered CSS"""
+        # Use the existing UI component for consistent headers if available
+        if self.ui:
+            st.markdown(
+                self.ui.results_header(title="Análisis de Sentimientos Mejorado"),
+                unsafe_allow_html=True
+            )
+        else:
+            st.markdown("## 🤖 Análisis de Sentimientos Mejorado")
+        
         col1, col2, col3 = st.columns([2, 1, 1])
         
         with col1:
-            st.markdown("## 📊 Análisis de Sentimientos")
-            
-        with col2:
-            # Analysis method indicator
+            # Analysis method indicator using theme colors
             method = results.get('analysis_method', 'UNKNOWN')
             if method == 'AI_POWERED':
-                st.success("🤖 Con IA")
                 model = results.get('ai_model_used', 'N/A')
-                st.caption(f"Modelo: {model}")
+                if self.ui:
+                    st.markdown(
+                        self.ui.status_badge(
+                            icon="🤖",
+                            text=f"Análisis con IA ({model})",
+                            badge_type="positive"
+                        ),
+                        unsafe_allow_html=True
+                    )
+                else:
+                    st.success(f"🤖 Análisis con IA ({model})")
             elif method == 'RULE_BASED_FALLBACK':
-                st.info("📋 Basado en Reglas")
+                if self.ui:
+                    st.markdown(
+                        self.ui.status_badge(
+                            icon="📋", 
+                            text="Análisis Basado en Reglas",
+                            badge_type="neutral"
+                        ),
+                        unsafe_allow_html=True
+                    )
+                else:
+                    st.info("📋 Análisis Basado en Reglas")
             else:
-                st.warning("❓ Método Desconocido")
+                if self.ui:
+                    st.markdown(
+                        self.ui.status_badge(
+                            icon="❓",
+                            text="Método Desconocido", 
+                            badge_type="negative"
+                        ),
+                        unsafe_allow_html=True
+                    )
+                else:
+                    st.warning("❓ Método Desconocido")
         
-        with col3:
-            # AI confidence if available
+        with col2:
+            # AI confidence using themed metric card
             if results.get('analysis_method') == 'AI_POWERED':
                 ai_confidence = results.get('ai_confidence_avg', 0)
                 confidence_pct = ai_confidence * 100
                 
-                if confidence_pct >= 80:
-                    st.success(f"🎯 Confianza: {confidence_pct:.1f}%")
-                elif confidence_pct >= 60:
-                    st.warning(f"⚡ Confianza: {confidence_pct:.1f}%")
+                card_type = "positive" if confidence_pct >= 80 else ("neutral" if confidence_pct >= 60 else "negative")
+                
+                if self.ui:
+                    st.markdown(
+                        self.ui.metric_card(
+                            icon="🎯",
+                            title="Confianza IA",
+                            value=f"{confidence_pct:.1f}%",
+                            card_type=card_type
+                        ),
+                        unsafe_allow_html=True
+                    )
                 else:
-                    st.error(f"⚠️ Confianza: {confidence_pct:.1f}%")
+                    st.metric("🎯 Confianza IA", f"{confidence_pct:.1f}%")
         
-        st.markdown("---")
+        with col3:
+            # Data quality indicator
+            total = results.get('total', 0)
+            if self.ui:
+                st.markdown(
+                    self.ui.metric_card(
+                        icon="📊",
+                        title="Comentarios",
+                        value=str(total),
+                        card_type="neutral"
+                    ),
+                    unsafe_allow_html=True
+                )
+            else:
+                st.metric("📊 Comentarios", str(total))
+        
+        # Add section divider using UI component
+        if self.ui:
+            st.markdown(self.ui.section_divider(), unsafe_allow_html=True)
+        else:
+            st.divider()
     
     def _render_sentiment_overview(self, results: Dict[str, Any]):
         """Render main sentiment overview with Spanish labels"""

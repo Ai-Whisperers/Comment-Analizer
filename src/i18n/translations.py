@@ -3,6 +3,8 @@ Internationalization Support
 Simple translation system for multi-language support
 """
 
+from typing import Dict, Any, List, Optional
+
 class Translations:
     """Simple translation manager"""
     
@@ -254,23 +256,23 @@ class Translations:
         }
     }
     
-    def __init__(self, language='es'):
+    def __init__(self, language: str = 'es') -> None:
         """Initialize with default language (Spanish)"""
         self.current_language = language
     
-    def get(self, key: str, default: str = None) -> str:
+    def get(self, key: str, default: Optional[str] = None) -> str:
         """Get translated string for current language"""
         lang_dict = self.TRANSLATIONS.get(self.current_language, self.TRANSLATIONS['es'])
         return lang_dict.get(key, default or key)
     
-    def set_language(self, language: str):
+    def set_language(self, language: str) -> None:
         """Change current language"""
         if language in self.LANGUAGES:
             self.current_language = language
         else:
             self.current_language = 'es'
     
-    def get_available_languages(self):
+    def get_available_languages(self) -> Dict[str, str]:
         """Get list of available languages"""
         return self.LANGUAGES
     
@@ -292,19 +294,19 @@ class Translations:
 # Global translator instance
 _translator = None
 
-def get_translator(language='es') -> Translations:
+def get_translator(language: str = 'es') -> Translations:
     """Get or create global translator"""
     global _translator
     if _translator is None:
         _translator = Translations(language)
     return _translator
 
-def t(key: str, default: str = None) -> str:
+def t(key: str, default: Optional[str] = None) -> str:
     """Convenience function for translations"""
     translator = get_translator()
     return translator.get(key, default)
 
-def translate_sentiment_data(openai_result: dict) -> dict:
+def translate_sentiment_data(openai_result: Dict[str, Any]) -> Dict[str, Any]:
     """
     Translate OpenAI sentiment analysis result to Spanish for UI display
     
@@ -341,35 +343,35 @@ def translate_sentiment_data(openai_result: dict) -> dict:
     
     # Themes - translate each theme
     if 'themes' in openai_result:
-        themes_spanish = []
+        themes_spanish: List[str] = []
         for theme in openai_result['themes']:
             # Try direct translation first, fallback to cleaned theme
             spanish_theme = translator.get(theme, theme.replace('_', ' ').title())
             themes_spanish.append(spanish_theme)
-        translated['temas'] = themes_spanish
+        translated['temas'] = ', '.join(themes_spanish)
         translated['temas_originales'] = openai_result['themes']  # Keep originals for logic
     
     # Pain points - translate each pain point
     if 'pain_points' in openai_result:
-        pain_points_spanish = []
+        pain_points_spanish: List[str] = []
         for pain_point in openai_result['pain_points']:
             spanish_pain = translator.get(pain_point.replace(' ', '_').lower(), pain_point)
             pain_points_spanish.append(spanish_pain)
-        translated['puntos_dolor'] = pain_points_spanish
+        translated['puntos_dolor'] = ', '.join(pain_points_spanish)
         translated['puntos_dolor_originales'] = openai_result['pain_points']
     
     # Emotions - translate each emotion
     if 'emotions' in openai_result:
-        emotions_spanish = []
+        emotions_spanish: List[str] = []
         for emotion in openai_result['emotions']:
             spanish_emotion = translator.get(emotion, emotion.title())
             emotions_spanish.append(spanish_emotion)
-        translated['emociones'] = emotions_spanish
+        translated['emociones'] = ', '.join(emotions_spanish)
         translated['emociones_originales'] = openai_result['emotions']
     
     return translated
 
-def get_comprehensive_sentiment_labels() -> dict:
+def get_comprehensive_sentiment_labels() -> Dict[str, Any]:
     """
     Get comprehensive sentiment analysis labels in Spanish for Excel export
     

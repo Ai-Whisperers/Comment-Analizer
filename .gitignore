@@ -110,4 +110,4 @@ terraform.tfstate.backup
 
 # Docker
 docker-compose.override.yml
-.dockerignore
+.dockerignore.mypy_cache/
