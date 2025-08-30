@@ -1,0 +1,1 @@
+# Multi-page structure for simplified architecture
