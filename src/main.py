@@ -1728,7 +1728,8 @@ try:
 except Exception as session_error:
     print(f"❌ Session state issue: {session_error}")
     st.error("⚠️ Problema con sesión. Intenta recargar la página.")
-    st.stop()
+    # CRITICAL FIX: Don't stop entire app, just show error and continue
+    pass
 
 # Web3 Animated Header using clean UI component
 st.markdown(
@@ -1776,7 +1777,8 @@ if uploaded_file:
         # Validate file properties
         if file_size == 0:
             st.error("❌ El archivo está vacío. Por favor, carga un archivo válido.")
-            st.stop()
+            # CRITICAL FIX: Skip further processing instead of stopping app
+            uploaded_file = None
             
         if file_size > 3 * 1024 * 1024:  # 3MB limit for cloud
             # IMPROVED USER MESSAGING (Fix 15)
@@ -1801,7 +1803,8 @@ if uploaded_file:
                     st.markdown("• O usar `python run.py`")
                     st.markdown("• Procesa archivos hasta 50MB+")
             
-            st.stop()
+            # CRITICAL FIX: Continue execution instead of stopping app
+            pass
             
         # Test basic file readability
         try:
@@ -1811,12 +1814,14 @@ if uploaded_file:
             
             if not test_bytes:
                 st.error("❌ No se puede leer el archivo. Puede estar corrupto.")
-                st.stop()
+                # CRITICAL FIX: Continue execution instead of stopping app
+            pass
                 
         except Exception as read_error:
             st.error(f"❌ Error leyendo archivo: {str(read_error)}")
             st.info("🔄 Intenta cargar el archivo nuevamente")
-            st.stop()
+            # CRITICAL FIX: Continue execution instead of stopping app
+            pass
             
         # FILE FORMAT VALIDATION (Fix 14)
         file_extension = uploaded_file.name.lower().split('.')[-1]
@@ -1825,7 +1830,8 @@ if uploaded_file:
         if file_extension not in supported_formats:
             st.error(f"❌ Formato de archivo no soportado: .{file_extension}")
             st.info(f"📋 Formatos soportados: {', '.join([f'.{fmt}' for fmt in supported_formats])}")
-            st.stop()
+            # CRITICAL FIX: Continue execution instead of stopping app
+            pass
             
         # Additional format-specific validation
         if file_extension in ['xlsx', 'xls']:
@@ -1851,7 +1857,8 @@ if uploaded_file:
     except Exception as validation_error:
         st.error(f"❌ Error validando archivo: {str(validation_error)}")
         st.info("🔄 Vuelve a cargar el archivo")
-        st.stop()
+        # CRITICAL FIX: Continue execution instead of stopping app
+        pass
     
     # Add section divider
     st.markdown(ui.section_divider(), unsafe_allow_html=True)
@@ -1906,18 +1913,21 @@ if uploaded_file:
                 if monitor_memory_critical():
                     st.error("🛑 MEMORIA CRÍTICA - No se puede procesar archivo")
                     st.error("🔄 SOLUCIÓN: Reinicia la aplicación (clic en ⋮ → Reboot app)")
-                    st.stop()
+                    # CRITICAL FIX: Skip processing but continue app execution
+                    uploaded_file = None
                 
                 # CRITICAL FIX: Validate uploaded_file state before processing
                 if not uploaded_file:
                     st.error("❌ No hay archivo cargado. Por favor, carga un archivo Excel o CSV primero.")
-                    st.stop()
+                    # CRITICAL FIX: Skip processing but continue app execution
+                    uploaded_file = None
                     
                 try:
                     # Verify file is still accessible 
                     if not hasattr(uploaded_file, 'name') or not uploaded_file.name:
                         st.error("❌ Archivo no válido. Por favor, vuelve a cargar el archivo.")
-                        st.stop()
+                        # CRITICAL FIX: Skip processing but continue app
+                        uploaded_file = None
                         
                     print(f"🔄 Starting analysis for file: {uploaded_file.name}")
                     
@@ -1996,7 +2006,8 @@ if uploaded_file:
                     with st.expander("🔧 Detalles técnicos", expanded=False):
                         st.code(f"{type(button_error).__name__}: {str(button_error)}")
                         
-                    st.stop()  # Stop execution to prevent further errors
+                    # CRITICAL FIX: Continue execution instead of stopping app
+            pass  # Stop execution to prevent further errors
 
 # Results display with enhanced Spanish sentiment UI
 if st.session_state.analysis_results:
