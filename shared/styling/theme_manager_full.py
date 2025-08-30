@@ -292,9 +292,9 @@ class ThemeManager:
         """
     
     def generate_glass_effects(self) -> str:
-        """Generate consistent glassmorphism styles"""
+        """Generate consistent glassmorphism styles with mobile optimization"""
         return """
-        /* Base glass effect */
+        /* Base glass effect with mobile optimization */
         .glass {
             backdrop-filter: blur(var(--glass-blur));
             -webkit-backdrop-filter: blur(var(--glass-blur));
@@ -311,7 +311,23 @@ class ThemeManager:
             box-shadow: var(--elevation-md);
         }
         
-        /* Glass card variant */
+        /* Mobile optimizations - reduced blur for performance */
+        @media (max-width: 768px) {
+            .glass {
+                backdrop-filter: blur(8px);
+                -webkit-backdrop-filter: blur(8px);
+            }
+        }
+        
+        /* Touch device optimizations */
+        @media (hover: none) and (pointer: coarse) {
+            .glass:hover {
+                transform: none;
+                box-shadow: var(--elevation-sm);
+            }
+        }
+        
+        /* Glass card variant with mobile optimization */
         .glass-card {
             backdrop-filter: blur(var(--glass-blur));
             -webkit-backdrop-filter: blur(var(--glass-blur));
@@ -330,7 +346,25 @@ class ThemeManager:
             box-shadow: var(--elevation-lg);
         }
         
-        /* Glass button */
+        /* Mobile glass card optimizations */
+        @media (max-width: 768px) {
+            .glass-card {
+                backdrop-filter: blur(8px);
+                -webkit-backdrop-filter: blur(8px);
+                padding: 1rem;
+                border-radius: 16px;
+            }
+        }
+        
+        /* Touch device card optimizations */
+        @media (hover: none) and (pointer: coarse) {
+            .glass-card:hover {
+                transform: translateY(-2px);
+                box-shadow: var(--elevation-md);
+            }
+        }
+        
+        /* Glass button with mobile optimization */
         .glass-button {
             backdrop-filter: blur(var(--glass-blur));
             background: linear-gradient(135deg, var(--glass-bg), var(--glass-bg-hover));
@@ -358,6 +392,22 @@ class ThemeManager:
         
         .glass-button:hover::before {
             left: 100%;
+        }
+        
+        /* Mobile glass button optimizations */
+        @media (max-width: 768px) {
+            .glass-button {
+                backdrop-filter: blur(8px);
+                -webkit-backdrop-filter: blur(8px);
+                padding: 0.5rem 1rem;
+            }
+        }
+        
+        /* Touch device button optimizations */
+        @media (hover: none) and (pointer: coarse) {
+            .glass-button:hover::before {
+                display: none;
+            }
         }
         """
     
@@ -418,8 +468,10 @@ class ThemeManager:
             transform: translateX(100%);
         }
         
-        /* File uploader - FIXED for drag and drop functionality */
+        /* File uploader with enhanced glassmorphism */
         [data-testid="stFileUploader"] {
+            backdrop-filter: blur(var(--glass-blur));
+            -webkit-backdrop-filter: blur(var(--glass-blur));
             background: var(--glass-bg);
             border: 2px dashed var(--glass-border);
             border-radius: 20px;
@@ -427,6 +479,7 @@ class ThemeManager:
             transition: all var(--duration-normal) var(--easing-default);
             position: relative !important;
             z-index: 100 !important;
+            box-shadow: var(--elevation-sm);
         }
         
         /* Disable overlay that blocks drag and drop */
@@ -439,7 +492,26 @@ class ThemeManager:
         [data-testid="stFileUploader"]:hover {
             background: var(--glass-bg-hover);
             border-color: var(--primary);
-            box-shadow: 0 0 20px rgba(139, 92, 246, 0.4);
+            box-shadow: var(--elevation-lg), 0 0 20px rgba(139, 92, 246, 0.4);
+            transform: translateY(-2px);
+        }
+        
+        /* Mobile file uploader optimizations */
+        @media (max-width: 768px) {
+            [data-testid="stFileUploader"] {
+                backdrop-filter: blur(8px);
+                -webkit-backdrop-filter: blur(8px);
+                padding: 1rem;
+                border-radius: 16px;
+            }
+        }
+        
+        /* Touch device file uploader optimizations */
+        @media (hover: none) and (pointer: coarse) {
+            [data-testid="stFileUploader"]:hover {
+                transform: none;
+                box-shadow: var(--elevation-sm);
+            }
         }
         
         /* Fix the dropzone to be fully interactive */
@@ -513,8 +585,10 @@ class ThemeManager:
             z-index: -999 !important;
         }
         
-        /* Metrics with coherent styling */
+        /* Metrics with enhanced glassmorphism */
         [data-testid="metric-container"] {
+            backdrop-filter: blur(var(--glass-blur));
+            -webkit-backdrop-filter: blur(var(--glass-blur));
             background: var(--glass-bg);
             border: 1px solid var(--glass-border);
             border-radius: 16px;
@@ -534,47 +608,118 @@ class ThemeManager:
             transform: translateY(-4px);
             box-shadow: var(--elevation-md);
             border-color: var(--glass-border-hover);
+            background: var(--glass-bg-hover);
         }
         
-        /* Sidebar with glass effect */
+        /* Mobile metrics optimizations */
+        @media (max-width: 768px) {
+            [data-testid="metric-container"] {
+                backdrop-filter: blur(8px);
+                -webkit-backdrop-filter: blur(8px);
+                padding: 1rem;
+                border-radius: 12px;
+            }
+        }
+        
+        /* Touch device metrics optimizations */
+        @media (hover: none) and (pointer: coarse) {
+            [data-testid="metric-container"]:hover {
+                transform: translateY(-2px);
+                box-shadow: var(--elevation-sm);
+            }
+        }
+        
+        /* Sidebar with enhanced glass effect */
         section[data-testid="stSidebar"] {
-            background: var(--bg-tertiary);
-            backdrop-filter: blur(20px);
+            background: var(--glass-bg);
+            backdrop-filter: blur(var(--glass-blur));
+            -webkit-backdrop-filter: blur(var(--glass-blur));
             border-right: 1px solid var(--glass-border);
+            box-shadow: var(--elevation-sm);
+        }
+        
+        /* Mobile sidebar optimizations */
+        @media (max-width: 768px) {
+            section[data-testid="stSidebar"] {
+                backdrop-filter: blur(8px);
+                -webkit-backdrop-filter: blur(8px);
+            }
         }
         
         section[data-testid="stSidebar"] .stButton > button {
             width: 100%;
             background: var(--glass-bg);
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
             color: var(--text-primary);
+            border: 1px solid var(--glass-border);
         }
         
         section[data-testid="stSidebar"] .stButton > button:hover {
             background: var(--glass-bg-hover);
+            border-color: var(--glass-border-hover);
+            transform: translateY(-1px);
         }
         
-        /* Expanders with coherent style */
+        /* Expanders with enhanced glassmorphism */
         .streamlit-expanderHeader {
             background: var(--glass-bg);
+            backdrop-filter: blur(var(--glass-blur));
+            -webkit-backdrop-filter: blur(var(--glass-blur));
             border-radius: 12px;
             padding: 0.75rem 1rem;
             transition: all var(--duration-normal) var(--easing-default);
             border: 1px solid var(--glass-border);
+            box-shadow: var(--elevation-sm);
         }
         
         .streamlit-expanderHeader:hover {
             background: var(--glass-bg-hover);
             border-color: var(--glass-border-hover);
+            transform: translateY(-1px);
         }
         
-        /* Charts with glass container */
+        /* Mobile expander optimizations */
+        @media (max-width: 768px) {
+            .streamlit-expanderHeader {
+                backdrop-filter: blur(8px);
+                -webkit-backdrop-filter: blur(8px);
+                padding: 0.5rem 0.75rem;
+            }
+        }
+        
+        /* Charts with enhanced glass container */
         .js-plotly-plot {
             border-radius: 16px;
             overflow: hidden;
             box-shadow: var(--elevation-sm);
             background: var(--glass-bg);
+            backdrop-filter: blur(var(--glass-blur));
+            -webkit-backdrop-filter: blur(var(--glass-blur));
+            border: 1px solid var(--glass-border);
             padding: 1rem;
             animation: fadeInUp var(--duration-slow) var(--easing-default);
+            transition: all var(--duration-normal) var(--easing-default);
+        }
+        
+        .js-plotly-plot:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--elevation-md);
+            border-color: var(--glass-border-hover);
+        }
+        
+        /* Mobile chart optimizations */
+        @media (max-width: 768px) {
+            .js-plotly-plot {
+                backdrop-filter: blur(8px);
+                -webkit-backdrop-filter: blur(8px);
+                padding: 0.5rem;
+                border-radius: 12px;
+            }
+            
+            .js-plotly-plot:hover {
+                transform: none;
+            }
         }
         """
     
@@ -994,9 +1139,65 @@ def inject_styles(dark_mode: bool) -> str:
     
     # Add any additional runtime styles
     additional_css = """
-    /* Ensure smooth transitions on theme change */
+    /* Performance optimizations for all devices */
     * {
         transition-duration: 0.3s !important;
+        will-change: auto;
+    }
+    
+    /* GPU acceleration for transform animations */
+    .glass, .glass-card, .glass-button, 
+    [data-testid="metric-container"], 
+    [data-testid="stFileUploader"],
+    .js-plotly-plot {
+        will-change: transform, opacity;
+        transform: translateZ(0);
+    }
+    
+    /* Reduce motion for users who prefer it */
+    @media (prefers-reduced-motion: reduce) {
+        *, *::before, *::after {
+            animation-duration: 0.01ms !important;
+            animation-iteration-count: 1 !important;
+            transition-duration: 0.01ms !important;
+        }
+        
+        .glass:hover, .glass-card:hover, .glass-button:hover,
+        [data-testid="metric-container"]:hover,
+        [data-testid="stFileUploader"]:hover {
+            transform: none !important;
+        }
+    }
+    
+    /* Mobile-first responsive design */
+    @media (max-width: 480px) {
+        .stApp {
+            padding: 0.5rem;
+        }
+        
+        h1 { font-size: var(--size-2xl); }
+        h2 { font-size: var(--size-xl); }
+        h3 { font-size: var(--size-lg); }
+        
+        /* Disable expensive effects on very small screens */
+        .particles-container {
+            display: none;
+        }
+        
+        /* Simplify animations for better performance */
+        .animate-fade-in, .animate-shimmer, 
+        .animate-pulse, .animate-glow {
+            animation: none;
+            opacity: 1;
+        }
+    }
+    
+    /* High-DPI display optimizations */
+    @media (-webkit-min-device-pixel-ratio: 2), (min-resolution: 192dpi) {
+        .glass, .glass-card, .glass-button {
+            backdrop-filter: blur(calc(var(--glass-blur) * 0.8));
+            -webkit-backdrop-filter: blur(calc(var(--glass-blur) * 0.8));
+        }
     }
     
     /* Custom scrollbar */
