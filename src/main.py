@@ -116,6 +116,61 @@ def optimize_memory():
     """Force garbage collection to free memory"""
     gc.collect()
 
+def aggressive_memory_cleanup():
+    """Aggressive memory cleanup for Streamlit Cloud deployment"""
+    import gc
+    import sys
+    
+    # Force multiple garbage collection passes
+    for _ in range(3):
+        gc.collect()
+    
+    # Clear Python's internal caches
+    sys.intern._clear_cache() if hasattr(sys.intern, '_clear_cache') else None
+    
+    # Log memory status after cleanup
+    memory_after = get_memory_usage()
+    logger.info(f"Memory after aggressive cleanup: {memory_after}MB")
+    
+    return memory_after
+
+def clear_session_state_safely():
+    """Clear large objects from session state to prevent memory accumulation"""
+    
+    # Keys that can safely be cleared after processing
+    clearable_keys = [
+        'temp_dataframe', 'raw_data', 'processed_chunks',
+        'large_analysis_cache', 'temp_analysis_results'
+    ]
+    
+    cleared_count = 0
+    for key in clearable_keys:
+        if key in st.session_state:
+            del st.session_state[key]
+            cleared_count += 1
+    
+    if cleared_count > 0:
+        logger.info(f"Cleared {cleared_count} temporary session state items")
+    
+    # Force session state garbage collection
+    gc.collect()
+
+def monitor_memory_critical():
+    """Monitor if we're approaching critical memory limits"""
+    current_memory = get_memory_usage()
+    memory_limit = 690 if is_streamlit_cloud() else 2048
+    usage_pct = (current_memory / memory_limit) * 100
+    
+    if usage_pct > 85:
+        st.error(f"🚨 MEMORIA CRÍTICA: {usage_pct:.1f}% - App puede fallar")
+        st.error("🔧 SOLUCIÓN: Reinicia la aplicación o usa archivos más pequeños")
+        return True
+    elif usage_pct > 70:
+        st.warning(f"⚠️ Memoria alta: {usage_pct:.1f}% - Considera reiniciar pronto")
+        return False
+    
+    return False
+
 def _process_with_ai_analysis(uploaded_file) -> Dict:
     """
     Extract AI analysis processing logic to reduce main button handler complexity
@@ -493,6 +548,25 @@ try:
                     f"{memory_mb:.0f}MB",
                     f"{memory_pct:.1f}% usado"
                 )
+                
+                # CRITICAL: Emergency memory management for Streamlit Cloud
+                if memory_pct > 75:
+                    st.error("🚨 MEMORIA CRÍTICA")
+                    if st.button("🧹 Limpiar Memoria", type="secondary", help="Limpia memoria para evitar crash"):
+                        try:
+                            # Clear analysis results
+                            if 'analysis_results' in st.session_state:
+                                del st.session_state.analysis_results
+                            
+                            # Aggressive cleanup
+                            aggressive_memory_cleanup()
+                            clear_session_state_safely()
+                            
+                            st.success("✅ Memoria limpiada - Recarga la página")
+                            st.info("🔄 Presiona F5 o actualiza la página para continuar")
+                        except Exception as cleanup_error:
+                            st.error(f"Error limpiando memoria: {str(cleanup_error)}")
+                            
         except:
             pass  # Silent fail if monitoring unavailable
             
@@ -1080,17 +1154,43 @@ def process_file_simple(uploaded_file):
             progress_bar.progress(1.0, "🎉 Procesamiento completado exitosamente")
             status_text.success("🎉 Análisis completado - Resultados disponibles")
             
-            # Final memory cleanup for enhanced results
-            print("🧹 Final memory cleanup for AI-enhanced results")  
-            optimize_memory()
+            # CRITICAL: Final memory cleanup for Streamlit Cloud
+            print("🧹 Critical final memory cleanup for Streamlit Cloud")
+            
+            # Clear all processing variables
+            try:
+                if 'unique_comments' in locals(): del unique_comments
+                if 'sentiments' in locals(): del sentiments
+                if 'comment_frequencies' in locals(): del comment_frequencies
+                if 'df' in locals(): del df
+            except:
+                pass
+            
+            # Force aggressive memory cleanup
+            aggressive_memory_cleanup()
+            
             return enhanced_results
         except Exception as ai_error:
             st.warning(f"Validación IA no disponible: {str(ai_error)}")
             # Return original results if AI oversight fails
             progress_bar.progress(1.0, "✅ Procesamiento completado (sin IA)")
             status_text.success("✅ Análisis completado - Resultados disponibles")
-            print("🧹 Final memory cleanup for standard results")
-            optimize_memory()
+            
+            # CRITICAL: Final memory cleanup for standard results
+            print("🧹 Critical final memory cleanup for standard results")
+            
+            # Clear all processing variables
+            try:
+                if 'unique_comments' in locals(): del unique_comments
+                if 'sentiments' in locals(): del sentiments
+                if 'comment_frequencies' in locals(): del comment_frequencies
+                if 'df' in locals(): del df
+            except:
+                pass
+            
+            # Force aggressive memory cleanup
+            aggressive_memory_cleanup()
+            
             return results
         
     except Exception as e:
@@ -1763,6 +1863,12 @@ if uploaded_file:
                 print(f"🚨 Button text error: {button_text_error}")
                 button_text = "Analizar Archivo"  # Safe fallback
             if st.button(button_text, type="primary", use_container_width=True):
+                # CRITICAL: Check memory status before processing
+                if monitor_memory_critical():
+                    st.error("🛑 MEMORIA CRÍTICA - No se puede procesar archivo")
+                    st.error("🔄 SOLUCIÓN: Reinicia la aplicación (clic en ⋮ → Reboot app)")
+                    st.stop()
+                
                 # CRITICAL FIX: Validate uploaded_file state before processing
                 if not uploaded_file:
                     st.error("❌ No hay archivo cargado. Por favor, carga un archivo Excel o CSV primero.")
@@ -1786,6 +1892,9 @@ if uploaded_file:
                             results = _process_with_ai_analysis(uploaded_file)
                             if results:
                                 st.session_state.analysis_results = results
+                                # CRITICAL: Aggressive cleanup after storing results
+                                aggressive_memory_cleanup()
+                                clear_session_state_safely()
                             else:
                                 st.error("Error en análisis AI - intente con análisis rápido")
                         else:
@@ -1794,6 +1903,9 @@ if uploaded_file:
                             if results:
                                 st.session_state.analysis_results = results
                                 st.success("Análisis rápido completado!")
+                                # CRITICAL: Aggressive cleanup after storing results
+                                aggressive_memory_cleanup()
+                                clear_session_state_safely()
                     
                     # Add success animation if we have results - with error protection
                     if 'analysis_results' in st.session_state and st.session_state.analysis_results:

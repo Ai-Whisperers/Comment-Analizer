@@ -14,9 +14,24 @@ enableStaticServing = true
 allowRunOnSave = true
 runOnSave = false
 fileWatcherType = "auto"
+address = "0.0.0.0"
+baseUrlPath = ""
 
 [browser]
 gatherUsageStats = false
+serverAddress = "0.0.0.0"
 
 [global]
 developmentMode = false
+suppressDeprecationWarnings = true
+showWarningOnDirectExecution = false
+
+[client]
+caching = true
+showErrorDetails = true
+toolbarMode = "minimal"
+
+[runner]
+magicEnabled = true
+installTracer = false
+fixMatplotlib = true
