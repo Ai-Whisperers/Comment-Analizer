@@ -55,6 +55,10 @@ if not st.session_state.app_initialized:
         st.session_state.app_initialized = True
     except ImportError as e:
         print(f"❌ src.main import failed: {e}")
+    except SyntaxError as syntax_error:
+        print(f"🚨 SYNTAX ERROR in src/main.py: {syntax_error}")
+        print("🔧 Critical: main.py has syntax errors preventing import")
+        print(f"🔍 Error details: {syntax_error}")
     except Exception as e:
         print(f"🚨 UNEXPECTED ERROR during main execution: {e}")
         import traceback
@@ -73,6 +77,13 @@ if not import_success and not st.session_state.app_initialized:
         print("✅ SUCCESS: main import worked")
     except ImportError as e:
         print(f"❌ main import failed: {e}")
+    except SyntaxError as syntax_error:
+        print(f"🚨 SYNTAX ERROR in main.py: {syntax_error}")
+        print("🔧 Check main.py for syntax issues (missing try/except blocks, indentation)")
+    except Exception as e:
+        print(f"🚨 UNEXPECTED ERROR during fallback import: {e}")
+        import traceback
+        print(f"🔍 Fallback traceback: {traceback.format_exc()}")
 
 # Strategy 3: Try explicit path import (only if previous strategies failed)
 if not import_success and not st.session_state.app_initialized:
