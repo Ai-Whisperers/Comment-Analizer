@@ -1,36 +1,42 @@
 """
 Streamlit Cloud Entry Point - Personal Paraguay Comment Analyzer
-Robust entry point with multiple fallback strategies
+Production-ready entry point with error boundaries and health checks
 """
 
 import sys
 import os
+import traceback
 from pathlib import Path
+import logging
 
-# Debug: Print current working directory and Python path
-print(f"Current working directory: {os.getcwd()}")
-print(f"Python path: {sys.path[:3]}...")  # First 3 entries
-print(f"__file__ location: {__file__}")
+# Configure logging for deployment debugging
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(levelname)s - %(message)s',
+    handlers=[
+        logging.StreamHandler(sys.stdout)
+    ]
+)
+logger = logging.getLogger(__name__)
 
-# Multiple path setup strategies for maximum compatibility
+# Production debugging info (reduced verbosity)
+logger.info(f"Starting Streamlit app from: {__file__}")
+logger.info(f"Working directory: {os.getcwd()}")
+
+# Robust path setup for Streamlit Cloud
 current_dir = Path(__file__).parent.absolute()
 src_dir = current_dir / "src"
 
-print(f"Attempting to add to path: {src_dir}")
+# Ensure src directory exists
+if not src_dir.exists():
+    logger.error(f"Source directory not found: {src_dir}")
+    sys.exit(1)
 
-# Add both possible path locations
-paths_to_add = [
-    str(src_dir),
-    str(current_dir / "src"),
-    str(current_dir),
-    os.path.join(os.path.dirname(__file__), "src")
-]
+# Add to Python path
+if str(src_dir) not in sys.path:
+    sys.path.insert(0, str(src_dir))
 
-for path in paths_to_add:
-    if path not in sys.path:
-        sys.path.insert(0, path)
-
-print(f"Updated Python path (first 5): {sys.path[:5]}")
+logger.info(f"Added to Python path: {src_dir}")
 
 # Prevent infinite import loops with session-based guard
 import streamlit as st
@@ -40,32 +46,40 @@ if 'app_initialized' not in st.session_state:
     st.session_state.app_initialized = False
 
 if not st.session_state.app_initialized:
-    print("🚀 First-time app initialization...")
+    logger.info("First-time app initialization...")
     
-    # Import main application with comprehensive fallback
+    # Error boundary for main application import
     import_success = False
-
-    # Strategy 1: Try direct src import
+    
     try:
-        print("Attempting: from src.main import *")
+        logger.info("Attempting main application import...")
         from src.main import *
         import_success = True
-        print("✅ SUCCESS: src.main import worked")
-        print("🎯 Main module imported - setting initialization flag")
         st.session_state.app_initialized = True
+        logger.info("✅ Main application imported successfully")
+        
     except ImportError as e:
-        print(f"❌ src.main import failed: {e}")
+        logger.error(f"Import failed: {e}")
+        st.error("🚨 Application failed to load due to missing dependencies")
+        st.error(f"Details: {str(e)}")
+        
     except SyntaxError as syntax_error:
-        print(f"🚨 SYNTAX ERROR in src/main.py: {syntax_error}")
-        print("🔧 Critical: main.py has syntax errors preventing import")
-        print(f"🔍 Error details: {syntax_error}")
+        logger.error(f"Syntax error in main application: {syntax_error}")
+        st.error("🚨 CRITICAL: Application code has syntax errors")
+        st.error(f"Error: {syntax_error}")
+        st.error("Please contact support - this is a deployment issue")
+        
     except Exception as e:
-        print(f"🚨 UNEXPECTED ERROR during main execution: {e}")
-        import traceback
-        print(f"🔍 Full traceback: {traceback.format_exc()}")
+        logger.error(f"Unexpected error during initialization: {e}")
+        logger.error(f"Traceback: {traceback.format_exc()}")
+        st.error("🚨 Application initialization failed")
+        st.error("This appears to be a deployment or configuration issue")
+        with st.expander("Technical Details"):
+            st.code(str(e))
+            st.code(traceback.format_exc())
 else:
-    print("✅ App already initialized - skipping re-import")
     import_success = True
+    logger.info("App already initialized")
 
 # Strategy 2: Try without src prefix (only if first strategy failed)
 if not import_success and not st.session_state.app_initialized:
