@@ -26,7 +26,7 @@ ui = st.session_state.ui
 # Apply sophisticated styling (SAME AS ORIGINAL)
 dark_theme = theme.get_theme(st.session_state.get('dark_mode', True))
 st.markdown(f"<style>{theme.generate_css_variables(dark_theme)}</style>", unsafe_allow_html=True)
-st.markdown(f"<style>{theme.generate_base_styles()}</style>", unsafe_allow_html=True)
+st.markdown(f"<style>{theme.generate_base_styles(dark_theme)}</style>", unsafe_allow_html=True)
 st.markdown(f"<style>{theme.generate_animations()}</style>", unsafe_allow_html=True)
 
 # Modern header (PRESERVED)

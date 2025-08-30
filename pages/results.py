@@ -28,7 +28,7 @@ ui = st.session_state.ui
 # Apply sophisticated styling (EXACT SAME AS ORIGINAL)
 dark_theme = theme.get_theme(st.session_state.get('dark_mode', True))
 st.markdown(f"<style>{theme.generate_css_variables(dark_theme)}</style>", unsafe_allow_html=True)
-st.markdown(f"<style>{theme.generate_base_styles()}</style>", unsafe_allow_html=True)
+st.markdown(f"<style>{theme.generate_base_styles(dark_theme)}</style>", unsafe_allow_html=True)
 st.markdown(f"<style>{theme.generate_animations()}</style>", unsafe_allow_html=True)
 
 # Modern header (PRESERVED SOPHISTICATION)
@@ -135,10 +135,7 @@ st.markdown("### 💡 Recomendaciones")
 
 recommendations = results.get('recommendations', [])
 for i, rec in enumerate(recommendations, 1):
-    st.markdown(
-        ui.alert_banner(f"{i}. {rec}", "info"),
-        unsafe_allow_html=True
-    )
+    st.info(f"{i}. {rec}")  # Use simple Streamlit info instead of non-existent alert_banner
 
 # SIMPLE DOWNLOAD SECTION (NO COMPLEX NESTING)
 st.markdown("### 📥 Descargar Resultados")
