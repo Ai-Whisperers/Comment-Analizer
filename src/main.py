@@ -43,6 +43,7 @@ try:
     import logging
     from logging.handlers import RotatingFileHandler
     import sys
+    from typing import Dict, List, Optional
     import gc  # For garbage collection and memory management
     critical_imports['stdlib'] = '✅'
     print("✅ Standard library modules imported successfully")
@@ -114,6 +115,141 @@ def get_memory_usage():
 def optimize_memory():
     """Force garbage collection to free memory"""
     gc.collect()
+
+def _process_with_ai_analysis(uploaded_file) -> Dict:
+    """
+    Extract AI analysis processing logic to reduce main button handler complexity
+    Uses standardized error handling patterns
+    """
+    from src.utils.error_handler import ErrorHandler, with_error_handling
+    
+    try:
+        st.info("Iniciando análisis avanzado con IA...")
+        
+        # First, process file with basic pipeline
+        basic_results = ErrorHandler.safe_execute(
+            process_file_simple, 
+            uploaded_file,
+            context={"operation": "basic_file_processing", "file": uploaded_file.name}
+        )
+        
+        if isinstance(basic_results, dict) and basic_results.get('error'):
+            st.error("Error procesando archivo")
+            return None
+        
+        if not basic_results:
+            st.error("No se pudieron procesar los datos del archivo")
+            return None
+        
+        # Then enhance with AI analysis
+        return _enhance_with_ai_processing(basic_results)
+        
+    except Exception as e:
+        error = ErrorHandler.handle_error(
+            e, 
+            context={"operation": "ai_analysis_processing", "file": uploaded_file.name}
+        )
+        st.error(f"Error en procesamiento: {error.user_message}")
+        logger.error(f"AI processing error {error.error_id}: {error.error_message}")
+        return None
+
+def _enhance_with_ai_processing(basic_results: Dict) -> Dict:
+    """
+    Enhance basic results with AI processing
+    Uses standardized error handling
+    """
+    from src.utils.error_handler import ErrorHandler
+    
+    try:
+        from src.ai_analysis_adapter import AIAnalysisAdapter
+        adapter = AIAnalysisAdapter()
+        
+        # Extract comments from basic results
+        comments = basic_results.get('comments', [])
+        if len(comments) > 50:
+            st.info(f"Procesando {len(comments)} comentarios con IA (esto puede tomar 1-3 minutos)...")
+        
+        # Attempt AI enhancement
+        return _attempt_ai_enhancement(adapter, comments, basic_results)
+        
+    except Exception as e:
+        error = ErrorHandler.handle_error(
+            e, 
+            context={"operation": "ai_enhancement_init", "comments_count": len(basic_results.get('comments', []))}
+        )
+        st.warning(f"Error iniciando IA: {error.user_message}")
+        logger.warning(f"AI enhancement init error {error.error_id}: {error.error_message}")
+        return basic_results
+
+def _attempt_ai_enhancement(adapter, comments: List[str], basic_results: Dict) -> Dict:
+    """
+    Attempt AI enhancement with standardized error handling
+    """
+    from src.utils.error_handler import ErrorHandler
+    
+    try:
+        ai_enhanced = adapter.openai_analyzer.analyze_comments_batch(comments[:50])  # Limit for demo
+        if ai_enhanced:
+            return _build_enhanced_results(basic_results, ai_enhanced)
+        else:
+            st.warning("🔄 IA no disponible, usando análisis rápido...")
+            return basic_results
+            
+    except Exception as ai_error:
+        error = ErrorHandler.handle_error(
+            ai_error, 
+            context={"operation": "ai_batch_analysis", "comments_count": len(comments)}
+        )
+        st.warning(f"IA falló: {error.user_message}")
+        logger.warning(f"AI batch analysis error {error.error_id}: {error.error_message}")
+        return basic_results
+
+def _build_enhanced_results(basic_results: Dict, ai_enhanced: List[Dict]) -> Dict:
+    """
+    Build enhanced results from AI data with standardized error handling
+    """
+    from src.utils.error_handler import ErrorHandler
+    
+    try:
+        enhanced_results = basic_results.copy()
+        enhanced_results['analysis_method'] = 'AI_POWERED'
+        enhanced_results['ai_results'] = ai_enhanced
+        
+        # Calculate confidence safely
+        valid_confidences = [r.get('confidence', 0) for r in ai_enhanced if r.get('confidence') is not None]
+        enhanced_results['ai_confidence_avg'] = sum(valid_confidences) / len(valid_confidences) if valid_confidences else 0
+        
+        # Extract emotions and pain points safely
+        emotions = []
+        pain_points = []
+        for result in ai_enhanced:
+            if isinstance(result, dict):
+                emotions.extend(result.get('emotions', []))
+                pain_points.extend(result.get('pain_points', []))
+        
+        # Add AI-specific data structures
+        enhanced_results['emotion_summary'] = {
+            'distribution': {emotion: emotions.count(emotion) for emotion in set(emotions)} if emotions else {},
+            'avg_intensity': 3.5  # Mock intensity for now
+        }
+        
+        enhanced_results['churn_analysis'] = {
+            'indicators': list(set(pain_points))[:5] if pain_points else [],
+            'risk_level': 'medium' if pain_points else 'low'
+        }
+        
+        st.success("Análisis IA completado con éxito!")
+        return enhanced_results
+        
+    except Exception as e:
+        error = ErrorHandler.handle_error(
+            e, 
+            context={"operation": "build_enhanced_results", "ai_results_count": len(ai_enhanced)}
+        )
+        st.warning(f"Error construyendo resultados: {error.user_message}")
+        logger.warning(f"Build enhanced results error {error.error_id}: {error.error_message}")
+        # Return basic results as fallback
+        return basic_results
     
 def check_memory_limit():
     """Check if approaching Streamlit Cloud memory limit"""
@@ -1646,62 +1782,12 @@ if uploaded_file:
                         print(f"🔄 Using analysis method: {analysis_method}")
                         
                         if analysis_method == "ai":
-                            # Use Pipeline 2 (AI + Fallback) with better error handling
-                            try:
-                                st.info("Iniciando análisis avanzado con IA...")
-                                
-                                # First, process file the same way as simple pipeline
-                                basic_results = process_file_simple(uploaded_file)
-                                if not basic_results:
-                                    st.error("Error procesando archivo")
-                                else:
-                                    # Then enhance with AI analysis
-                                    from src.ai_analysis_adapter import AIAnalysisAdapter
-                                    adapter = AIAnalysisAdapter()
-                                    
-                                    # Extract comments from basic results for AI processing
-                                    comments = basic_results.get('comments', [])
-                                    if len(comments) > 50:
-                                        st.info(f"Procesando {len(comments)} comentarios con IA (esto puede tomar 1-3 minutos)...")
-                                
-                                # Try AI enhancement on the extracted comments
-                                try:
-                                    ai_enhanced = adapter.openai_analyzer.analyze_comments_batch(comments[:50])  # Limit for demo
-                                    if ai_enhanced:
-                                        # Enhance the basic results with AI data
-                                        enhanced_results = basic_results.copy()
-                                        enhanced_results['analysis_method'] = 'AI_POWERED'
-                                        enhanced_results['ai_results'] = ai_enhanced
-                                        enhanced_results['ai_confidence_avg'] = sum(r.get('confidence', 0) for r in ai_enhanced) / len(ai_enhanced)
-                                        
-                                        # Add AI-specific data structures
-                                        emotions = []
-                                        pain_points = []
-                                        for result in ai_enhanced:
-                                            emotions.extend(result.get('emotions', []))
-                                            pain_points.extend(result.get('pain_points', []))
-                                        
-                                        enhanced_results['emotion_summary'] = {
-                                            'distribution': {emotion: emotions.count(emotion) for emotion in set(emotions)},
-                                            'avg_intensity': 3.5  # Mock intensity for now
-                                        }
-                                        
-                                        enhanced_results['churn_analysis'] = {
-                                            'indicators': list(set(pain_points))[:5],
-                                            'risk_level': 'medium' if pain_points else 'low'
-                                        }
-                                        
-                                        st.session_state.analysis_results = enhanced_results
-                                        st.success("Análisis IA completado con éxito!")
-                                    else:
-                                        st.warning("🔄 IA no disponible, usando análisis rápido...")
-                                        st.session_state.analysis_results = basic_results
-                                except Exception as ai_error:
-                                    st.warning(f"IA falló ({str(ai_error)[:50]}...), usando análisis rápido")
-                                    st.session_state.analysis_results = basic_results
-                                    
-                            except Exception as e:
-                                st.error(f"Error en procesamiento: {str(e)}")
+                            # Use Pipeline 2 (AI + Fallback) with simplified error handling
+                            results = _process_with_ai_analysis(uploaded_file)
+                            if results:
+                                st.session_state.analysis_results = results
+                            else:
+                                st.error("Error en análisis AI - intente con análisis rápido")
                         else:
                             # Use Pipeline 1 (Simple Rule-Based)  
                             results = process_file_simple(uploaded_file)

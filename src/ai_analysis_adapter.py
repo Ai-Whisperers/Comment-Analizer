@@ -11,7 +11,7 @@ import re
 import logging
 import time
 from datetime import datetime
-from typing import List, Dict, Any, Optional
+from typing import List, Dict, Any, Optional, Tuple
 import traceback
 import os
 from io import BytesIO
@@ -71,113 +71,202 @@ class AIAnalysisAdapter:
             ai_logger.debug(f"Initialization error traceback: {traceback.format_exc()}")
             self.ai_available = False
     
-    def process_uploaded_file_with_ai(self, uploaded_file) -> Optional[Dict]:
-        """
-        Process uploaded file using AI analysis with fallback to rule-based analysis.
-        Returns results in the exact same format as the original process_uploaded_file()
-        """
-        start_time = time.time()
-        analysis_type = "UNKNOWN"
-        
+    def _read_and_validate_file(self, uploaded_file) -> pd.DataFrame:
+        """Extract file reading logic to reduce nesting"""
         try:
-            ai_logger.info(f"🚀 Starting AI-enhanced analysis of file: {uploaded_file.name}")
+            ai_logger.info(f"🚀 Reading file: {uploaded_file.name}")
             ai_logger.debug(f"File size: {uploaded_file.size} bytes")
             
-            # File reading logic - handle different file object types
-            try:
-                if uploaded_file.name.endswith('.csv'):
-                    # For CSV files
-                    if hasattr(uploaded_file, 'read'):
-                        # Reset file pointer to beginning
-                        uploaded_file.seek(0)
-                        df = pd.read_csv(uploaded_file)
-                    else:
-                        # For our test mock objects
-                        df = pd.read_csv(uploaded_file.content)
-                else:
-                    # For Excel files - Streamlit UploadedFile handling
-                    if hasattr(uploaded_file, 'read'):
-                        # Read the content into BytesIO to avoid Streamlit file object issues
-                        uploaded_file.seek(0)
-                        file_content = uploaded_file.read()
-                        file_buffer = BytesIO(file_content)
-                        df = pd.read_excel(file_buffer)
-                    else:
-                        # For our test mock objects
-                        df = pd.read_excel(uploaded_file.content)
-                        
-                ai_logger.debug(f"File read successfully: {df.shape[0]} rows, {df.shape[1]} columns")
+            if uploaded_file.name.endswith('.csv'):
+                return self._read_csv_file(uploaded_file)
+            else:
+                return self._read_excel_file(uploaded_file)
                 
-            except Exception as e:
-                ai_logger.error(f"Failed to read file {uploaded_file.name}: {str(e)}")
-                raise
-            
-            # Check for NPS and Nota columns (identical to original)
+        except Exception as e:
+            ai_logger.error(f"Failed to read file {uploaded_file.name}: {str(e)}")
+            return None
+    
+    def _read_csv_file(self, uploaded_file) -> pd.DataFrame:
+        """Read CSV file with proper handling"""
+        if hasattr(uploaded_file, 'read'):
+            uploaded_file.seek(0)
+            return pd.read_csv(uploaded_file)
+        else:
+            return pd.read_csv(uploaded_file.content)
+    
+    def _read_excel_file(self, uploaded_file) -> pd.DataFrame:
+        """Read Excel file with proper handling"""
+        if hasattr(uploaded_file, 'read'):
+            uploaded_file.seek(0)
+            file_content = uploaded_file.read()
+            file_buffer = BytesIO(file_content)
+            return pd.read_excel(file_buffer)
+        else:
+            return pd.read_excel(uploaded_file.content)
+    
+    def _extract_analysis_data(self, df: pd.DataFrame) -> Dict:
+        """Extract and prepare data for analysis to reduce main function complexity"""
+        try:
+            # Check for NPS and Nota columns
             has_nps = 'NPS' in df.columns
             has_nota = 'Nota' in df.columns
             nps_data = df['NPS'].tolist() if has_nps else []
             nota_data = df['Nota'].tolist() if has_nota else []
             
-            # Find comment column (identical to original)
-            comment_cols = ['comentario final', 'comment', 'comments', 'feedback', 'review', 'texto', 
-                           'comentario', 'comentarios', 'respuesta', 'opinion', 'observacion']
-            
-            comment_col = None
-            for col in df.columns:
-                if any(name in col.lower() for name in comment_cols):
-                    comment_col = col
-                    break
-            
-            if comment_col is None and len(df.columns) > 0:
-                for col in df.columns:
-                    if df[col].dtype == 'object':
-                        comment_col = col
-                        break
-            
+            # Find comment column
+            comment_col = self._find_comment_column(df)
             if comment_col is None:
-                logger.error("[AI_PIPELINE] No comment column found in file")
+                ai_logger.error("No comment column found")
                 return None
-            
-            # Get comments (identical to original preprocessing)
-            raw_comments = df[comment_col].dropna().tolist()
-            from src.main import clean_text, remove_duplicates  # Import existing functions
-            cleaned_comments = [clean_text(comment) for comment in raw_comments]
-            unique_comments, comment_frequencies = remove_duplicates(cleaned_comments)
-            
-            ai_logger.info(f"📊 Preprocessed {len(raw_comments)} raw → {len(unique_comments)} unique comments")
-            
-            # Try AI analysis first
-            ai_results = None
-            if self.ai_available:
-                ai_logger.info("🤖 Attempting AI analysis...")
-                ai_results = self._try_ai_analysis(unique_comments)
                 
-                if ai_results:
-                    ai_logger.info("✅ AI analysis successful - proceeding with format conversion")
-                else:
-                    ai_logger.warning("❌ AI analysis failed - will fallback to rule-based")
-            else:
-                ai_logger.info("🚫 AI not available - proceeding directly to fallback")
+            # Extract and clean comments
+            raw_comments = df[comment_col].dropna().tolist()
+            if not raw_comments:
+                ai_logger.error("No valid comments found")
+                return None
+                
+            # Clean and process comments
+            comments, comment_frequencies = self._clean_and_process_comments(raw_comments)
             
+            return {
+                'comments': comments,
+                'comment_frequencies': comment_frequencies,
+                'raw_comments': raw_comments,
+                'nps_data': nps_data,
+                'nota_data': nota_data,
+                'has_nps': has_nps,
+                'has_nota': has_nota
+            }
+            
+        except Exception as e:
+            ai_logger.error(f"Error extracting analysis data: {str(e)}")
+            return None
+    
+    def _find_comment_column(self, df: pd.DataFrame) -> str:
+        """Find the comment column in the dataframe"""
+        comment_cols = ['comentario final', 'comment', 'comments', 'feedback', 'review', 'texto', 
+                       'comentario', 'comentarios', 'respuesta', 'opinion', 'observacion']
+        
+        # Check explicit comment column names
+        for col in df.columns:
+            if any(name in col.lower() for name in comment_cols):
+                return col
+        
+        # Fallback to first text column
+        if len(df.columns) > 0:
+            for col in df.columns:
+                if df[col].dtype == 'object':
+                    return col
+        
+        return None
+    
+    def _clean_and_process_comments(self, raw_comments: List[str]) -> Tuple[List[str], List[int]]:
+        """Clean comments and calculate frequencies using existing functions"""
+        from src.main import clean_text, remove_duplicates
+        
+        # Clean comments using existing function
+        cleaned_comments = [clean_text(comment) for comment in raw_comments]
+        
+        # Get unique comments and frequencies using existing function
+        unique_comments, comment_frequencies = remove_duplicates(cleaned_comments)
+        
+        ai_logger.info(f"Processed {len(raw_comments)} raw → {len(unique_comments)} unique comments")
+        return unique_comments, comment_frequencies
+    
+    def _attempt_ai_analysis(self, comments: List[str], progress_bar=None) -> List[Dict]:
+        """Attempt AI analysis with proper error handling"""
+        if not self.ai_available or not self.openai_analyzer:
+            ai_logger.info("OpenAI analyzer not available, skipping AI analysis")
+            return None
+            
+        try:
+            ai_logger.info(f"🤖 Attempting AI analysis of {len(comments)} unique comments")
+            
+            # Update progress
+            if progress_bar:
+                progress_bar.progress(0.3, "Iniciando análisis con IA...")
+            
+            # Perform AI analysis
+            ai_results = self.openai_analyzer.analyze_batch(comments, progress_callback=progress_bar)
+            
+            if ai_results and len(ai_results) > 0:
+                ai_logger.info(f"✅ AI analysis successful: {len(ai_results)} results")
+                return ai_results
+            else:
+                ai_logger.warning("❌ AI analysis returned no results")
+                return None
+                
+        except Exception as e:
+            ai_logger.error(f"AI analysis failed: {str(e)}")
+            ai_logger.debug(f"AI analysis error traceback: {traceback.format_exc()}")
+            return None
+    
+    def _process_ai_results(self, ai_results: List[Dict], analysis_data: Dict, uploaded_file) -> Dict:
+        """Process AI results into expected format"""
+        return self._convert_ai_results_to_expected_format(
+            ai_results, analysis_data['comments'], 
+            analysis_data['comment_frequencies'], uploaded_file,
+            analysis_data['raw_comments'], analysis_data['nps_data'],
+            analysis_data['nota_data'], analysis_data['has_nps'], analysis_data['has_nota']
+        )
+    
+    def _create_error_response(self, error_message: str) -> Dict:
+        """Create standardized error response"""
+        return {
+            'analysis_results': [],
+            'sentiments': [],
+            'enhanced_results': [],
+            'insights': {
+                'total_comments': 0,
+                'sentiment_percentages': {'positivo': 0, 'negativo': 0, 'neutral': 100},
+                'avg_confidence': 0,
+                'analysis_method': 'ERROR_FALLBACK'
+            },
+            'recommendations': [f'Error occurred during analysis: {error_message}'],
+            'error': True,
+            'error_message': error_message
+        }
+
+    def process_uploaded_file_with_ai(self, uploaded_file) -> Optional[Dict]:
+        """
+        Process uploaded file using AI analysis with fallback to rule-based analysis.
+        Refactored to reduce deep nesting and improve maintainability.
+        """
+        start_time = time.time()
+        analysis_type = "UNKNOWN"
+        
+        try:
+            # Step 1: Read and validate file
+            df = self._read_and_validate_file(uploaded_file)
+            if df is None:
+                return self._create_error_response("File reading failed")
+            
+            ai_logger.debug(f"File read successfully: {df.shape[0]} rows, {df.shape[1]} columns")
+            
+            # Step 2: Extract data and prepare for analysis
+            analysis_data = self._extract_analysis_data(df)
+            if not analysis_data:
+                return self._create_error_response("No valid data found")
+                
+            ai_logger.info(f"📊 Preprocessed {len(analysis_data['raw_comments'])} raw → {len(analysis_data['comments'])} unique comments")
+            
+            # Step 3: Attempt AI analysis with fallback
+            ai_results = self._attempt_ai_analysis(analysis_data['comments'])
+            
+            # Step 4: Process results based on AI success/failure
             if ai_results:
-                # Convert AI results to expected format
-                ai_logger.info("🔄 Converting AI results to expected format...")
+                ai_logger.info("✅ AI analysis successful - proceeding with format conversion")
                 analysis_type = "AI_POWERED"
-                result = self._convert_ai_results_to_expected_format(
-                    ai_results, unique_comments, comment_frequencies, uploaded_file,
-                    raw_comments, nps_data, nota_data, has_nps, has_nota
-                )
-                ai_logger.info("✅ AI format conversion completed successfully")
+                result = self._process_ai_results(ai_results, analysis_data, uploaded_file)
                 return result
             else:
-                # Fallback to rule-based analysis
-                ai_logger.info("🔄 Executing fallback rule-based analysis...")
+                ai_logger.warning("❌ AI analysis failed - executing rule-based fallback")
                 analysis_type = "RULE_BASED_FALLBACK"
                 result = self._fallback_to_rule_based_analysis(
-                    unique_comments, comment_frequencies, uploaded_file,
-                    raw_comments, nps_data, nota_data, has_nps, has_nota
+                    analysis_data['comments'], analysis_data['comment_frequencies'],
+                    uploaded_file, analysis_data['raw_comments'], analysis_data['nps_data'],
+                    analysis_data['nota_data'], analysis_data['has_nps'], analysis_data['has_nota']
                 )
-                ai_logger.info("✅ Fallback analysis completed successfully")
                 return result
                 
         except Exception as e:
@@ -186,7 +275,7 @@ class AIAnalysisAdapter:
             ai_logger.error(f"Error occurred at analysis_type: {analysis_type}")
             ai_logger.debug(f"Full error traceback: {traceback.format_exc()}")
             
-            # Try to provide some diagnostic information
+            # Log diagnostic information
             try:
                 ai_logger.debug(f"File name: {uploaded_file.name if hasattr(uploaded_file, 'name') else 'Unknown'}")
                 ai_logger.debug(f"File size: {uploaded_file.size if hasattr(uploaded_file, 'size') else 'Unknown'}")
@@ -194,7 +283,7 @@ class AIAnalysisAdapter:
             except:
                 pass
             
-            return None
+            return self._create_error_response(f"Critical analysis failure: {str(e)}")
         finally:
             duration = time.time() - start_time
             ai_logger.info(f"🏁 Analysis completed | Type: {analysis_type} | Duration: {duration:.2f}s")
