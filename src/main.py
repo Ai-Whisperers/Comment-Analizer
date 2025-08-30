@@ -582,7 +582,7 @@ try:
                     
                     col1, col2 = st.columns(2)
                     with col1:
-                        if st.button("🧹 Limpiar", type="secondary", help="Limpia resultados"):
+                        if st.button("🧹 Limpiar", type="secondary", help="Limpia resultados", key="memory_clean"):
                             try:
                                 # Clear analysis results only
                                 if 'analysis_results' in st.session_state:
@@ -594,7 +594,7 @@ try:
                                 st.error(f"Error: {str(cleanup_error)}")
                     
                     with col2:
-                        if st.button("🆘 Reset", type="secondary", help="Reset completo de sesión"):
+                        if st.button("🆘 Reset", type="secondary", help="Reset completo de sesión", key="memory_reset"):
                             try:
                                 cleared_count = emergency_session_reset()
                                 st.success(f"✅ Reset completo: {cleared_count} items")
@@ -1868,7 +1868,7 @@ if uploaded_file:
     col_method1, col_method2 = st.columns(2)
     
     with col_method1:
-        if st.button("Análisis Rápido (Reglas)", type="secondary", use_container_width=True, help="Análisis inmediato basado en reglas, sin costo"):
+        if st.button("Análisis Rápido (Reglas)", type="secondary", use_container_width=True, help="Análisis inmediato basado en reglas, sin costo", key="method_simple"):
             try:
                 st.session_state.analysis_method = "simple"
                 print("✅ Analysis method set to: simple")
@@ -1877,7 +1877,7 @@ if uploaded_file:
                 st.error("Error configurando método de análisis")
             
     with col_method2:
-        if st.button("Análisis Avanzado (IA)", type="secondary", use_container_width=True, help="Análisis profundo con IA - requiere API key"):
+        if st.button("Análisis Avanzado (IA)", type="secondary", use_container_width=True, help="Análisis profundo con IA - requiere API key", key="method_ai"):
             try:
                 st.session_state.analysis_method = "ai"
                 print("✅ Analysis method set to: ai")
@@ -1908,7 +1908,7 @@ if uploaded_file:
             except Exception as button_text_error:
                 print(f"🚨 Button text error: {button_text_error}")
                 button_text = "Analizar Archivo"  # Safe fallback
-            if st.button(button_text, type="primary", use_container_width=True):
+            if st.button(button_text, type="primary", use_container_width=True, key="analyze_button_main"):
                 # CRITICAL: Check memory status before processing
                 if monitor_memory_critical():
                     st.error("🛑 MEMORIA CRÍTICA - No se puede procesar archivo")
@@ -2126,7 +2126,7 @@ if st.session_state.analysis_results:
     with st.expander("🧹 Gestión de Memoria", expanded=False):
         col1, col2 = st.columns(2)
         with col1:
-            if st.button("Limpiar Resultados", help="Libera memoria después del análisis"):
+            if st.button("Limpiar Resultados", help="Libera memoria después del análisis", key="cleanup_results"):
                 try:
                     print("🧹 Manual session state cleanup triggered")
                     # Clear results first
