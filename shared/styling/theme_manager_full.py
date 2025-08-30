@@ -51,6 +51,9 @@ class ThemeManager:
                 'glass_border': 'rgba(139, 92, 246, 0.15)',
                 'glass_border_hover': 'rgba(139, 92, 246, 0.25)',
                 'glass_blur': '16px',
+                'glass_blur_mobile': '8px',
+                'glass_transition': 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                'glass_hover_lift': 'translateY(-2px)',
                 
                 # Text hierarchy
                 'text_primary': '#FFFFFF',
@@ -97,6 +100,9 @@ class ThemeManager:
                 'glass_border': 'rgba(139, 92, 246, 0.2)',
                 'glass_border_hover': 'rgba(139, 92, 246, 0.3)',
                 'glass_blur': '12px',
+                'glass_blur_mobile': '6px',
+                'glass_transition': 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                'glass_hover_lift': 'translateY(-2px)',
                 
                 # Text hierarchy
                 'text_primary': '#111827',
@@ -140,6 +146,17 @@ class ThemeManager:
             'lg': '0 16px 40px rgba(139, 92, 246, 0.16)',
             'xl': '0 24px 56px rgba(139, 92, 246, 0.20)'
         }
+        
+        # Z-index system for consistent layering
+        self.z_index = {
+            'background': -999,
+            'particles': -1,
+            'base': 1,
+            'elevated': 10,
+            'dropdown': 50,
+            'modal': 100,
+            'tooltip': 1000
+        }
     
     def get_theme(self, dark_mode: bool) -> Dict[str, str]:
         """Get theme colors based on mode"""
@@ -167,6 +184,10 @@ class ThemeManager:
         # Add elevation variables
         for key, value in self.elevation.items():
             variables.append(f"--elevation-{key}: {value};")
+        
+        # Add z-index variables
+        for key, value in self.z_index.items():
+            variables.append(f"--z-{key}: {value};")
         
         return "\n".join(variables)
     
@@ -478,7 +499,7 @@ class ThemeManager:
             padding: 2rem;
             transition: all var(--duration-normal) var(--easing-default);
             position: relative !important;
-            z-index: 100 !important;
+            z-index: var(--z-modal) !important;
             box-shadow: var(--elevation-sm);
         }
         
@@ -486,7 +507,7 @@ class ThemeManager:
         [data-testid="stFileUploader"]::before,
         [data-testid="stFileUploader"]::after {
             pointer-events: none !important;
-            z-index: -1 !important;
+            z-index: var(--z-particles) !important;
         }
         
         [data-testid="stFileUploader"]:hover {
@@ -518,7 +539,7 @@ class ThemeManager:
         [data-testid="stFileUploadDropzone"],
         [data-testid="stFileUploader"] section {
             position: relative !important;
-            z-index: 101 !important;
+            z-index: var(--z-elevated) !important;
             pointer-events: auto !important;
             cursor: pointer !important;
         }
@@ -531,7 +552,7 @@ class ThemeManager:
         /* Fix for file uploader browse button */
         [data-testid="stFileUploader"] button,
         [data-testid="baseButton-secondary"] {
-            z-index: 102 !important;
+            z-index: var(--z-dropdown) !important;
             position: relative !important;
             pointer-events: auto !important;
             cursor: pointer !important;
@@ -559,7 +580,7 @@ class ThemeManager:
             height: 100% !important;
             opacity: 0 !important;
             pointer-events: auto !important;
-            z-index: 103 !important;
+            z-index: var(--z-tooltip) !important;
             cursor: pointer !important;
         }
         
@@ -575,14 +596,14 @@ class ThemeManager:
         /* Remove interference from parent containers */
         .stApp .main .block-container {
             position: relative !important;
-            z-index: 1 !important;
+            z-index: var(--z-base) !important;
         }
         
         /* Ensure particles don't block interaction */
         .particles-container,
         [class*="particle"] {
             pointer-events: none !important;
-            z-index: -999 !important;
+            z-index: var(--z-background) !important;
         }
         
         /* Metrics with enhanced glassmorphism */
@@ -982,6 +1003,44 @@ class ThemeManager:
             animation: gradientShift var(--duration-ambient) ease infinite;
         }
         """
+    
+    def get_chart_theme(self, dark_mode: bool) -> dict:
+        """Generate Plotly theme matching glassmorphism design"""
+        theme = self.get_theme(dark_mode)
+        return {
+            'layout': {
+                'paper_bgcolor': 'rgba(0,0,0,0)',
+                'plot_bgcolor': theme['bg_tertiary'],
+                'colorway': [
+                    theme['primary'], theme['secondary'], theme['accent'],
+                    theme['positive'], theme['negative'], theme['neutral']
+                ],
+                'font': {
+                    'color': theme['text_primary'], 
+                    'family': 'Inter, -apple-system, BlinkMacSystemFont, sans-serif',
+                    'size': 14
+                },
+                'title': {
+                    'font': {
+                        'color': theme['text_primary'],
+                        'size': 18,
+                        'family': 'Inter, -apple-system, BlinkMacSystemFont, sans-serif'
+                    }
+                },
+                'xaxis': {
+                    'gridcolor': theme['glass_border'],
+                    'linecolor': theme['glass_border'],
+                    'tickcolor': theme['text_tertiary'],
+                    'tickfont': {'color': theme['text_secondary']}
+                },
+                'yaxis': {
+                    'gridcolor': theme['glass_border'],
+                    'linecolor': theme['glass_border'],
+                    'tickcolor': theme['text_tertiary'],
+                    'tickfont': {'color': theme['text_secondary']}
+                }
+            }
+        }
     
     def get_complete_css(self, dark_mode: bool) -> str:
         """Get complete CSS for the application"""

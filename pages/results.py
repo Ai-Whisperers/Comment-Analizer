@@ -107,20 +107,28 @@ st.markdown("### Análisis Detallado")
 # Create charts (preserve sophisticated visualization)
 import plotly.express as px
 
-# Sentiment distribution pie chart
+# Sentiment distribution pie chart with theme integration
 if results.get('sentiment_percentages'):
     sentiment_data = results['sentiment_percentages']
+    
+    # Apply glassmorphism theme to chart
+    chart_theme = theme.get_chart_theme(st.session_state.get('dark_mode', True))
+    
     fig_sentiment = px.pie(
         values=list(sentiment_data.values()),
         names=list(sentiment_data.keys()),
         title="Distribución de Sentimientos"
     )
+    fig_sentiment.update_layout(chart_theme['layout'])
     st.plotly_chart(fig_sentiment, use_container_width=True)
 
-# Theme analysis
+# Theme analysis with glassmorphism integration
 if results.get('theme_counts'):
     theme_data = results['theme_counts']
     theme_df = pd.DataFrame(list(theme_data.items()), columns=['Tema', 'Frecuencia'])
+    
+    # Apply glassmorphism theme to chart
+    chart_theme = theme.get_chart_theme(st.session_state.get('dark_mode', True))
     
     fig_themes = px.bar(
         theme_df,
@@ -128,6 +136,7 @@ if results.get('theme_counts'):
         y='Frecuencia',
         title="Temas Principales"
     )
+    fig_themes.update_layout(chart_theme['layout'])
     st.plotly_chart(fig_themes, use_container_width=True)
 
 # Recommendations with modern styling
