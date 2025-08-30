@@ -529,6 +529,31 @@ def extract_themes_simple(texts):
 def process_file_simple(uploaded_file):
     """Process uploaded file and extract comments with memory optimization"""
     try:
+        # PRE-PROCESSING MEMORY MONITORING (Fix 5)
+        try:
+            current_memory = get_memory_usage()
+            memory_limit = 690 if is_streamlit_cloud() else 2048  # 690MB cloud, 2GB local
+            memory_threshold = memory_limit * 0.7  # 70% threshold
+            
+            print(f"🔍 Pre-processing memory check: {current_memory:.1f}MB / {memory_limit}MB")
+            
+            if current_memory > memory_threshold:
+                st.error(f"⚠️ Memoria insuficiente para procesar archivo")
+                st.error(f"💾 Memoria actual: {current_memory:.1f}MB / {memory_limit}MB")
+                st.info("🧹 Usa el panel 'Gestión de Memoria' para limpiar resultados anteriores")
+                return None
+                
+            # Show memory status to user
+            memory_pct = (current_memory / memory_limit) * 100
+            if memory_pct > 50:
+                st.warning(f"📊 Memoria al {memory_pct:.1f}% - Procesamiento puede ser lento")
+            else:
+                st.success(f"✅ Memoria disponible: {memory_pct:.1f}% usado")
+                
+        except Exception as memory_error:
+            print(f"⚠️ Memory check failed: {memory_error}")
+            # Continue without memory check if monitoring fails
+        
         # Streamlit Cloud memory optimization - ultra strict limits
         MAX_FILE_SIZE_MB = 3    # Ultra conservative for 690MB limit
         MAX_COMMENTS = 500      # Drastically reduce for cloud stability
@@ -540,21 +565,34 @@ def process_file_simple(uploaded_file):
         
         # Read file with comprehensive validation and error handling
         try:
-            st.info(f"Procesando archivo: {uploaded_file.name}")
+            # REAL-TIME PROGRESS FEEDBACK (Fix 8)
+            progress_container = st.container()
+            with progress_container:
+                progress_bar = st.progress(0.0, "🔄 Iniciando procesamiento...")
+                status_text = st.empty()
+                
+            status_text.info(f"📁 Leyendo archivo: {uploaded_file.name}")
+            progress_bar.progress(0.1, "📖 Leyendo archivo...")
             
             if uploaded_file.name.endswith('.csv'):
                 df = pd.read_csv(uploaded_file, encoding='utf-8', on_bad_lines='skip')
+                progress_bar.progress(0.2, "✅ Archivo CSV leído exitosamente")
             else:
                 # Enhanced Excel reading with openpyxl engine for better compatibility
                 try:
+                    status_text.info("📊 Leyendo archivo Excel con openpyxl...")
                     df = pd.read_excel(uploaded_file, engine='openpyxl')
+                    progress_bar.progress(0.2, "✅ Excel leído con openpyxl")
                 except Exception as excel_error:
-                    st.warning(f"Error con openpyxl, probando xlrd: {str(excel_error)}")
+                    status_text.warning(f"⚠️ Error con openpyxl, probando xlrd...")
+                    progress_bar.progress(0.15, "🔄 Reintentando con xlrd...")
                     try:
                         uploaded_file.seek(0)
                         df = pd.read_excel(uploaded_file, engine=None)  # Auto-detect
+                        progress_bar.progress(0.2, "✅ Excel leído con xlrd")
                     except Exception as fallback_error:
                         st.error(f"Error leyendo Excel con todos los engines: {str(fallback_error)}")
+                        progress_bar.progress(0.0, "❌ Error leyendo archivo")
                         return None
                         
         except UnicodeDecodeError:
@@ -577,16 +615,21 @@ def process_file_simple(uploaded_file):
             return None
         
         # Validate dataframe
+        progress_bar.progress(0.25, "🔍 Validando estructura del archivo...")
         if df.empty:
             st.error("El archivo está vacío")
+            progress_bar.progress(0.0, "❌ Archivo vacío")
             return None
         
         if len(df.columns) == 0:
             st.error("No se encontraron columnas en el archivo")
+            progress_bar.progress(0.0, "❌ No hay columnas")
             return None
         
         # Show file structure for debugging
-        st.success(f"✅ Archivo leído correctamente: {df.shape[0]} filas, {df.shape[1]} columnas")
+        status_text.success(f"✅ Archivo validado: {df.shape[0]} filas, {df.shape[1]} columnas")
+        progress_bar.progress(0.3, "✅ Archivo validado correctamente")
+        
         with st.expander("🔍 Ver estructura del archivo"):
             st.write("**Columnas encontradas:**")
             st.write(list(df.columns))
@@ -595,6 +638,9 @@ def process_file_simple(uploaded_file):
         
         # Find comment column with improved detection
         try:
+            progress_bar.progress(0.35, "🔍 Detectando columna de comentarios...")
+            status_text.info("🔍 Buscando columna de comentarios...")
+            
             comment_cols = ['comentario final', 'comment', 'comments', 'feedback', 'texto', 'comentario', 
                            'observacion', 'observaciones', 'opinion', 'mensaje', 'respuesta']
             comment_col = None
@@ -603,19 +649,23 @@ def process_file_simple(uploaded_file):
             for col in df.columns:
                 if any(name in col.lower() for name in comment_cols):
                     comment_col = col
-                    st.info(f"Columna de comentarios detectada: '{comment_col}'")
+                    status_text.success(f"✅ Columna de comentarios detectada: '{comment_col}'")
+                    progress_bar.progress(0.4, f"✅ Columna encontrada: {comment_col}")
                     break
             
             if comment_col is None:
                 # Use first text column
+                status_text.warning("⚠️ Buscando primera columna de texto...")
                 for col in df.columns:
                     if df[col].dtype == 'object':
                         comment_col = col
-                        st.warning(f"Usando primera columna de texto como comentarios: '{comment_col}'")
+                        status_text.warning(f"📝 Usando primera columna de texto: '{comment_col}'")
+                        progress_bar.progress(0.4, f"📝 Usando columna: {comment_col}")
                         break
             
             if comment_col is None:
                 st.error("No se encontró columna de comentarios válida")
+                progress_bar.progress(0.0, "❌ No se encontró columna")
                 st.error("Columnas disponibles:")
                 for i, col in enumerate(df.columns):
                     st.write(f"{i+1}. {col} (tipo: {df[col].dtype})")
@@ -627,101 +677,171 @@ def process_file_simple(uploaded_file):
         
         # Extract and clean comments with comprehensive error handling
         try:
-            st.info(f"Extrayendo comentarios de la columna: '{comment_col}'")
+            progress_bar.progress(0.45, "📊 Extrayendo comentarios...")
+            status_text.info(f"📊 Extrayendo comentarios de la columna: '{comment_col}'")
             raw_comments = df[comment_col].dropna().tolist()
             
             if not raw_comments:
                 st.error("No se encontraron comentarios válidos en la columna seleccionada")
+                progress_bar.progress(0.0, "❌ No hay comentarios válidos")
                 return None
+                
+            progress_bar.progress(0.5, f"✅ {len(raw_comments)} comentarios extraídos")
             
-            # Memory optimization: Limit comments for Streamlit Cloud
-            if len(raw_comments) > MAX_COMMENTS:
-                st.warning(f"⚠️ Limitando a {MAX_COMMENTS} comentarios para optimizar rendimiento en Streamlit Cloud")
+            # GRACEFUL DEGRADATION (Fix 6) - Adaptive processing based on memory
+            current_memory_after_load = get_memory_usage()
+            memory_limit = 690 if is_streamlit_cloud() else 2048
+            memory_usage_pct = (current_memory_after_load / memory_limit) * 100
+            
+            # Adjust processing limits based on current memory usage
+            if memory_usage_pct > 80:  # Critical memory usage
+                degraded_limit = min(100, len(raw_comments))
+                st.error(f"🚨 Memoria crítica ({memory_usage_pct:.1f}%) - Modo degradado activado")
+                st.warning(f"📉 Procesando solo {degraded_limit} comentarios (modo de emergencia)")
+                raw_comments = raw_comments[:degraded_limit]
+            elif memory_usage_pct > 60:  # High memory usage
+                degraded_limit = min(250, len(raw_comments))
+                st.warning(f"⚠️ Memoria alta ({memory_usage_pct:.1f}%) - Procesamiento reducido")
+                st.info(f"📊 Procesando {degraded_limit} comentarios (modo optimizado)")
+                raw_comments = raw_comments[:degraded_limit]
+            elif len(raw_comments) > MAX_COMMENTS:  # Normal memory, large dataset
+                st.warning(f"📊 Limitando a {MAX_COMMENTS} comentarios para optimizar rendimiento en Streamlit Cloud")
                 raw_comments = raw_comments[:MAX_COMMENTS]
                 
-            st.success(f"✅ Extraídos {len(raw_comments)} comentarios")
+            st.success(f"✅ Extraídos {len(raw_comments)} comentarios para procesamiento")
             
             # Clean text with progress indication and memory optimization
-            with st.spinner("Limpiando y procesando comentarios..."):
-                cleaned_comments = []
-                
-                # Process in chunks to reduce memory usage
-                CHUNK_SIZE = 100
-                for i in range(0, len(raw_comments), CHUNK_SIZE):
-                    chunk = raw_comments[i:i + CHUNK_SIZE]
-                    for comment in chunk:
-                        try:
-                            cleaned = clean_text_simple(comment)
-                            if cleaned and len(cleaned.strip()) > 2:
-                                cleaned_comments.append(cleaned)
-                        except Exception:
-                            continue
-                    
-                    # Clear chunk from memory
-                    del chunk
-                    
-                    # Force garbage collection every 200 comments for memory efficiency
-                    if i > 0 and i % 200 == 0:
-                        optimize_memory()
-                        print(f"🧹 Memory cleanup at {i} comments processed")
-                
-                if not cleaned_comments:
-                    st.error("No se encontraron comentarios válidos después de la limpieza")
-                    return None
-                    
-                st.success(f"✅ Limpieza completada: {len(cleaned_comments)} comentarios válidos")
-                
-                # Clear raw_comments from memory
-                del raw_comments
+            progress_bar.progress(0.55, "🧽 Limpiando comentarios...")
+            status_text.info("🧽 Limpiando y normalizando texto...")
             
-            # Remove duplicates
-            with st.spinner("Removiendo duplicados..."):
-                unique_comments, comment_frequencies = remove_duplicates_simple(cleaned_comments)
-                st.info(f"Comentarios únicos: {len(unique_comments)}")
-                
-                # Clear cleaned_comments from memory after deduplication
-                del cleaned_comments
+            cleaned_comments = []
             
-            # Analyze sentiment with progress and memory management
-            with st.spinner("Analizando sentimientos..."):
-                sentiments = []
+            # Process in chunks to reduce memory usage
+            CHUNK_SIZE = 100
+            for i in range(0, len(raw_comments), CHUNK_SIZE):
+                chunk = raw_comments[i:i + CHUNK_SIZE]
+                for comment in chunk:
+                    try:
+                        cleaned = clean_text_simple(comment)
+                        if cleaned and len(cleaned.strip()) > 2:
+                            cleaned_comments.append(cleaned)
+                    except Exception:
+                        continue
                 
-                # Process sentiment in smaller batches for memory efficiency
-                SENTIMENT_BATCH_SIZE = 50
-                for i in range(0, len(unique_comments), SENTIMENT_BATCH_SIZE):
-                    batch = unique_comments[i:i + SENTIMENT_BATCH_SIZE]
-                    batch_sentiments = []
-                    
-                    for comment in batch:
-                        try:
-                            sentiment = analyze_sentiment_simple(comment)
-                            batch_sentiments.append(sentiment)
-                        except Exception:
-                            batch_sentiments.append('neutral')
-                    
-                    sentiments.extend(batch_sentiments)
-                    
-                    # Clear batch memory immediately
-                    del batch, batch_sentiments
-                    
-                    # Progress indicator for large datasets  
-                    if len(unique_comments) > SENTIMENT_BATCH_SIZE:
-                        progress = min(i + SENTIMENT_BATCH_SIZE, len(unique_comments))
-                        st.progress(progress / len(unique_comments))
-                        
-                        # Additional memory cleanup every few batches
-                        if (i // SENTIMENT_BATCH_SIZE) % 3 == 0:
-                            optimize_memory()
-                            print(f"🧹 Sentiment analysis memory cleanup at batch {i // SENTIMENT_BATCH_SIZE}")
-                        
-                st.success(f"✅ Análisis de sentimientos completado")
+                # Update progress during cleaning
+                cleaning_progress = 0.55 + (i / len(raw_comments)) * 0.15  # 0.55 to 0.70
+                progress_bar.progress(cleaning_progress, f"🧽 Limpiando... ({i}/{len(raw_comments)})")
                 
-                # Memory optimization after processing
+                # Clear chunk from memory
+                del chunk
+                
+                # Force garbage collection every 200 comments for memory efficiency
+                if i > 0 and i % 200 == 0:
+                    optimize_memory()
+                    print(f"🧹 Memory cleanup at {i} comments processed")
+                
+            if not cleaned_comments:
+                st.error("No se encontraron comentarios válidos después de la limpieza")
+                progress_bar.progress(0.0, "❌ No hay comentarios válidos")
+                return None
+                
+            progress_bar.progress(0.7, f"✅ {len(cleaned_comments)} comentarios limpiados")
+            status_text.success(f"✅ Limpieza completada: {len(cleaned_comments)} comentarios válidos")
+            
+            # Clear raw_comments from memory
+            del raw_comments
+        
+        # Remove duplicates
+        progress_bar.progress(0.75, "🔍 Removiendo duplicados...")
+        status_text.info("🔍 Eliminando comentarios duplicados...")
+        unique_comments, comment_frequencies = remove_duplicates_simple(cleaned_comments)
+        progress_bar.progress(0.8, f"✅ {len(unique_comments)} comentarios únicos")
+        
+        # Clear cleaned_comments from memory after deduplication
+        del cleaned_comments
+        
+        # Analyze sentiment with progress and memory management
+        progress_bar.progress(0.82, "🧠 Analizando sentimientos...")
+        status_text.info("🧠 Iniciando análisis de sentimientos...")
+        sentiments = []
+                
+        # Process sentiment in smaller batches for memory efficiency
+        SENTIMENT_BATCH_SIZE = 50
+        for i in range(0, len(unique_comments), SENTIMENT_BATCH_SIZE):
+            batch = unique_comments[i:i + SENTIMENT_BATCH_SIZE]
+            batch_sentiments = []
+            
+            for comment in batch:
+                try:
+                    sentiment = analyze_sentiment_simple(comment)
+                    batch_sentiments.append(sentiment)
+                except Exception:
+                    batch_sentiments.append('neutral')
+            
+            sentiments.extend(batch_sentiments)
+            
+            # Update progress for sentiment analysis
+            sentiment_progress = 0.82 + (i / len(unique_comments)) * 0.15  # 0.82 to 0.97
+            processed_comments = min(i + SENTIMENT_BATCH_SIZE, len(unique_comments))
+            progress_bar.progress(sentiment_progress, f"🧠 Sentimientos: {processed_comments}/{len(unique_comments)}")
+            
+            # Clear batch memory immediately
+            del batch, batch_sentiments
+            
+            # Additional memory cleanup every few batches
+            if (i // SENTIMENT_BATCH_SIZE) % 3 == 0:
                 optimize_memory()
+                print(f"🧹 Sentiment analysis memory cleanup at batch {i // SENTIMENT_BATCH_SIZE}")
+                        
+        progress_bar.progress(0.97, "✅ Análisis de sentimientos completado")
+        status_text.success(f"✅ Análisis de sentimientos completado")
+        
+        # Memory optimization after processing
+        optimize_memory()
                 
         except Exception as processing_error:
-            st.error(f"Error durante el procesamiento: {str(processing_error)}")
-            st.code(f"Error: {type(processing_error).__name__}: {str(processing_error)}")
+            # ENHANCED ERROR HANDLING WITH CLEANUP (Fix 7)
+            print(f"🚨 Processing error occurred: {type(processing_error).__name__}: {str(processing_error)}")
+            
+            # Emergency cleanup of any variables that might be in memory
+            try:
+                if 'raw_comments' in locals(): del raw_comments
+                if 'cleaned_comments' in locals(): del cleaned_comments  
+                if 'unique_comments' in locals(): del unique_comments
+                if 'sentiments' in locals(): del sentiments
+                if 'df' in locals(): del df
+                optimize_memory()
+                print("🧹 Emergency cleanup completed after processing error")
+            except:
+                print("⚠️ Emergency cleanup failed, but continuing...")
+            
+            # User-friendly error reporting
+            st.error(f"❌ Error durante el procesamiento del archivo")
+            st.error(f"🔍 Tipo de error: {type(processing_error).__name__}")
+            
+            # Show actionable error message based on error type
+            error_message = str(processing_error).lower()
+            if 'memory' in error_message or 'allocation' in error_message:
+                st.error("💾 **Error de memoria detectado**")
+                st.info("🧹 Usa el panel 'Gestión de Memoria' para limpiar resultados previos")
+                st.info("📉 Intenta con un archivo más pequeño o menos comentarios")
+            elif 'encoding' in error_message or 'decode' in error_message:
+                st.error("📝 **Error de codificación de texto**")
+                st.info("💡 Intenta guardar el archivo Excel con codificación UTF-8")
+                st.info("🔄 O convierte a CSV con codificación UTF-8")
+            elif 'column' in error_message or 'key' in error_message:
+                st.error("🗂️ **Error de estructura del archivo**")
+                st.info("📋 Verifica que el archivo tenga una columna con comentarios")
+                st.info("✏️ Renombra la columna a 'comentario' o 'comentarios'")
+            else:
+                st.error("⚠️ **Error general del sistema**")
+                st.info("🔄 Intenta recargar la página y procesar nuevamente")
+                st.info("📞 Si persiste, reporta el error con los detalles mostrados")
+            
+            # Technical details for debugging (collapsible)
+            with st.expander("🔧 Detalles técnicos (para desarrolladores)", expanded=False):
+                st.code(f"Error: {type(processing_error).__name__}: {str(processing_error)}")
+                
             return None
         
         # Count sentiments
@@ -778,6 +898,10 @@ def process_file_simple(uploaded_file):
                 else:
                     st.info("Validación basada en reglas aplicada")
             
+            # Final completion
+            progress_bar.progress(1.0, "🎉 Procesamiento completado exitosamente")
+            status_text.success("🎉 Análisis completado - Resultados disponibles")
+            
             # Final memory cleanup for enhanced results
             print("🧹 Final memory cleanup for AI-enhanced results")  
             optimize_memory()
@@ -785,6 +909,8 @@ def process_file_simple(uploaded_file):
         except Exception as ai_error:
             st.warning(f"Validación IA no disponible: {str(ai_error)}")
             # Return original results if AI oversight fails
+            progress_bar.progress(1.0, "✅ Procesamiento completado (sin IA)")
+            status_text.success("✅ Análisis completado - Resultados disponibles")
             print("🧹 Final memory cleanup for standard results")
             optimize_memory()
             return results
