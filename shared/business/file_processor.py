@@ -147,8 +147,51 @@ class FileProcessor:
             unique_comments = comment_data['unique_comments']
             comment_frequencies = comment_data['comment_frequencies']
             
-            # Analyze sentiments
-            sentiments = [analyze_sentiment_simple(comment) for comment in unique_comments]
+            if use_ai_insights:
+                # Use enhanced emotion detection for AI analysis
+                from .analysis_engine import analyze_emotions_enhanced
+                
+                # Analyze emotions for each comment
+                enhanced_results = []
+                all_emotions = []
+                total_intensity = 0
+                
+                for comment in unique_comments:
+                    emotion_result = analyze_emotions_enhanced(comment)
+                    enhanced_results.append({'emotions': emotion_result})
+                    
+                    # Collect emotions for summary
+                    dominant = emotion_result['dominant_emotion']
+                    if dominant != 'neutral':
+                        all_emotions.append(dominant)
+                    total_intensity += emotion_result['intensity']
+                
+                # Create emotion summary
+                from collections import Counter
+                emotion_counts = Counter(all_emotions)
+                emotion_summary = {
+                    'distribution': dict(emotion_counts),
+                    'avg_intensity': round(total_intensity / len(unique_comments), 1) if unique_comments else 0
+                }
+                
+                # Convert emotions to sentiments for compatibility
+                sentiments = []
+                positive_emotions = ['satisfacción', 'alegría', 'optimismo', 'confianza', 'agradecimiento', 'tranquilidad', 'esperanza']
+                negative_emotions = ['frustración', 'enojo', 'preocupación', 'irritación', 'desilusión', 'ansiedad', 'pesimismo']
+                
+                for result in enhanced_results:
+                    emotion = result['emotions']['dominant_emotion']
+                    if emotion in positive_emotions:
+                        sentiments.append('positivo')
+                    elif emotion in negative_emotions:
+                        sentiments.append('negativo') 
+                    else:
+                        sentiments.append('neutral')
+            else:
+                # Use basic sentiment analysis
+                sentiments = [analyze_sentiment_simple(comment) for comment in unique_comments]
+                emotion_summary = {}
+                enhanced_results = []
             
             # Extract themes
             theme_counts, theme_examples = extract_themes_simple(unique_comments)
@@ -176,6 +219,11 @@ class FileProcessor:
                 'analysis_method': analysis_method,
                 'ai_insights_enabled': use_ai_insights
             }
+            
+            # Add emotion data if AI analysis was used
+            if use_ai_insights and emotion_summary:
+                results['emotion_summary'] = emotion_summary
+                results['enhanced_results'] = enhanced_results
             
             # Add insights and recommendations (enhanced with AI if requested)
             results['insights'] = generate_insights_summary(results, enhanced_ai=use_ai_insights)

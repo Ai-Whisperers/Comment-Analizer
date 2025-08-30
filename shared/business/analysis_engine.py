@@ -43,6 +43,55 @@ def analyze_sentiment_simple(text):
         return 'neutral'
 
 
+def analyze_emotions_enhanced(text) -> Dict:
+    """Enhanced emotion detection for Spanish text"""
+    if pd.isna(text) or text == "":
+        return {'dominant_emotion': 'neutral', 'all_emotions': {}, 'intensity': 0}
+    
+    text = str(text).lower()
+    
+    # Spanish emotion patterns
+    emotion_patterns = {
+        'satisfacción': ['satisfecho', 'satisfactorio', 'contento', 'complacido', 'cumple', 'funciona bien'],
+        'frustración': ['frustrado', 'molesto', 'desesperante', 'no funciona', 'problema', 'falla'],
+        'alegría': ['feliz', 'alegre', 'encantado', 'genial', 'excelente', 'fantástico'],
+        'enojo': ['enojado', 'furioso', 'rabioso', 'indignado', 'terrible', 'pésimo'],
+        'preocupación': ['preocupado', 'preocupante', 'inquieto', 'nervioso', 'dudoso'],
+        'confianza': ['confío', 'seguro', 'confiable', 'estable', 'sólido'],
+        'desilusión': ['decepcionado', 'desilusionado', 'esperaba más', 'no cumple'],
+        'agradecimiento': ['gracias', 'agradecido', 'reconozco', 'valoro'],
+        'optimismo': ['optimista', 'esperanzado', 'positivo', 'mejorará'],
+        'irritación': ['irritado', 'fastidioso', 'molestia', 'incomoda'],
+        'sorpresa': ['sorprendido', 'inesperado', 'no esperaba', 'increíble'],
+        'tranquilidad': ['tranquilo', 'relajado', 'paz', 'sereno'],
+        'ansiedad': ['ansioso', 'nervioso', 'estresado', 'agobiado'],
+        'esperanza': ['espero', 'ojalá', 'esperanzado', 'confío en que'],
+        'pesimismo': ['pesimista', 'negativo', 'no creo', 'dudo que']
+    }
+    
+    # Detect emotions and calculate intensity
+    detected_emotions = {}
+    total_intensity = 0
+    
+    for emotion, patterns in emotion_patterns.items():
+        intensity = sum(2 if pattern in text else 1 for pattern in patterns if pattern in text)
+        if intensity > 0:
+            detected_emotions[emotion] = intensity
+            total_intensity += intensity
+    
+    # Determine dominant emotion
+    dominant_emotion = max(detected_emotions.items(), key=lambda x: x[1])[0] if detected_emotions else 'neutral'
+    
+    # Calculate average intensity (0-10 scale)
+    avg_intensity = min(10, round((total_intensity / max(1, len(detected_emotions))) * 1.5)) if detected_emotions else 0
+    
+    return {
+        'dominant_emotion': dominant_emotion,
+        'all_emotions': detected_emotions,
+        'intensity': avg_intensity
+    }
+
+
 def clean_text_simple(text):
     """Clean and normalize text"""
     if pd.isna(text) or text == "":

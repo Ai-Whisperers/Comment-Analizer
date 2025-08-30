@@ -179,6 +179,45 @@ if is_ai_analysis:
     # Engagement Quality
     engagement_quality = insights.get('engagement_quality', 'básico')
     st.markdown(f"**Calidad de Engagement:** {engagement_quality.title()}")
+    
+    # Emotion Analysis Section (if available)
+    if results.get('emotion_summary'):
+        st.markdown("#### Análisis Emocional Detallado")
+        
+        emotion_summary = results['emotion_summary']
+        emotion_distribution = emotion_summary.get('distribution', {})
+        avg_intensity = emotion_summary.get('avg_intensity', 0)
+        
+        # Emotion intensity metric
+        col_intensity1, col_intensity2 = st.columns(2)
+        with col_intensity1:
+            st.metric("Intensidad Emocional Promedio", f"{avg_intensity}/10")
+        with col_intensity2:
+            intensity_level = "Alta" if avg_intensity > 7 else ("Media" if avg_intensity > 4 else "Baja")
+            st.markdown(
+                ui.status_badge(
+                    icon="",
+                    text=f"Nivel: {intensity_level}",
+                    badge_type="positive" if avg_intensity > 7 else ("neutral" if avg_intensity > 4 else "negative")
+                ),
+                unsafe_allow_html=True
+            )
+        
+        # Emotion distribution chart
+        if emotion_distribution:
+            chart_theme = theme.get_chart_theme(st.session_state.get('dark_mode', True))
+            
+            emotion_df = pd.DataFrame(list(emotion_distribution.items()), columns=['Emoción', 'Frecuencia'])
+            emotion_df = emotion_df.sort_values('Frecuencia', ascending=False).head(10)  # Top 10 emotions
+            
+            fig_emotions = px.bar(
+                emotion_df,
+                x='Emoción',
+                y='Frecuencia', 
+                title="Distribución de Emociones Específicas (Top 10)"
+            )
+            fig_emotions.update_layout(chart_theme['layout'])
+            st.plotly_chart(fig_emotions, use_container_width=True)
 
 # Modern section divider (PRESERVED)
 st.markdown(ui.section_divider(), unsafe_allow_html=True)
@@ -289,11 +328,12 @@ try:
         summary_df = pd.DataFrame(summary_data, columns=['Métrica', 'Valor'])
         summary_df.to_excel(writer, sheet_name='Resumen', index=False)
         
-        # AI-specific sheet for enhanced analysis
+        # AI-specific sheets for enhanced analysis
         if is_ai_analysis:
             insights = results.get('insights', {})
             priority_areas = insights.get('priority_action_areas', [])
             
+            # AI Insights sheet
             ai_insights_df = pd.DataFrame([
                 ['Customer Satisfaction Index', insights.get('customer_satisfaction_index', 0)],
                 ['Emotional Intensity', insights.get('emotional_intensity', 'medio')],
@@ -303,13 +343,40 @@ try:
                 ['Priority Areas Count', len(priority_areas)]
             ], columns=['AI Metric', 'Value'])
             ai_insights_df.to_excel(writer, sheet_name='Insights IA', index=False)
+            
+            # Emotion Analysis sheet (if emotion data is available)
+            if results.get('emotion_summary'):
+                emotion_summary = results['emotion_summary']
+                emotion_distribution = emotion_summary.get('distribution', {})
+                avg_intensity = emotion_summary.get('avg_intensity', 0)
+                
+                if emotion_distribution:
+                    emotion_data = []
+                    for emotion, count in emotion_distribution.items():
+                        emotion_data.append([emotion.title(), count])
+                    
+                    emotion_df = pd.DataFrame(emotion_data, columns=['Emoción', 'Frecuencia'])
+                    emotion_df = emotion_df.sort_values('Frecuencia', ascending=False)
+                    
+                    # Add summary row
+                    summary_row = pd.DataFrame([
+                        ['--- RESUMEN EMOCIONAL ---', ''],
+                        ['Total Emociones Detectadas', len(emotion_distribution)],
+                        ['Intensidad Promedio (/10)', avg_intensity],
+                        ['Emoción Dominante', emotion_df.iloc[0]['Emoción'] if len(emotion_df) > 0 else 'N/A']
+                    ], columns=['Emoción', 'Frecuencia'])
+                    
+                    final_emotion_df = pd.concat([emotion_df, summary_row], ignore_index=True)
+                    final_emotion_df.to_excel(writer, sheet_name='Emociones Detalladas', index=False)
     
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
     analysis_type = "IA" if is_ai_analysis else "rapido"
     filename = f"analisis_comentarios_{analysis_type}_{timestamp}.xlsx"
     
     # Enhanced download button with analysis type
-    download_label = "📊 Descargar Reporte IA (3 hojas)" if is_ai_analysis else "📊 Descargar Reporte Básico (2 hojas)"
+    emotion_sheets = " + Emociones" if (is_ai_analysis and results.get('emotion_summary')) else ""
+    sheet_count = "4 hojas" if (is_ai_analysis and results.get('emotion_summary')) else ("3 hojas" if is_ai_analysis else "2 hojas")
+    download_label = f"Descargar Reporte IA ({sheet_count}){emotion_sheets}" if is_ai_analysis else "Descargar Reporte Básico (2 hojas)"
     
     st.download_button(
         label=download_label,
