@@ -652,27 +652,37 @@ def process_file_simple(uploaded_file):
             progress_bar.progress(0.35, "🔍 Detectando columna de comentarios...")
             status_text.info("🔍 Buscando columna de comentarios...")
             
-            comment_cols = ['comentario final', 'comment', 'comments', 'feedback', 'texto', 'comentario', 
-                           'observacion', 'observaciones', 'opinion', 'mensaje', 'respuesta']
+            # OPTIMIZED SINGLE-PASS COLUMN DETECTION (Fix 12)
+            comment_keywords = ['comentario final', 'comment', 'comments', 'feedback', 'texto', 'comentario', 
+                               'observacion', 'observaciones', 'opinion', 'mensaje', 'respuesta']
             comment_col = None
+            first_text_col = None
             
-            # First try exact match
+            # Single pass through columns with priority scoring
             for col in df.columns:
-                if any(name in col.lower() for name in comment_cols):
-                    comment_col = col
-                    status_text.success(f"✅ Columna de comentarios detectada: '{comment_col}'")
-                    progress_bar.progress(0.4, f"✅ Columna encontrada: {comment_col}")
-                    break
-            
-            if comment_col is None:
-                # Use first text column
-                status_text.warning("⚠️ Buscando primera columna de texto...")
-                for col in df.columns:
-                    if df[col].dtype == 'object':
+                col_lower = col.lower()
+                
+                # Check for exact keyword matches (highest priority)
+                for keyword in comment_keywords:
+                    if keyword in col_lower:
                         comment_col = col
-                        status_text.warning(f"📝 Usando primera columna de texto: '{comment_col}'")
-                        progress_bar.progress(0.4, f"📝 Usando columna: {comment_col}")
+                        status_text.success(f"✅ Columna de comentarios detectada: '{comment_col}' (palabra clave: '{keyword}')")
+                        progress_bar.progress(0.4, f"✅ Columna encontrada: {comment_col}")
                         break
+                
+                # If exact match found, exit early
+                if comment_col:
+                    break
+                    
+                # Track first text column as fallback (only if not found yet)
+                if first_text_col is None and df[col].dtype == 'object':
+                    first_text_col = col
+            
+            # Use fallback if no keyword match found
+            if comment_col is None and first_text_col is not None:
+                comment_col = first_text_col
+                status_text.warning(f"📝 Usando primera columna de texto: '{comment_col}'")
+                progress_bar.progress(0.4, f"📝 Usando columna: {comment_col}")
             
             if comment_col is None:
                 st.error("No se encontró columna de comentarios válida")
@@ -705,18 +715,39 @@ def process_file_simple(uploaded_file):
             memory_usage_pct = (current_memory_after_load / memory_limit) * 100
             
             # Adjust processing limits based on current memory usage
+            # ENHANCED USER MESSAGING FOR MEMORY LIMITS (Fix 15 continued)
             if memory_usage_pct > 80:  # Critical memory usage
                 degraded_limit = min(100, len(raw_comments))
                 st.error(f"🚨 Memoria crítica ({memory_usage_pct:.1f}%) - Modo degradado activado")
-                st.warning(f"📉 Procesando solo {degraded_limit} comentarios (modo de emergencia)")
+                
+                with st.expander("🔍 ¿Por qué modo degradado?", expanded=True):
+                    st.warning("💾 **Memoria de Streamlit Cloud casi agotada**")
+                    st.info(f"📊 Uso actual: {memory_usage_pct:.1f}% de 690MB disponibles")
+                    st.info(f"📉 Procesando solo {degraded_limit} comentarios para evitar crash")
+                    st.info("🧹 Usa 'Gestión de Memoria' → 'Limpiar Resultados' para liberar espacio")
+                    
                 raw_comments = raw_comments[:degraded_limit]
+                
             elif memory_usage_pct > 60:  # High memory usage
                 degraded_limit = min(250, len(raw_comments))
-                st.warning(f"⚠️ Memoria alta ({memory_usage_pct:.1f}%) - Procesamiento reducido")
-                st.info(f"📊 Procesando {degraded_limit} comentarios (modo optimizado)")
+                st.warning(f"⚠️ Memoria alta ({memory_usage_pct:.1f}%) - Procesamiento optimizado")
+                
+                with st.expander("📊 Información de rendimiento", expanded=False):
+                    st.info(f"💾 Uso de memoria: {memory_usage_pct:.1f}% del límite cloud")
+                    st.info(f"📊 Procesando {degraded_limit} de {len(raw_comments)} comentarios")
+                    st.info("🚀 Para procesar más comentarios, limpia resultados anteriores")
+                    
                 raw_comments = raw_comments[:degraded_limit]
+                
             elif len(raw_comments) > MAX_COMMENTS:  # Normal memory, large dataset
-                st.warning(f"📊 Limitando a {MAX_COMMENTS} comentarios para optimizar rendimiento en Streamlit Cloud")
+                st.warning(f"📊 Optimización automática: {MAX_COMMENTS} de {len(raw_comments)} comentarios")
+                
+                with st.expander("⚡ Optimización para Streamlit Cloud", expanded=False):
+                    st.info("🌐 **Streamlit Cloud optimizado para mejor rendimiento**")
+                    st.info(f"📈 Límite de {MAX_COMMENTS} comentarios asegura velocidad")
+                    st.info("🖥️ **Instalación local**: Sin límites, archivos grandes")
+                    st.info("💡 **Tip**: Para datasets grandes, usa muestreo representativo")
+                    
                 raw_comments = raw_comments[:MAX_COMMENTS]
                 
             st.success(f"✅ Extraídos {len(raw_comments)} comentarios para procesamiento")
@@ -1473,8 +1504,28 @@ if uploaded_file:
             st.stop()
             
         if file_size > 3 * 1024 * 1024:  # 3MB limit for cloud
+            # IMPROVED USER MESSAGING (Fix 15)
             st.error(f"❌ Archivo demasiado grande: {file_size/1024/1024:.1f}MB > 3MB")
-            st.info("💡 Reduce el tamaño del archivo o usa la instalación local")
+            
+            with st.expander("💡 ¿Por qué hay límite de tamaño?", expanded=True):
+                st.info("🌐 **Streamlit Cloud tiene límite de memoria de 690MB total**")
+                st.info("👥 **Se comparte entre 3-5 usuarios simultáneos**")
+                st.info("💾 **Tu límite efectivo: ~140MB por análisis**")
+                st.info("⚡ **Límite de 3MB asegura rendimiento óptimo**")
+                
+                col1, col2 = st.columns(2)
+                with col1:
+                    st.markdown("**🔧 Opciones para archivos grandes:**")
+                    st.markdown("• Eliminar columnas innecesarias")  
+                    st.markdown("• Dividir en archivos más pequeños")
+                    st.markdown("• Usar solo comentarios esenciales")
+                    
+                with col2:
+                    st.markdown("**🖥️ Instalación local (sin límites):**")
+                    st.markdown("• Ejecutar `START_HERE.bat`")
+                    st.markdown("• O usar `python run.py`")
+                    st.markdown("• Procesa archivos hasta 50MB+")
+            
             st.stop()
             
         # Test basic file readability
@@ -1492,9 +1543,35 @@ if uploaded_file:
             st.info("🔄 Intenta cargar el archivo nuevamente")
             st.stop()
             
+        # FILE FORMAT VALIDATION (Fix 14)
+        file_extension = uploaded_file.name.lower().split('.')[-1]
+        supported_formats = ['csv', 'xlsx', 'xls']
+        
+        if file_extension not in supported_formats:
+            st.error(f"❌ Formato de archivo no soportado: .{file_extension}")
+            st.info(f"📋 Formatos soportados: {', '.join([f'.{fmt}' for fmt in supported_formats])}")
+            st.stop()
+            
+        # Additional format-specific validation
+        if file_extension in ['xlsx', 'xls']:
+            # Quick Excel format validation
+            try:
+                uploaded_file.seek(0)
+                first_bytes = uploaded_file.read(8)
+                uploaded_file.seek(0)
+                
+                # Check for Excel magic bytes (simplified check)
+                if file_extension == 'xlsx' and not (b'PK' in first_bytes[:4]):  # ZIP-based format
+                    st.warning("⚠️ El archivo .xlsx puede estar corrupto (no es formato ZIP válido)")
+                elif file_extension == 'xls' and not (first_bytes[:8] == b'\xd0\xcf\x11\xe0\xa1\xb1\x1a\xe1' or b'\x09' in first_bytes):
+                    st.warning("⚠️ El archivo .xls puede no ser un formato Excel válido")
+                    
+            except Exception as format_error:
+                st.warning(f"⚠️ No se pudo validar el formato Excel: {str(format_error)}")
+        
         # File validation successful
-        st.success(f"✅ Archivo válido: {uploaded_file.name} ({file_size/1024:.1f}KB)")
-        print(f"✅ File validation passed: {uploaded_file.name}, {file_size} bytes")
+        st.success(f"✅ Archivo válido: {uploaded_file.name} ({file_size/1024:.1f}KB) - Formato: .{file_extension}")
+        print(f"✅ File validation passed: {uploaded_file.name}, {file_size} bytes, format: {file_extension}")
         
     except Exception as validation_error:
         st.error(f"❌ Error validando archivo: {str(validation_error)}")
