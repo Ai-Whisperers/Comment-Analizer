@@ -1646,23 +1646,23 @@ if uploaded_file:
                         print(f"🔄 Using analysis method: {analysis_method}")
                         
                         if analysis_method == "ai":
-                        # Use Pipeline 2 (AI + Fallback) with better error handling
-                        try:
-                            st.info("Iniciando análisis avanzado con IA...")
-                            
-                            # First, process file the same way as simple pipeline
-                            basic_results = process_file_simple(uploaded_file)
-                            if not basic_results:
-                                st.error("Error procesando archivo")
-                            else:
-                                # Then enhance with AI analysis
-                                from src.ai_analysis_adapter import AIAnalysisAdapter
-                                adapter = AIAnalysisAdapter()
+                            # Use Pipeline 2 (AI + Fallback) with better error handling
+                            try:
+                                st.info("Iniciando análisis avanzado con IA...")
                                 
-                                # Extract comments from basic results for AI processing
-                                comments = basic_results.get('comments', [])
-                                if len(comments) > 50:
-                                    st.info(f"Procesando {len(comments)} comentarios con IA (esto puede tomar 1-3 minutos)...")
+                                # First, process file the same way as simple pipeline
+                                basic_results = process_file_simple(uploaded_file)
+                                if not basic_results:
+                                    st.error("Error procesando archivo")
+                                else:
+                                    # Then enhance with AI analysis
+                                    from src.ai_analysis_adapter import AIAnalysisAdapter
+                                    adapter = AIAnalysisAdapter()
+                                    
+                                    # Extract comments from basic results for AI processing
+                                    comments = basic_results.get('comments', [])
+                                    if len(comments) > 50:
+                                        st.info(f"Procesando {len(comments)} comentarios con IA (esto puede tomar 1-3 minutos)...")
                                 
                                 # Try AI enhancement on the extracted comments
                                 try:
@@ -1700,14 +1700,14 @@ if uploaded_file:
                                     st.warning(f"IA falló ({str(ai_error)[:50]}...), usando análisis rápido")
                                     st.session_state.analysis_results = basic_results
                                     
-                        except Exception as e:
-                            st.error(f"Error en procesamiento: {str(e)}")
-                    else:
-                        # Use Pipeline 1 (Simple Rule-Based)  
-                        results = process_file_simple(uploaded_file)
-                        if results:
-                            st.session_state.analysis_results = results
-                            st.success("Análisis rápido completado!")
+                            except Exception as e:
+                                st.error(f"Error en procesamiento: {str(e)}")
+                        else:
+                            # Use Pipeline 1 (Simple Rule-Based)  
+                            results = process_file_simple(uploaded_file)
+                            if results:
+                                st.session_state.analysis_results = results
+                                st.success("Análisis rápido completado!")
                     
                     # Add success animation if we have results - with error protection
                     if 'analysis_results' in st.session_state and st.session_state.analysis_results:
