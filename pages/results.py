@@ -49,6 +49,30 @@ if 'analysis_results' not in st.session_state:
 
 results = st.session_state.analysis_results
 
+# AI analysis detection
+is_ai_analysis = results.get('ai_insights_enabled', False)
+analysis_method = results.get('analysis_method', 'RULE_BASED_SIMPLE')
+
+# Analysis method indicator  
+if is_ai_analysis:
+    st.markdown(
+        ui.status_badge(
+            icon="",
+            text="Análisis con IA Completado",
+            badge_type="positive"
+        ),
+        unsafe_allow_html=True
+    )
+else:
+    st.markdown(
+        ui.status_badge(
+            icon="",
+            text="Análisis Rápido Completado", 
+            badge_type="neutral"
+        ),
+        unsafe_allow_html=True
+    )
+
 # SOPHISTICATED RESULTS DISPLAY (PRESERVED FROM ORIGINAL)
 st.markdown("### Resumen Ejecutivo")
 
@@ -98,6 +122,64 @@ with col4:
         unsafe_allow_html=True
     )
 
+# AI-Enhanced Insights Section (NEW)
+if is_ai_analysis:
+    st.markdown(ui.section_divider(), unsafe_allow_html=True)
+    st.markdown("### Insights de Inteligencia Artificial")
+    
+    insights = results.get('insights', {})
+    
+    # AI metrics display
+    col1, col2, col3 = st.columns(3)
+    
+    with col1:
+        # Customer Satisfaction Index
+        satisfaction_index = insights.get('customer_satisfaction_index', 0)
+        satisfaction_level = "Alto" if satisfaction_index > 70 else ("Medio" if satisfaction_index > 40 else "Bajo")
+        st.metric(
+            "Índice de Satisfacción", 
+            f"{satisfaction_index}/100",
+            delta=satisfaction_level
+        )
+    
+    with col2:
+        # Emotional Intensity  
+        emotional_intensity = insights.get('emotional_intensity', 'medio')
+        intensity_badge_type = "positive" if emotional_intensity in ['alto', 'muy_alto'] else "neutral"
+        st.markdown(
+            ui.status_badge(
+                icon="",
+                text=f"Intensidad: {emotional_intensity.title()}",
+                badge_type=intensity_badge_type
+            ),
+            unsafe_allow_html=True
+        )
+    
+    with col3:
+        # Sentiment Stability
+        sentiment_stability = insights.get('sentiment_stability', 'balanceado')
+        stability_badge_type = "positive" if sentiment_stability == 'muy_balanceado' else ("negative" if 'polarizado' in sentiment_stability else "neutral")
+        st.markdown(
+            ui.status_badge(
+                icon="",
+                text=f"Estabilidad: {sentiment_stability.replace('_', ' ').title()}",
+                badge_type=stability_badge_type
+            ),
+            unsafe_allow_html=True
+        )
+    
+    # Priority Action Areas
+    priority_areas = insights.get('priority_action_areas', [])
+    if priority_areas:
+        st.markdown("#### Áreas Prioritarias de Acción")
+        for area in priority_areas[:4]:  # Show top 4
+            area_display = area.replace('_', ' ').title().replace('Optimization', 'Optimización')
+            st.info(f"• {area_display}")
+    
+    # Engagement Quality
+    engagement_quality = insights.get('engagement_quality', 'básico')
+    st.markdown(f"**Calidad de Engagement:** {engagement_quality.title()}")
+
 # Modern section divider (PRESERVED)
 st.markdown(ui.section_divider(), unsafe_allow_html=True)
 
@@ -139,12 +221,34 @@ if results.get('theme_counts'):
     fig_themes.update_layout(chart_theme['layout'])
     st.plotly_chart(fig_themes, use_container_width=True)
 
-# Recommendations with modern styling
-st.markdown("### Recomendaciones")
-
-recommendations = results.get('recommendations', [])
-for i, rec in enumerate(recommendations, 1):
-    st.info(f"{i}. {rec}")  # Use simple Streamlit info instead of non-existent alert_banner
+# Enhanced recommendations with AI differentiation
+if is_ai_analysis:
+    st.markdown("### Recomendaciones Estratégicas IA")
+    recommendations = results.get('recommendations', [])
+    
+    for i, rec in enumerate(recommendations, 1):
+        # Highlight strategic AI recommendations
+        if any(indicator in rec for indicator in ['EXCELENCIA', 'CRÍTICO', 'INTENSIDAD', 'VELOCIDAD', 'PRECIO', 'SERVICIO']):
+            st.warning(f"**{i}.** {rec}")  # Strategic recommendations in warning style
+        else:
+            st.info(f"{i}. {rec}")
+            
+    # Add AI analysis explanation
+    with st.expander("ℹ️ Acerca de las Recomendaciones IA", expanded=False):
+        st.markdown("""
+        **Las recomendaciones estratégicas** están generadas por inteligencia artificial basándose en:
+        - Patrones detectados en los comentarios
+        - Análisis contextual de sentimientos
+        - Métricas de satisfacción y engagement
+        - Benchmarks de la industria de telecomunicaciones
+        
+        **Recomendaciones marcadas** requieren **acción prioritaria**.
+        """)
+else:
+    st.markdown("### Recomendaciones")
+    recommendations = results.get('recommendations', [])
+    for i, rec in enumerate(recommendations, 1):
+        st.info(f"{i}. {rec}")
 
 # SIMPLE DOWNLOAD SECTION (NO COMPLEX NESTING)
 st.markdown("### Descargar Resultados")
@@ -162,21 +266,53 @@ try:
         })
         results_df.to_excel(writer, sheet_name='Resultados', index=False)
         
-        # Summary sheet
-        summary_df = pd.DataFrame([
+        # Summary sheet with AI enhancement
+        summary_data = [
             ['Total Comentarios', results.get('total', 0)],
             ['Positivos %', results.get('sentiment_percentages', {}).get('positivo', 0)],
             ['Negativos %', results.get('sentiment_percentages', {}).get('negativo', 0)],
-            ['Neutrales %', results.get('sentiment_percentages', {}).get('neutral', 0)]
-        ], columns=['Métrica', 'Valor'])
+            ['Neutrales %', results.get('sentiment_percentages', {}).get('neutral', 0)],
+            ['Método de Análisis', results.get('analysis_method', 'RULE_BASED_SIMPLE')]
+        ]
+        
+        # Add AI-specific metrics if available
+        if is_ai_analysis:
+            insights = results.get('insights', {})
+            summary_data.extend([
+                ['--- MÉTRICAS IA AVANZADAS ---', ''],
+                ['Índice de Satisfacción (/100)', insights.get('customer_satisfaction_index', 0)],
+                ['Intensidad Emocional', insights.get('emotional_intensity', 'medio')],
+                ['Estabilidad de Sentimientos', insights.get('sentiment_stability', 'balanceado')],
+                ['Calidad de Engagement', insights.get('engagement_quality', 'básico')]
+            ])
+        
+        summary_df = pd.DataFrame(summary_data, columns=['Métrica', 'Valor'])
         summary_df.to_excel(writer, sheet_name='Resumen', index=False)
+        
+        # AI-specific sheet for enhanced analysis
+        if is_ai_analysis:
+            insights = results.get('insights', {})
+            priority_areas = insights.get('priority_action_areas', [])
+            
+            ai_insights_df = pd.DataFrame([
+                ['Customer Satisfaction Index', insights.get('customer_satisfaction_index', 0)],
+                ['Emotional Intensity', insights.get('emotional_intensity', 'medio')],
+                ['Sentiment Stability', insights.get('sentiment_stability', 'balanceado')],
+                ['Engagement Quality', insights.get('engagement_quality', 'básico')],
+                ['Top Priority Area', priority_areas[0] if priority_areas else 'N/A'],
+                ['Priority Areas Count', len(priority_areas)]
+            ], columns=['AI Metric', 'Value'])
+            ai_insights_df.to_excel(writer, sheet_name='Insights IA', index=False)
     
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    filename = f"analisis_comentarios_{timestamp}.xlsx"
+    analysis_type = "IA" if is_ai_analysis else "rapido"
+    filename = f"analisis_comentarios_{analysis_type}_{timestamp}.xlsx"
     
-    # SIMPLE DOWNLOAD BUTTON (NO NESTING)
+    # Enhanced download button with analysis type
+    download_label = "📊 Descargar Reporte IA (3 hojas)" if is_ai_analysis else "📊 Descargar Reporte Básico (2 hojas)"
+    
     st.download_button(
-        label="Descargar Reporte Excel",
+        label=download_label,
         data=output.getvalue(),
         file_name=filename,
         mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
