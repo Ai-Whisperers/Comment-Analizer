@@ -155,6 +155,33 @@ def clear_session_state_safely():
     # Force session state garbage collection
     gc.collect()
 
+def emergency_session_reset():
+    """Emergency reset of all session state except essential items"""
+    
+    # Essential keys to preserve
+    essential_keys = {
+        'app_initialized', 'dark_mode', 'analysis_method', 
+        'theme_manager', 'ui_components'
+    }
+    
+    # Clear everything else
+    keys_to_clear = []
+    for key in list(st.session_state.keys()):
+        if key not in essential_keys:
+            keys_to_clear.append(key)
+    
+    for key in keys_to_clear:
+        try:
+            del st.session_state[key]
+        except:
+            pass
+    
+    # Force aggressive cleanup
+    aggressive_memory_cleanup()
+    
+    logger.info(f"Emergency reset: cleared {len(keys_to_clear)} session state items")
+    return len(keys_to_clear)
+
 def monitor_memory_critical():
     """Monitor if we're approaching critical memory limits"""
     current_memory = get_memory_usage()
@@ -552,20 +579,32 @@ try:
                 # CRITICAL: Emergency memory management for Streamlit Cloud
                 if memory_pct > 75:
                     st.error("🚨 MEMORIA CRÍTICA")
-                    if st.button("🧹 Limpiar Memoria", type="secondary", help="Limpia memoria para evitar crash"):
-                        try:
-                            # Clear analysis results
-                            if 'analysis_results' in st.session_state:
-                                del st.session_state.analysis_results
-                            
-                            # Aggressive cleanup
-                            aggressive_memory_cleanup()
-                            clear_session_state_safely()
-                            
-                            st.success("✅ Memoria limpiada - Recarga la página")
-                            st.info("🔄 Presiona F5 o actualiza la página para continuar")
-                        except Exception as cleanup_error:
-                            st.error(f"Error limpiando memoria: {str(cleanup_error)}")
+                    
+                    col1, col2 = st.columns(2)
+                    with col1:
+                        if st.button("🧹 Limpiar", type="secondary", help="Limpia resultados"):
+                            try:
+                                # Clear analysis results only
+                                if 'analysis_results' in st.session_state:
+                                    del st.session_state.analysis_results
+                                
+                                aggressive_memory_cleanup()
+                                st.success("✅ Resultados limpiados")
+                            except Exception as cleanup_error:
+                                st.error(f"Error: {str(cleanup_error)}")
+                    
+                    with col2:
+                        if st.button("🆘 Reset", type="secondary", help="Reset completo de sesión"):
+                            try:
+                                cleared_count = emergency_session_reset()
+                                st.success(f"✅ Reset completo: {cleared_count} items")
+                                st.info("🔄 Actualiza la página (F5)")
+                                st.rerun()
+                            except Exception as reset_error:
+                                st.error(f"Error en reset: {str(reset_error)}")
+                
+                elif memory_pct > 60:
+                    st.warning("⚠️ Memoria alta - considera limpiar resultados")
                             
         except:
             pass  # Silent fail if monitoring unavailable
@@ -775,9 +814,9 @@ def process_file_simple(uploaded_file):
             print(f"⚠️ Memory check failed: {memory_error}")
             # Continue without memory check if monitoring fails
         
-        # Streamlit Cloud memory optimization - ultra strict limits
-        MAX_FILE_SIZE_MB = 3    # Ultra conservative for 690MB limit
-        MAX_COMMENTS = 500      # Drastically reduce for cloud stability
+        # Streamlit Cloud memory optimization - EMERGENCY ultra strict limits
+        MAX_FILE_SIZE_MB = 1.5  # EMERGENCY: Reduced to 1.5MB for stability
+        MAX_COMMENTS = 200      # EMERGENCY: Reduced to 200 for crash prevention
         
         if hasattr(uploaded_file, 'size') and uploaded_file.size > MAX_FILE_SIZE_MB * 1024 * 1024:
             st.error(f"Archivo demasiado grande para Streamlit Cloud. Máximo: {MAX_FILE_SIZE_MB}MB")
@@ -2033,8 +2072,33 @@ if st.session_state.analysis_results:
             use_container_width=True,
             help="Descargar reporte en formato Excel"
         )
+        
+        # CRITICAL: Clear Excel data from memory immediately after download button
+        del excel_data
+        aggressive_memory_cleanup()
+        
     except Exception as e:
         st.error(f"Error creando Excel: {e}")
+    
+    # CRITICAL: Final cleanup after displaying all results to prevent memory accumulation
+    try:
+        # Clear large objects after user has seen results
+        if 'results' in locals():
+            # Keep a minimal copy for any remaining UI elements
+            essential_data = {
+                'total_comments': results.get('total_comments', 0),
+                'analysis_method': results.get('analysis_method', 'simple')
+            }
+            # Clear the full results from memory
+            del results
+            
+        # Force final cleanup
+        aggressive_memory_cleanup()
+        logger.info("🧹 Critical post-display memory cleanup completed")
+        
+    except Exception as final_cleanup_error:
+        logger.warning(f"Final cleanup warning: {str(final_cleanup_error)}")
+        pass
 
 # Enhanced footer using clean UI component
 st.markdown(
