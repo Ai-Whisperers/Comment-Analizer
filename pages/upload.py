@@ -33,7 +33,7 @@ st.markdown(f"<style>{theme.generate_animations()}</style>", unsafe_allow_html=T
 st.markdown(
     ui.animated_header(
         title="Análisis de Comentarios",
-        subtitle="Personal Paraguay | File Upload"
+        subtitle="Personal Paraguay | Cargar Archivo"
     ),
     unsafe_allow_html=True
 )
@@ -42,7 +42,7 @@ st.markdown(
 st.markdown(ui.floating_particles(), unsafe_allow_html=True)
 
 # SIMPLE BUTTON ARCHITECTURE (FIX FOR RELIABILITY)
-st.markdown("### Upload Your File")
+st.markdown("### Cargar Archivo")
 
 # File upload with modern styling
 uploaded_file = st.file_uploader(
@@ -58,12 +58,12 @@ if uploaded_file:
     validation = processor.validate_file(uploaded_file)
     
     if validation['valid']:
-        st.success(f"✅ Archivo válido: {uploaded_file.name} ({validation['file_size_mb']:.1f}MB)")
+        st.success(f"Archivo válido: {uploaded_file.name} ({validation['file_size_mb']:.1f}MB)")
         
         # SIMPLE BUTTON - NO COMPLEX NESTING
         col1, col2, col3 = st.columns([1, 2, 1])
         with col2:
-            if st.button("🚀 Procesar Archivo", type="primary", use_container_width=True, key="process_file_btn"):
+            if st.button("Procesar Archivo", type="primary", use_container_width=True, key="process_file_btn"):
                 # Store file for processing
                 st.session_state.uploaded_file = uploaded_file
                 st.session_state.validation_results = validation
@@ -71,15 +71,15 @@ if uploaded_file:
                 # Navigate to analyze page
                 st.switch_page("pages/analyze.py")
     else:
-        st.error(f"❌ {validation['error_message']}")
+        st.error(f"Error: {validation['error_message']}")
 
 # Modern section divider (PRESERVED)
 st.markdown(ui.section_divider(), unsafe_allow_html=True)
 
 # File requirements with modern styling
-st.markdown("### 📋 Requisitos del Archivo")
+st.markdown("### Requisitos del Archivo")
 
-with st.expander("ℹ️ Información de formato", expanded=False):
+with st.expander("Información de formato", expanded=False):
     st.markdown("""
     **Formatos soportados:**
     - Excel (.xlsx, .xls)
@@ -97,15 +97,15 @@ with st.expander("ℹ️ Información de formato", expanded=False):
 # Modern gradient footer (PRESERVED)
 st.markdown(
     ui.gradient_footer(
-        primary_text="File Upload | Comment Analyzer",
-        secondary_text="Powered by Advanced Analytics"
+        primary_text="Cargar Archivo | Analizador de Comentarios",
+        secondary_text="Impulsado por Análisis Avanzados"
     ),
     unsafe_allow_html=True
 )
 
 # Memory monitoring in sidebar (PRESERVED FUNCTIONALITY)
 with st.sidebar:
-    st.markdown("### 💾 System Status")
+    st.markdown("### Estado del Sistema")
     
     try:
         # Import memory functions
@@ -116,18 +116,19 @@ with st.sidebar:
         if memory_mb > 0:
             memory_limit = 690 if is_streamlit_cloud() else 2048
             memory_pct = (memory_mb / memory_limit) * 100
-            color = "🔴" if memory_pct > 80 else ("🟡" if memory_pct > 60 else "🟢")
+            status = "Alto" if memory_pct > 80 else ("Medio" if memory_pct > 60 else "Normal")
+            color = "red" if memory_pct > 80 else ("orange" if memory_pct > 60 else "green")
             
             st.metric(
-                f"{color} Memory",
+                f"Memoria ({status})",
                 f"{memory_mb:.0f}MB", 
-                f"{memory_pct:.1f}% used"
+                f"{memory_pct:.1f}% usado"
             )
     except:
-        st.info("Memory monitoring unavailable")
+        st.info("Monitoreo de memoria no disponible")
     
     # Navigation
     st.markdown("---")
-    st.markdown("### 🧭 Navigation")
-    if st.button("📊 View Results", disabled=('analysis_results' not in st.session_state)):
+    st.markdown("### Navegación")
+    if st.button("Ver Resultados", disabled=('analysis_results' not in st.session_state)):
         st.switch_page("pages/results.py")

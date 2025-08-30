@@ -32,16 +32,16 @@ st.markdown(f"<style>{theme.generate_animations()}</style>", unsafe_allow_html=T
 # Modern header (PRESERVED)
 st.markdown(
     ui.animated_header(
-        title="Processing Comments",
-        subtitle="Advanced Analytics in Progress"
+        title="Procesando Comentarios",
+        subtitle="Análisis Avanzado en Progreso"
     ),
     unsafe_allow_html=True
 )
 
 # Check if file was uploaded
 if 'uploaded_file' not in st.session_state:
-    st.error("❌ No file uploaded. Please go back to upload a file.")
-    if st.button("🔙 Back to Upload", key="back_to_upload"):
+    st.error("No se cargó ningún archivo. Por favor regresa a cargar un archivo.")
+    if st.button("Volver a Cargar", key="back_to_upload"):
         st.switch_page("pages/upload.py")
     st.stop()
 
@@ -49,14 +49,14 @@ uploaded_file = st.session_state.uploaded_file
 processor = FileProcessor()
 
 # SIMPLE PROCESSING WITH MODERN UI
-st.markdown("### 🧠 Analysis Options")
+st.markdown("### Opciones de Análisis")
 
 # Analysis method selection with simple button structure
 col1, col2 = st.columns(2)
 
 with col1:
     # SIMPLE BUTTON - NO DEEP NESTING
-    if st.button("🚀 Análisis Rápido", type="primary", use_container_width=True, key="quick_analysis"):
+    if st.button("Análisis Rápido", type="primary", use_container_width=True, key="quick_analysis"):
         with st.spinner("Procesando comentarios..."):
             try:
                 # Process file using business logic
@@ -64,22 +64,37 @@ with col1:
                 
                 if results:
                     st.session_state.analysis_results = results
-                    st.success("✅ Análisis completado!")
+                    st.success("Análisis completado!")
                     
                     # Navigate to results
-                    if st.button("📊 Ver Resultados", key="view_results_quick"):
+                    if st.button("Ver Resultados", key="view_results_quick"):
                         st.switch_page("pages/results.py")
                 else:
-                    st.error("❌ Error procesando archivo")
+                    st.error("Error procesando archivo")
                     
             except Exception as e:
-                st.error(f"❌ Error durante análisis: {str(e)}")
+                st.error(f"Error durante análisis: {str(e)}")
 
 with col2:
     # SIMPLE AI BUTTON - NO DEEP NESTING  
-    if st.button("🤖 Análisis con IA", type="secondary", use_container_width=True, key="ai_analysis"):
-        st.info("🚧 Análisis IA disponible próximamente")
-        # Future: Implement AI analysis without complex nesting
+    if st.button("Análisis con IA", type="secondary", use_container_width=True, key="ai_analysis"):
+        with st.spinner("Procesando con inteligencia artificial..."):
+            try:
+                # Process file using AI-enhanced business logic
+                results = processor.process_uploaded_file(uploaded_file, use_ai_insights=True)
+                
+                if results:
+                    st.session_state.analysis_results = results
+                    st.success("Análisis IA completado!")
+                    
+                    # Navigate to results
+                    if st.button("Ver Resultados IA", key="view_results_ai"):
+                        st.switch_page("pages/results.py")
+                else:
+                    st.error("Error procesando archivo con IA")
+                    
+            except Exception as e:
+                st.error(f"Error durante análisis IA: {str(e)}")
 
 # Modern section divider (PRESERVED)
 st.markdown(ui.section_divider(), unsafe_allow_html=True)
@@ -130,21 +145,21 @@ st.markdown("---")
 col1, col2 = st.columns(2)
 
 with col1:
-    if st.button("🔙 Nueva Carga", key="new_upload"):
+    if st.button("Nueva Carga", key="new_upload"):
         # Clear session and go back
         if 'uploaded_file' in st.session_state:
             del st.session_state.uploaded_file
         st.switch_page("pages/upload.py")
 
 with col2:
-    if st.button("📊 Ver Resultados", key="goto_results", disabled=('analysis_results' not in st.session_state)):
+    if st.button("Ver Resultados", key="goto_results", disabled=('analysis_results' not in st.session_state)):
         st.switch_page("pages/results.py")
 
 # Modern footer (PRESERVED)
 st.markdown(
     ui.gradient_footer(
-        primary_text="Analysis Engine | Comment Analyzer", 
-        secondary_text="Intelligent Processing"
+        primary_text="Motor de Análisis | Analizador de Comentarios", 
+        secondary_text="Procesamiento Inteligente"
     ),
     unsafe_allow_html=True
 )

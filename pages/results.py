@@ -35,22 +35,22 @@ st.markdown(f"<style>{theme.generate_animations()}</style>", unsafe_allow_html=T
 st.markdown(
     ui.animated_header(
         title="Resultados del Análisis",
-        subtitle="Personal Paraguay | Advanced Analytics"
+        subtitle="Personal Paraguay | Análisis Avanzado"
     ),
     unsafe_allow_html=True
 )
 
 # Check if results exist
 if 'analysis_results' not in st.session_state:
-    st.error("❌ No hay resultados disponibles. Por favor, realiza un análisis primero.")
-    if st.button("🔙 Ir a Upload", key="goto_upload"):
+    st.error("No hay resultados disponibles. Por favor, realiza un análisis primero.")
+    if st.button("Ir a Cargar Archivo", key="goto_upload"):
         st.switch_page("pages/upload.py")
     st.stop()
 
 results = st.session_state.analysis_results
 
 # SOPHISTICATED RESULTS DISPLAY (PRESERVED FROM ORIGINAL)
-st.markdown("### 📊 Resumen Ejecutivo")
+st.markdown("### Resumen Ejecutivo")
 
 # Modern metrics display with glass effects
 col1, col2, col3, col4 = st.columns(4)
@@ -58,7 +58,7 @@ col1, col2, col3, col4 = st.columns(4)
 with col1:
     st.markdown(
         ui.status_badge(
-            icon="📝",
+            icon="",
             text=f"{results.get('total', 0)} Comentarios",
             badge_type="neutral"
         ),
@@ -69,7 +69,7 @@ with col2:
     positive_pct = results.get('sentiment_percentages', {}).get('positivo', 0)
     st.markdown(
         ui.status_badge(
-            icon="😊", 
+            icon="", 
             text=f"{positive_pct}% Positivos",
             badge_type="positive"
         ),
@@ -80,7 +80,7 @@ with col3:
     negative_pct = results.get('sentiment_percentages', {}).get('negativo', 0)
     st.markdown(
         ui.status_badge(
-            icon="😞",
+            icon="",
             text=f"{negative_pct}% Negativos", 
             badge_type="negative"
         ),
@@ -91,7 +91,7 @@ with col4:
     neutral_pct = results.get('sentiment_percentages', {}).get('neutral', 0)
     st.markdown(
         ui.status_badge(
-            icon="😐",
+            icon="",
             text=f"{neutral_pct}% Neutrales",
             badge_type="neutral"
         ),
@@ -102,7 +102,7 @@ with col4:
 st.markdown(ui.section_divider(), unsafe_allow_html=True)
 
 # Detailed results with sophisticated visualization
-st.markdown("### 📈 Análisis Detallado")
+st.markdown("### Análisis Detallado")
 
 # Create charts (preserve sophisticated visualization)
 import plotly.express as px
@@ -131,14 +131,14 @@ if results.get('theme_counts'):
     st.plotly_chart(fig_themes, use_container_width=True)
 
 # Recommendations with modern styling
-st.markdown("### 💡 Recomendaciones")
+st.markdown("### Recomendaciones")
 
 recommendations = results.get('recommendations', [])
 for i, rec in enumerate(recommendations, 1):
     st.info(f"{i}. {rec}")  # Use simple Streamlit info instead of non-existent alert_banner
 
 # SIMPLE DOWNLOAD SECTION (NO COMPLEX NESTING)
-st.markdown("### 📥 Descargar Resultados")
+st.markdown("### Descargar Resultados")
 
 # Generate Excel report (preserve functionality)
 try:
@@ -167,7 +167,7 @@ try:
     
     # SIMPLE DOWNLOAD BUTTON (NO NESTING)
     st.download_button(
-        label="📊 Descargar Reporte Excel",
+        label="Descargar Reporte Excel",
         data=output.getvalue(),
         file_name=filename,
         mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
@@ -183,7 +183,7 @@ st.markdown("---")
 col1, col2, col3 = st.columns(3)
 
 with col1:
-    if st.button("🔙 Nueva Carga", key="new_upload_from_results"):
+    if st.button("Nueva Carga", key="new_upload_from_results"):
         # Clear results and go to upload
         if 'analysis_results' in st.session_state:
             del st.session_state.analysis_results
@@ -192,22 +192,22 @@ with col1:
         st.switch_page("pages/upload.py")
 
 with col2:
-    if st.button("🔄 Procesar Nuevo", key="reprocess"):
+    if st.button("Procesar Nuevo", key="reprocess"):
         st.switch_page("pages/analyze.py")
 
 with col3:
-    if st.button("🧹 Limpiar Memoria", key="cleanup_memory"):
+    if st.button("Limpiar Memoria", key="cleanup_memory"):
         # Simple cleanup without complex nesting
         if 'analysis_results' in st.session_state:
             del st.session_state.analysis_results
-        st.success("✅ Memoria limpiada")
+        st.success("Memoria limpiada")
         st.rerun()
 
 # Modern footer (PRESERVED)
 st.markdown(
     ui.gradient_footer(
-        primary_text="Results Dashboard | Comment Analyzer",
-        secondary_text="Professional Analytics Platform"
+        primary_text="Panel de Resultados | Analizador de Comentarios",
+        secondary_text="Plataforma de Análisis Profesional"
     ),
     unsafe_allow_html=True
 )

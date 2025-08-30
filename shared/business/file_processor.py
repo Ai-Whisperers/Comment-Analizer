@@ -141,7 +141,7 @@ class FileProcessor:
             logger.error(f"Error extracting comments: {e}")
             raise
     
-    def analyze_comments(self, comment_data: Dict) -> Dict:
+    def analyze_comments(self, comment_data: Dict, use_ai_insights: bool = False) -> Dict:
         """Perform sentiment analysis on comment data"""
         try:
             unique_comments = comment_data['unique_comments']
@@ -156,7 +156,9 @@ class FileProcessor:
             # Calculate statistics
             sentiment_percentages = calculate_sentiment_percentages(sentiments)
             
-            # Generate results
+            # Generate results with analysis method indicator
+            analysis_method = 'AI_ENHANCED' if use_ai_insights else 'RULE_BASED_SIMPLE'
+            
             results = {
                 'total': len(unique_comments),
                 'comments': unique_comments,
@@ -171,12 +173,13 @@ class FileProcessor:
                 'raw_total': len(comment_data['raw_comments']),
                 'duplicates_removed': len(comment_data['raw_comments']) - len(unique_comments),
                 'cleaning_applied': True,
-                'analysis_method': 'RULE_BASED_SIMPLE'
+                'analysis_method': analysis_method,
+                'ai_insights_enabled': use_ai_insights
             }
             
-            # Add insights and recommendations
-            results['insights'] = generate_insights_summary(results)
-            results['recommendations'] = create_recommendations(results)
+            # Add insights and recommendations (enhanced with AI if requested)
+            results['insights'] = generate_insights_summary(results, enhanced_ai=use_ai_insights)
+            results['recommendations'] = create_recommendations(results, enhanced_ai=use_ai_insights)
             
             return results
             
@@ -184,7 +187,7 @@ class FileProcessor:
             logger.error(f"Error analyzing comments: {e}")
             raise
     
-    def process_uploaded_file(self, uploaded_file) -> Optional[Dict]:
+    def process_uploaded_file(self, uploaded_file, use_ai_insights: bool = False) -> Optional[Dict]:
         """Complete file processing pipeline"""
         try:
             # Validate file
@@ -205,8 +208,8 @@ class FileProcessor:
             # Extract comments
             comment_data = self.extract_comments(df, comment_col)
             
-            # Analyze comments
-            results = self.analyze_comments(comment_data)
+            # Analyze comments with AI enhancement if requested
+            results = self.analyze_comments(comment_data, use_ai_insights)
             
             # Add file metadata
             results.update({

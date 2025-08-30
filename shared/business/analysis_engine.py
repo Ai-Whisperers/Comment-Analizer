@@ -134,13 +134,13 @@ def calculate_sentiment_percentages(sentiments: List[str]) -> Dict[str, float]:
     }
 
 
-def generate_insights_summary(results: Dict) -> Dict:
+def generate_insights_summary(results: Dict, enhanced_ai: bool = False) -> Dict:
     """Generate analysis insights summary"""
     total_comments = results.get('total', 0)
     sentiment_percentages = results.get('sentiment_percentages', {})
     theme_counts = results.get('theme_counts', {})
     
-    # Key insights
+    # Base insights
     insights = {
         'total_comments_analyzed': total_comments,
         'dominant_sentiment': max(sentiment_percentages.items(), key=lambda x: x[1])[0] if sentiment_percentages else 'neutral',
@@ -150,10 +150,100 @@ def generate_insights_summary(results: Dict) -> Dict:
         'analysis_quality': 'high' if total_comments > 50 else 'medium' if total_comments > 10 else 'basic'
     }
     
+    # AI Enhanced insights
+    if enhanced_ai:
+        insights.update({
+            'sentiment_stability': calculate_sentiment_stability(sentiment_percentages),
+            'emotional_intensity': calculate_emotional_intensity(sentiment_percentages),
+            'priority_action_areas': identify_priority_areas(theme_counts, sentiment_percentages),
+            'customer_satisfaction_index': calculate_satisfaction_index(sentiment_percentages),
+            'engagement_quality': assess_engagement_quality(total_comments, theme_counts)
+        })
+    
     return insights
 
 
-def create_recommendations(results: Dict) -> List[str]:
+def calculate_sentiment_stability(sentiment_percentages: Dict) -> str:
+    """Calculate how balanced/stable the sentiment distribution is"""
+    values = list(sentiment_percentages.values())
+    if not values:
+        return 'unknown'
+    
+    max_val = max(values)
+    if max_val > 80:
+        return 'muy_polarizado'
+    elif max_val > 60:
+        return 'polarizado' 
+    elif max_val > 40:
+        return 'balanceado'
+    else:
+        return 'muy_balanceado'
+
+
+def calculate_emotional_intensity(sentiment_percentages: Dict) -> str:
+    """Calculate the emotional intensity of the feedback"""
+    positive = sentiment_percentages.get('positivo', 0)
+    negative = sentiment_percentages.get('negativo', 0)
+    
+    intensity = positive + negative  # Total non-neutral sentiment
+    
+    if intensity > 80:
+        return 'muy_alto'
+    elif intensity > 60:
+        return 'alto'
+    elif intensity > 40:
+        return 'medio'
+    else:
+        return 'bajo'
+
+
+def identify_priority_areas(theme_counts: Dict, sentiment_percentages: Dict) -> List[str]:
+    """Identify priority areas for business action using AI logic"""
+    priorities = []
+    
+    # High frequency themes become priorities
+    sorted_themes = sorted(theme_counts.items(), key=lambda x: x[1], reverse=True)
+    high_frequency_themes = [theme for theme, count in sorted_themes[:3] if count > 2]
+    
+    for theme in high_frequency_themes:
+        priorities.append(f"{theme}_optimization")
+    
+    # Sentiment-based priorities
+    if sentiment_percentages.get('negativo', 0) > 25:
+        priorities.append('negative_sentiment_mitigation')
+    
+    if sentiment_percentages.get('positivo', 0) > 70:
+        priorities.append('positive_experience_amplification')
+    
+    return priorities[:4]  # Top 4 priorities
+
+
+def calculate_satisfaction_index(sentiment_percentages: Dict) -> float:
+    """Calculate customer satisfaction index (0-100)"""
+    positive = sentiment_percentages.get('positivo', 0)
+    neutral = sentiment_percentages.get('neutral', 0) 
+    negative = sentiment_percentages.get('negativo', 0)
+    
+    # Weighted satisfaction score (neutral counts as 0.5)
+    satisfaction = (positive * 1.0) + (neutral * 0.5) + (negative * 0.0)
+    return round(satisfaction, 1)
+
+
+def assess_engagement_quality(total_comments: int, theme_counts: Dict) -> str:
+    """Assess the quality/depth of customer engagement"""
+    active_themes = len([theme for theme, count in theme_counts.items() if count > 0])
+    
+    if total_comments > 100 and active_themes > 4:
+        return 'excelente'
+    elif total_comments > 50 and active_themes > 3:
+        return 'bueno'
+    elif total_comments > 20 and active_themes > 2:
+        return 'moderado'
+    else:
+        return 'basico'
+
+
+def create_recommendations(results: Dict, enhanced_ai: bool = False) -> List[str]:
     """Generate actionable recommendations based on analysis"""
     recommendations = []
     
@@ -176,6 +266,31 @@ def create_recommendations(results: Dict) -> List[str]:
     
     if theme_counts.get('precio', 0) > 3:
         recommendations.append("Evaluar competitividad de precios - mencionado en múltiples comentarios")
+    
+    # Enhanced AI recommendations
+    if enhanced_ai:
+        insights = results.get('insights', {})
+        satisfaction_index = insights.get('customer_satisfaction_index', 50)
+        emotional_intensity = insights.get('emotional_intensity', 'medio')
+        priority_areas = insights.get('priority_action_areas', [])
+        
+        # Advanced strategic recommendations
+        if satisfaction_index > 80:
+            recommendations.append("🎯 EXCELENCIA: Capitalizar alta satisfacción - implementar programa de referidos")
+        elif satisfaction_index < 40:
+            recommendations.append("🚨 CRÍTICO: Plan de mejora urgente - satisfacción por debajo del 40%")
+        
+        if emotional_intensity == 'muy_alto':
+            recommendations.append("⚡ INTENSIDAD ALTA: Comentarios muy emocionales - respuesta personalizada recomendada")
+        
+        # Priority area specific recommendations
+        for area in priority_areas:
+            if 'velocidad' in area:
+                recommendations.append("🚀 VELOCIDAD: Optimizar infraestructura de red en zonas críticas")
+            elif 'precio' in area:
+                recommendations.append("💰 PRECIO: Evaluar estrategia de precios vs competencia")
+            elif 'servicio' in area:
+                recommendations.append("🎯 SERVICIO: Capacitación adicional al equipo de atención")
     
     if not recommendations:
         recommendations.append("Mantener calidad actual del servicio - comentarios en rango normal")
