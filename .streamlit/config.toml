@@ -26,12 +26,5 @@ developmentMode = false
 suppressDeprecationWarnings = true
 showWarningOnDirectExecution = false
 
-[client]
-caching = true
-showErrorDetails = true
-toolbarMode = "minimal"
-
 [runner]
 magicEnabled = true
-installTracer = false
-fixMatplotlib = true

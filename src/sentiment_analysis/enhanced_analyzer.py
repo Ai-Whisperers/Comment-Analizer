@@ -429,9 +429,10 @@ class EnhancedAnalyzer:
             all_words.extend(words)
             
             # Extract 2-3 word phrases
-            for i in range(len(words) - 1):
+            words_len = len(words)
+            for i in range(words_len - 1):
                 all_phrases.append(' '.join(words[i:i+2]))
-                if i < len(words) - 2:
+                if i < words_len - 2:
                     all_phrases.append(' '.join(words[i:i+3]))
         
         # Top keywords (excluding common stop words)

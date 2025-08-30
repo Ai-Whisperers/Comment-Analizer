@@ -244,7 +244,8 @@ class PatternDetector:
                 
             # Extract phrases (sequences of words)
             words = str(comment).lower().split()
-            for i in range(len(words) - min_length + 1):
+            words_len = len(words)
+            for i in range(words_len - min_length + 1):
                 phrase = ' '.join(words[i:i + min_length])
                 # Filter out common words and short phrases
                 if len(phrase) > 10 and not phrase.startswith(('el', 'la', 'un', 'una', 'de', 'en')):
