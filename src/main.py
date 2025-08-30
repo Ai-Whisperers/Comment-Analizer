@@ -761,54 +761,54 @@ def process_file_simple(uploaded_file):
             
             # Clear raw_comments from memory
             del raw_comments
-        
-        # Remove duplicates
-        progress_bar.progress(0.75, "🔍 Removiendo duplicados...")
-        status_text.info("🔍 Eliminando comentarios duplicados...")
-        unique_comments, comment_frequencies = remove_duplicates_simple(cleaned_comments)
-        progress_bar.progress(0.8, f"✅ {len(unique_comments)} comentarios únicos")
-        
-        # Clear cleaned_comments from memory after deduplication
-        del cleaned_comments
-        
-        # Analyze sentiment with progress and memory management
-        progress_bar.progress(0.82, "🧠 Analizando sentimientos...")
-        status_text.info("🧠 Iniciando análisis de sentimientos...")
-        sentiments = []
+            
+            # Remove duplicates
+            progress_bar.progress(0.75, "🔍 Removiendo duplicados...")
+            status_text.info("🔍 Eliminando comentarios duplicados...")
+            unique_comments, comment_frequencies = remove_duplicates_simple(cleaned_comments)
+            progress_bar.progress(0.8, f"✅ {len(unique_comments)} comentarios únicos")
+            
+            # Clear cleaned_comments from memory after deduplication
+            del cleaned_comments
+            
+            # Analyze sentiment with progress and memory management
+            progress_bar.progress(0.82, "🧠 Analizando sentimientos...")
+            status_text.info("🧠 Iniciando análisis de sentimientos...")
+            sentiments = []
+                    
+            # Process sentiment in smaller batches for memory efficiency
+            SENTIMENT_BATCH_SIZE = 50
+            for i in range(0, len(unique_comments), SENTIMENT_BATCH_SIZE):
+                batch = unique_comments[i:i + SENTIMENT_BATCH_SIZE]
+                batch_sentiments = []
                 
-        # Process sentiment in smaller batches for memory efficiency
-        SENTIMENT_BATCH_SIZE = 50
-        for i in range(0, len(unique_comments), SENTIMENT_BATCH_SIZE):
-            batch = unique_comments[i:i + SENTIMENT_BATCH_SIZE]
-            batch_sentiments = []
+                for comment in batch:
+                    try:
+                        sentiment = analyze_sentiment_simple(comment)
+                        batch_sentiments.append(sentiment)
+                    except Exception:
+                        batch_sentiments.append('neutral')
+                
+                sentiments.extend(batch_sentiments)
+                
+                # Update progress for sentiment analysis
+                sentiment_progress = 0.82 + (i / len(unique_comments)) * 0.15  # 0.82 to 0.97
+                processed_comments = min(i + SENTIMENT_BATCH_SIZE, len(unique_comments))
+                progress_bar.progress(sentiment_progress, f"🧠 Sentimientos: {processed_comments}/{len(unique_comments)}")
+                
+                # Clear batch memory immediately
+                del batch, batch_sentiments
+                
+                # Additional memory cleanup every few batches
+                if (i // SENTIMENT_BATCH_SIZE) % 3 == 0:
+                    optimize_memory()
+                    print(f"🧹 Sentiment analysis memory cleanup at batch {i // SENTIMENT_BATCH_SIZE}")
+                            
+            progress_bar.progress(0.97, "✅ Análisis de sentimientos completado")
+            status_text.success(f"✅ Análisis de sentimientos completado")
             
-            for comment in batch:
-                try:
-                    sentiment = analyze_sentiment_simple(comment)
-                    batch_sentiments.append(sentiment)
-                except Exception:
-                    batch_sentiments.append('neutral')
-            
-            sentiments.extend(batch_sentiments)
-            
-            # Update progress for sentiment analysis
-            sentiment_progress = 0.82 + (i / len(unique_comments)) * 0.15  # 0.82 to 0.97
-            processed_comments = min(i + SENTIMENT_BATCH_SIZE, len(unique_comments))
-            progress_bar.progress(sentiment_progress, f"🧠 Sentimientos: {processed_comments}/{len(unique_comments)}")
-            
-            # Clear batch memory immediately
-            del batch, batch_sentiments
-            
-            # Additional memory cleanup every few batches
-            if (i // SENTIMENT_BATCH_SIZE) % 3 == 0:
-                optimize_memory()
-                print(f"🧹 Sentiment analysis memory cleanup at batch {i // SENTIMENT_BATCH_SIZE}")
-                        
-        progress_bar.progress(0.97, "✅ Análisis de sentimientos completado")
-        status_text.success(f"✅ Análisis de sentimientos completado")
-        
-        # Memory optimization after processing
-        optimize_memory()
+            # Memory optimization after processing
+            optimize_memory()
                 
         except Exception as processing_error:
             # ENHANCED ERROR HANDLING WITH CLEANUP (Fix 7)
