@@ -10,12 +10,10 @@ headless = true
 enableCORS = true
 enableXsrfProtection = false
 maxUploadSize = 50
-enableStaticServing = true
+enableStaticServing = false
 allowRunOnSave = true
 runOnSave = false
 fileWatcherType = "auto"
-address = "0.0.0.0"
-baseUrlPath = ""
 
 [browser]
 gatherUsageStats = false
