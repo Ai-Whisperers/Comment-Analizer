@@ -1,16 +1,6 @@
-# System packages required for deployment
-# These are installed before Python packages
-
-# For pandas and data processing
 build-essential
-
-# For matplotlib and plotting
 libfreetype6-dev
 libpng-dev
-
-# For OpenAI and HTTP requests
 libssl-dev
 libffi-dev
-
-# For general compatibility
 pkg-config
