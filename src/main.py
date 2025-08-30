@@ -329,13 +329,20 @@ try:
             if st.button("◐", key="theme_toggle", help="Toggle Dark/Light Mode"):
                 try:
                     print(f"🎨 Toggling theme mode...")
+                    old_mode = st.session_state.dark_mode
                     st.session_state.dark_mode = not st.session_state.dark_mode
                     print(f"✅ Theme set to: {'Dark' if st.session_state.dark_mode else 'Light'}")
                     st.rerun()
                 except Exception as theme_error:
                     print(f"🚨 Theme toggle error: {theme_error}")
-                    # Fallback without rerun
-                    st.session_state.dark_mode = not st.session_state.dark_mode
+                    try:
+                        # Emergency fallback: toggle without rerun and show message
+                        if 'old_mode' in locals():
+                            st.session_state.dark_mode = not old_mode
+                        st.info("🎨 Tema cambiado. Actualiza la página si no se ve el cambio.")
+                    except Exception as fallback_error:
+                        print(f"🚨 Theme fallback error: {fallback_error}")
+                        st.error("Error cambiando tema. Actualiza la página.")
         with col2:
             st.markdown(f"**{'Dark' if st.session_state.dark_mode else 'Light'} Mode**")
         
@@ -410,18 +417,22 @@ if st.session_state.show_deployment_status:
                 st.warning("⚠️ OpenAI API: No configurada")
                 st.info("📊 Análisis básico: Disponible")
         
-        # Close button with error protection
+        # Close button with enhanced error protection
         if st.button("🗙 Cerrar mensajes de estado", key="close_status", type="secondary"):
             try:
                 print("🗙 Closing deployment status panel...")
                 st.session_state.show_deployment_status = False
-                print("✅ Deployment status hidden - page will refresh")
+                print("✅ Deployment status hidden - attempting page refresh")
                 st.rerun()
             except Exception as close_error:
                 print(f"🚨 Close button error: {close_error}")
-                # Fallback: just set the state without rerun
-                st.session_state.show_deployment_status = False
-                st.info("✅ Panel cerrado. Actualiza la página si no desaparece.")
+                try:
+                    # Emergency fallback: just set the state without rerun
+                    st.session_state.show_deployment_status = False
+                    st.success("✅ Panel cerrado. Si no desaparece, actualiza la página manualmente.")
+                except Exception as fallback_error:
+                    print(f"🚨 Fallback error: {fallback_error}")
+                    st.error("Error cerrando panel. Actualiza la página.")
 
 @st.cache_data(ttl=300, max_entries=500)  # 5 min TTL, reduced for cloud memory limits
 def analyze_sentiment_simple(text):
@@ -1458,11 +1469,21 @@ if uploaded_file:
     
     with col_method1:
         if st.button("Análisis Rápido (Reglas)", type="secondary", use_container_width=True, help="Análisis inmediato basado en reglas, sin costo"):
-            st.session_state.analysis_method = "simple"
+            try:
+                st.session_state.analysis_method = "simple"
+                print("✅ Analysis method set to: simple")
+            except Exception as method_error:
+                print(f"🚨 Error setting analysis method: {method_error}")
+                st.error("Error configurando método de análisis")
             
     with col_method2:
         if st.button("Análisis Avanzado (IA)", type="secondary", use_container_width=True, help="Análisis profundo con IA - requiere API key"):
-            st.session_state.analysis_method = "ai"
+            try:
+                st.session_state.analysis_method = "ai"
+                print("✅ Analysis method set to: ai")
+            except Exception as method_error:
+                print(f"🚨 Error setting analysis method: {method_error}")
+                st.error("Error configurando método de análisis")
     
     # Show selected method
     if 'analysis_method' in st.session_state:
@@ -1476,8 +1497,21 @@ if uploaded_file:
         with col2:
             button_text = "Analizar con IA" if st.session_state.analysis_method == "ai" else "Analizar Rápido"
             if st.button(button_text, type="primary", use_container_width=True):
-                with st.spinner("Procesando comentarios..."):
-                    if st.session_state.analysis_method == "ai":
+                # CRITICAL FIX: Validate uploaded_file state before processing
+                if not uploaded_file:
+                    st.error("❌ No hay archivo cargado. Por favor, carga un archivo Excel o CSV primero.")
+                    st.stop()
+                    
+                try:
+                    # Verify file is still accessible 
+                    if not hasattr(uploaded_file, 'name') or not uploaded_file.name:
+                        st.error("❌ Archivo no válido. Por favor, vuelve a cargar el archivo.")
+                        st.stop()
+                        
+                    print(f"🔄 Starting analysis for file: {uploaded_file.name}")
+                    
+                    with st.spinner("Procesando comentarios..."):
+                        if st.session_state.analysis_method == "ai":
                         # Use Pipeline 2 (AI + Fallback) with better error handling
                         try:
                             st.info("Iniciando análisis avanzado con IA...")
@@ -1551,6 +1585,40 @@ if uploaded_file:
                         except Exception as animation_error:
                             print(f"🚨 Animation error: {animation_error}")
                             # Continue without animation
+                            
+                except Exception as button_error:
+                    # COMPREHENSIVE BUTTON ERROR HANDLING
+                    print(f"🚨 Button handler error: {type(button_error).__name__}: {str(button_error)}")
+                    
+                    # Emergency cleanup
+                    try:
+                        optimize_memory()
+                        print("🧹 Emergency cleanup after button error")
+                    except:
+                        pass
+                    
+                    # User-friendly error reporting
+                    st.error("❌ Error procesando el archivo")
+                    error_msg = str(button_error).lower()
+                    
+                    if 'file' in error_msg or 'upload' in error_msg:
+                        st.error("📁 **Problema con el archivo**")
+                        st.info("🔄 Vuelve a cargar el archivo y prueba nuevamente")
+                    elif 'memory' in error_msg:
+                        st.error("💾 **Error de memoria**") 
+                        st.info("🧹 Usa 'Gestión de Memoria' para limpiar resultados anteriores")
+                    elif 'session' in error_msg or 'state' in error_msg:
+                        st.error("🔄 **Error de sesión**")
+                        st.info("↻ Recarga la página para resetear el estado")
+                    else:
+                        st.error("⚠️ **Error general**")
+                        st.info("🔄 Intenta recargar la página")
+                        
+                    # Technical details for debugging
+                    with st.expander("🔧 Detalles técnicos", expanded=False):
+                        st.code(f"{type(button_error).__name__}: {str(button_error)}")
+                        
+                    st.stop()  # Stop execution to prevent further errors
 
 # Results display with enhanced Spanish sentiment UI
 if st.session_state.analysis_results:
@@ -1647,13 +1715,30 @@ if st.session_state.analysis_results:
             if st.button("Limpiar Resultados", help="Libera memoria después del análisis"):
                 try:
                     print("🧹 Manual session state cleanup triggered")
+                    # Clear results first
                     st.session_state.analysis_results = None
+                    
+                    # Clear other related session state if exists
+                    if 'analysis_method' in st.session_state:
+                        del st.session_state.analysis_method
+                        
                     optimize_memory()
+                    print("✅ Session cleanup completed successfully")
+                    
                     st.success("✅ Memoria liberada. Puedes cargar un nuevo archivo.")
                     st.rerun()
+                    
                 except Exception as cleanup_error:
                     print(f"🚨 Session cleanup error: {cleanup_error}")
-                    st.error("Error al limpiar memoria. Actualiza la página.")
+                    try:
+                        # Emergency fallback: clear what we can
+                        if 'analysis_results' in st.session_state:
+                            st.session_state.analysis_results = None
+                        optimize_memory()
+                        st.success("✅ Memoria parcialmente liberada. Actualiza la página para completar.")
+                    except Exception as fallback_error:
+                        print(f"🚨 Cleanup fallback error: {fallback_error}")
+                        st.error("Error limpiando memoria. Actualiza la página para resetear completamente.")
         
         with col2:
             # Show current memory usage if available
