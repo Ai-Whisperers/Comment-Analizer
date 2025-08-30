@@ -1457,11 +1457,52 @@ with st.container():
         label_visibility="visible"
     )
 
-# Analysis button
+# Analysis button with enhanced file validation
 if uploaded_file:
+    # ENHANCED FILE VALIDATION (Fix 9)
+    try:
+        # Validate file is still accessible and not corrupted
+        original_pos = uploaded_file.tell() if hasattr(uploaded_file, 'tell') else 0
+        uploaded_file.seek(0, 2)  # Seek to end to get size
+        file_size = uploaded_file.tell()
+        uploaded_file.seek(original_pos)  # Restore original position
+        
+        # Validate file properties
+        if file_size == 0:
+            st.error("❌ El archivo está vacío. Por favor, carga un archivo válido.")
+            st.stop()
+            
+        if file_size > 3 * 1024 * 1024:  # 3MB limit for cloud
+            st.error(f"❌ Archivo demasiado grande: {file_size/1024/1024:.1f}MB > 3MB")
+            st.info("💡 Reduce el tamaño del archivo o usa la instalación local")
+            st.stop()
+            
+        # Test basic file readability
+        try:
+            uploaded_file.seek(0)
+            test_bytes = uploaded_file.read(100)  # Read first 100 bytes
+            uploaded_file.seek(0)  # Reset for actual processing
+            
+            if not test_bytes:
+                st.error("❌ No se puede leer el archivo. Puede estar corrupto.")
+                st.stop()
+                
+        except Exception as read_error:
+            st.error(f"❌ Error leyendo archivo: {str(read_error)}")
+            st.info("🔄 Intenta cargar el archivo nuevamente")
+            st.stop()
+            
+        # File validation successful
+        st.success(f"✅ Archivo válido: {uploaded_file.name} ({file_size/1024:.1f}KB)")
+        print(f"✅ File validation passed: {uploaded_file.name}, {file_size} bytes")
+        
+    except Exception as validation_error:
+        st.error(f"❌ Error validando archivo: {str(validation_error)}")
+        st.info("🔄 Vuelve a cargar el archivo")
+        st.stop()
+    
     # Add section divider
     st.markdown(ui.section_divider(), unsafe_allow_html=True)
-    st.info(f"Archivo cargado: {uploaded_file.name}")
     
     # Analysis method selection
     st.markdown("### Selecciona el Método de Análisis")
@@ -1485,17 +1526,29 @@ if uploaded_file:
                 print(f"🚨 Error setting analysis method: {method_error}")
                 st.error("Error configurando método de análisis")
     
-    # Show selected method
-    if 'analysis_method' in st.session_state:
-        if st.session_state.analysis_method == "simple":
+    # Show selected method with safe session state access
+    try:
+        selected_method = st.session_state.get('analysis_method', None)
+        if selected_method == "simple":
             st.success("**Método Seleccionado:** Análisis Rápido (Reglas)")
-        else:
+        elif selected_method == "ai":
             st.success("**Método Seleccionado:** Análisis Avanzado (IA)")
+        else:
+            st.info("👆 Selecciona un método de análisis arriba")
+    except Exception as method_display_error:
+        print(f"🚨 Method display error: {method_display_error}")
+        st.info("👆 Selecciona un método de análisis arriba")
         
         # Animated analyze button
         col1, col2, col3 = st.columns([1, 2, 1])
         with col2:
-            button_text = "Analizar con IA" if st.session_state.analysis_method == "ai" else "Analizar Rápido"
+            # Safe session state access for button text
+            try:
+                selected_method = st.session_state.get('analysis_method', 'simple')
+                button_text = "Analizar con IA" if selected_method == "ai" else "Analizar Rápido"
+            except Exception as button_text_error:
+                print(f"🚨 Button text error: {button_text_error}")
+                button_text = "Analizar Archivo"  # Safe fallback
             if st.button(button_text, type="primary", use_container_width=True):
                 # CRITICAL FIX: Validate uploaded_file state before processing
                 if not uploaded_file:
@@ -1511,7 +1564,11 @@ if uploaded_file:
                     print(f"🔄 Starting analysis for file: {uploaded_file.name}")
                     
                     with st.spinner("Procesando comentarios..."):
-                        if st.session_state.analysis_method == "ai":
+                        # Safe method access
+                        analysis_method = st.session_state.get('analysis_method', 'simple')
+                        print(f"🔄 Using analysis method: {analysis_method}")
+                        
+                        if analysis_method == "ai":
                         # Use Pipeline 2 (AI + Fallback) with better error handling
                         try:
                             st.info("Iniciando análisis avanzado con IA...")
@@ -1590,11 +1647,18 @@ if uploaded_file:
                     # COMPREHENSIVE BUTTON ERROR HANDLING
                     print(f"🚨 Button handler error: {type(button_error).__name__}: {str(button_error)}")
                     
-                    # Emergency cleanup
+                    # Emergency cleanup including UI elements
                     try:
+                        # Clear any progress bars or status elements
+                        if 'progress_bar' in locals():
+                            progress_bar.empty()
+                        if 'status_text' in locals():
+                            status_text.empty()
+                        
                         optimize_memory()
-                        print("🧹 Emergency cleanup after button error")
-                    except:
+                        print("🧹 Emergency cleanup after button error (including UI elements)")
+                    except Exception as cleanup_exception:
+                        print(f"⚠️ Emergency cleanup failed: {cleanup_exception}")
                         pass
                     
                     # User-friendly error reporting
