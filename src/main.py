@@ -425,7 +425,7 @@ else:
         sys.stdout.flush()
 
 
-# Page config - ONLY SET ONCE PER SESSION
+# Page config - ONLY SET ONCE PER SESSION  
 if 'page_config_set' not in st.session_state:
     try:
         print("🔧 Setting page config (first time)...")
@@ -2157,6 +2157,7 @@ if st.session_state.analysis_results:
                     )
             except:
                 pass
+
 
 # FINAL EXECUTION MARKER
 print("🎯 END OF MAIN.PY: Reached end of file - all code executed successfully")
