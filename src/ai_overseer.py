@@ -171,6 +171,9 @@ class AIAnalysisOverseer:
         consistency_score = max(0, 1 - (len(issues) * 0.2))
         validation.confidence_score = consistency_score
         
+        # MICRO-FIX: Clear local issues list
+        del issues
+        
         return validation
     
     def _validate_sentiment_analysis(self, results: Dict, validation: OverseerValidation) -> OverseerValidation:
@@ -538,7 +541,11 @@ class AIAnalysisOverseer:
         
         report.append("=" * 50)
         
-        return "\n".join(report)
+        # CRITICAL MICRO-FIX: Clean up report list before returning string
+        report_string = "\n".join(report)
+        del report  # Clear the accumulated list
+        
+        return report_string
 
 
 # Integration helper for easy pipeline integration

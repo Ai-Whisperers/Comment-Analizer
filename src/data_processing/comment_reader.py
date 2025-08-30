@@ -24,6 +24,16 @@ class CommentReader:
         self.data = None
         self.memory_manager = MemoryManager(max_memory_mb=512)
         self.chunked_processor = ChunkedDataProcessor(chunk_size=1000, memory_manager=self.memory_manager)
+    
+    def __del__(self):
+        """MICRO-FIX: Cleanup large objects when instance is destroyed"""
+        try:
+            if hasattr(self, 'data') and self.data is not None:
+                del self.data
+            if hasattr(self, 'memory_manager'):
+                self.memory_manager.force_garbage_collection()
+        except:
+            pass  # Silent cleanup - don't raise exceptions in destructor
         
     def read_file(self, file_path: Union[str, Path]) -> pd.DataFrame:
         """

@@ -87,22 +87,61 @@ class AIAnalysisAdapter:
             return None
     
     def _read_csv_file(self, uploaded_file) -> pd.DataFrame:
-        """Read CSV file with proper handling"""
-        if hasattr(uploaded_file, 'read'):
-            uploaded_file.seek(0)
-            return pd.read_csv(uploaded_file)
-        else:
-            return pd.read_csv(uploaded_file.content)
+        """Read CSV file with proper handling and memory cleanup"""
+        try:
+            if hasattr(uploaded_file, 'read'):
+                uploaded_file.seek(0)
+                df = pd.read_csv(uploaded_file)
+            else:
+                df = pd.read_csv(uploaded_file.content)
+            
+            # MICRO-FIX: Explicitly close file handle if possible
+            if hasattr(uploaded_file, 'close'):
+                uploaded_file.close()
+            
+            return df
+        except Exception as e:
+            # Clean up even on error
+            if 'df' in locals():
+                del df
+            raise
     
     def _read_excel_file(self, uploaded_file) -> pd.DataFrame:
-        """Read Excel file with proper handling"""
-        if hasattr(uploaded_file, 'read'):
-            uploaded_file.seek(0)
-            file_content = uploaded_file.read()
-            file_buffer = BytesIO(file_content)
-            return pd.read_excel(file_buffer)
-        else:
-            return pd.read_excel(uploaded_file.content)
+        """Read Excel file with proper handling and memory cleanup"""
+        file_buffer = None
+        file_content = None
+        
+        try:
+            if hasattr(uploaded_file, 'read'):
+                uploaded_file.seek(0)
+                file_content = uploaded_file.read()
+                file_buffer = BytesIO(file_content)
+                df = pd.read_excel(file_buffer)
+            else:
+                df = pd.read_excel(uploaded_file.content)
+            
+            # MICRO-FIX: Explicit cleanup of file objects
+            if file_buffer:
+                file_buffer.close()
+                del file_buffer
+            
+            if file_content:
+                del file_content
+            
+            if hasattr(uploaded_file, 'close'):
+                uploaded_file.close()
+            
+            return df
+            
+        except Exception as e:
+            # Clean up on error
+            if 'df' in locals():
+                del df
+            if file_buffer:
+                file_buffer.close()
+            if 'file_content' in locals():
+                del file_content
+            raise
     
     def _extract_analysis_data(self, df: pd.DataFrame) -> Dict:
         """Extract and prepare data for analysis to reduce main function complexity"""
@@ -781,6 +820,15 @@ class AIAnalysisAdapter:
             'ai_model_used': None,
             'ai_confidence_avg': 0
         }
+        
+        # CRITICAL MICRO-FIX: Clean up all accumulated lists before return
+        try:
+            del enhanced_results, churn_risks, urgency_levels, emotion_analysis
+            del competitor_mentions, customer_segments, nps_scores, improved_results
+            del comment_quality, service_issues, sentiments, comments
+            del raw_comments, comment_frequencies
+        except:
+            pass  # Silent cleanup
         
         logger.info(f"[AI_PIPELINE] Rule-based fallback completed | Sentiments: {dict(sentiment_counts)}")
         return result
