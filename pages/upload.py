@@ -31,8 +31,9 @@ if 'theme_manager' not in st.session_state:
 theme = st.session_state.theme_manager
 ui = st.session_state.ui
 
-# Apply complete glassmorphism Web3 styling
-st.markdown(theme.get_complete_css(st.session_state.get('dark_mode', True)), unsafe_allow_html=True)
+# Apply modular glassmorphism Web3 styling (proper separation of concerns)
+from shared.styling.modular_css import initialize_modular_styles
+initialize_modular_styles(dark_mode=st.session_state.get('dark_mode', True))
 
 # Modern animated header (PRESERVED SOPHISTICATION)
 st.markdown(

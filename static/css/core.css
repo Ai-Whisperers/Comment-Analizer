@@ -1,0 +1,178 @@
+/* Core CSS Variables and Base Styles for Comment Analyzer */
+/* Professional Web3 Glassmorphism Theme - Core Module */
+
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@200;300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap');
+
+:root {
+  /* Web3 Color Palette - Professional Grade */
+  --primary-purple: #8B5CF6;
+  --primary-purple-light: #A78BFA;
+  --primary-purple-dark: #7C3AED;
+  --primary-purple-glow: #DDD6FE;
+  
+  --secondary-cyan: #06B6D4;
+  --secondary-cyan-light: #22D3EE;
+  --secondary-cyan-dark: #0891B2;
+  --secondary-cyan-glow: #CFFAFE;
+  
+  --accent-amber: #F59E0B;
+  --accent-amber-light: #FCD34D;
+  --accent-amber-glow: #FEF3C7;
+  
+  /* Semantic Colors */
+  --success: #10B981;
+  --success-light: #34D399;
+  --success-glow: #D1FAE5;
+  --warning: #F59E0B;
+  --warning-light: #FBBF24;
+  --warning-glow: #FEF3C7;
+  --error: #EF4444;
+  --error-light: #F87171;
+  --error-glow: #FEE2E2;
+  
+  /* Background System */
+  --bg-primary: #0D0B14;
+  --bg-secondary: #141219;
+  --bg-tertiary: #1A1825;
+  --bg-elevated: #1F1D2B;
+  --bg-card: rgba(26, 24, 37, 0.95);
+  --bg-overlay: rgba(13, 11, 20, 0.95);
+  
+  /* Text Colors */
+  --text-primary: #F8FAFC;
+  --text-secondary: #E2E8F0;
+  --text-tertiary: #CBD5E1;
+  --text-muted: #94A3B8;
+  --text-accent: #C4B5FD;
+  
+  /* Typography */
+  --font-primary: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-mono: 'JetBrains Mono', 'Fira Code', monospace;
+  
+  /* Sizing Scale */
+  --size-xs: 0.75rem;
+  --size-sm: 0.875rem;
+  --size-base: 1rem;
+  --size-lg: 1.125rem;
+  --size-xl: 1.25rem;
+  --size-2xl: 1.5rem;
+  --size-3xl: 1.875rem;
+  --size-4xl: 2.25rem;
+  --size-5xl: 3rem;
+  
+  /* Spacing */
+  --space-1: 0.25rem;
+  --space-2: 0.5rem;
+  --space-3: 0.75rem;
+  --space-4: 1rem;
+  --space-5: 1.25rem;
+  --space-6: 1.5rem;
+  --space-8: 2rem;
+  --space-10: 2.5rem;
+  --space-12: 3rem;
+  
+  /* Border Radius */
+  --radius-sm: 6px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --radius-xl: 20px;
+  --radius-2xl: 24px;
+  --radius-full: 9999px;
+  
+  /* Shadows */
+  --shadow-sm: 0 2px 8px rgba(139, 92, 246, 0.08);
+  --shadow-md: 0 8px 24px rgba(139, 92, 246, 0.12);
+  --shadow-lg: 0 16px 40px rgba(139, 92, 246, 0.16);
+  --shadow-xl: 0 24px 56px rgba(139, 92, 246, 0.20);
+  --shadow-glow: 0 0 40px rgba(139, 92, 246, 0.3);
+  
+  /* Animation Durations */
+  --duration-fast: 0.15s;
+  --duration-normal: 0.3s;
+  --duration-slow: 0.5s;
+  --duration-slower: 0.8s;
+  
+  /* Easing Functions */
+  --ease-out: cubic-bezier(0.25, 0.8, 0.25, 1);
+  --ease-in-out: cubic-bezier(0.4, 0, 0.2, 1);
+  --ease-bounce: cubic-bezier(0.68, -0.55, 0.265, 1.55);
+}
+
+/* Global Styles */
+* {
+  box-sizing: border-box;
+  font-family: var(--font-primary);
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  margin: 0;
+  padding: 0;
+  font-family: var(--font-primary);
+  font-size: var(--size-base);
+  line-height: 1.6;
+  color: var(--text-primary);
+  background: radial-gradient(ellipse at top, var(--bg-secondary), var(--bg-primary)),
+              linear-gradient(135deg, var(--bg-primary) 0%, var(--bg-secondary) 50%, var(--bg-tertiary) 100%);
+  background-attachment: fixed;
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+/* Streamlit App Container */
+.stApp {
+  background: radial-gradient(ellipse at top, var(--bg-secondary), var(--bg-primary)),
+              linear-gradient(135deg, var(--bg-primary) 0%, var(--bg-secondary) 50%, var(--bg-tertiary) 100%);
+  background-attachment: fixed;
+  color: var(--text-primary);
+  min-height: 100vh;
+}
+
+/* Typography Enhancements */
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--font-primary);
+  font-weight: 600;
+  line-height: 1.2;
+  letter-spacing: -0.025em;
+  background: linear-gradient(135deg, var(--primary-purple), var(--secondary-cyan));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  margin-bottom: var(--space-4);
+}
+
+h1 { font-size: var(--size-4xl); font-weight: 700; }
+h2 { font-size: var(--size-3xl); }
+h3 { font-size: var(--size-2xl); }
+h4 { font-size: var(--size-xl); }
+
+p {
+  color: var(--text-secondary);
+  line-height: 1.7;
+  margin-bottom: var(--space-4);
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--bg-tertiary);
+  border-radius: var(--radius-sm);
+}
+
+::-webkit-scrollbar-thumb {
+  background: linear-gradient(135deg, var(--primary-purple), var(--secondary-cyan));
+  border-radius: var(--radius-sm);
+  transition: all var(--duration-normal);
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(135deg, var(--primary-purple-light), var(--secondary-cyan-light));
+  box-shadow: var(--shadow-glow);
+}

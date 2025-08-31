@@ -1,28 +1,12 @@
-[theme]
-primaryColor = "#4ea4ff"
-backgroundColor = "#0f1419"
-secondaryBackgroundColor = "#18202a"
-textColor = "#e6edf3"
-font = "sans serif"
-
 [server]
-headless = true
-enableCORS = true
-enableXsrfProtection = false
-maxUploadSize = 50
-enableStaticServing = false
-allowRunOnSave = true
-runOnSave = false
-fileWatcherType = "auto"
+enableStaticServing = true
 
 [browser]
 gatherUsageStats = false
-serverAddress = "0.0.0.0"
 
-[global]
-developmentMode = false
-suppressDeprecationWarnings = true
-showWarningOnDirectExecution = false
-
-[runner]
-magicEnabled = true
+[theme]
+base = "dark"
+primaryColor = "#8B5CF6"
+backgroundColor = "#0D0B14"
+secondaryBackgroundColor = "#1A1825"
+textColor = "#F8FAFC"
