@@ -15,6 +15,7 @@ if str(current_dir) not in sys.path:
 
 import streamlit as st
 import pandas as pd
+import plotly.express as px
 from shared.styling.theme_manager_full import ThemeManager, UIComponents
 
 # Initialize styling (PRESERVE MODERN UX)
@@ -226,7 +227,6 @@ st.markdown(ui.section_divider(), unsafe_allow_html=True)
 st.markdown("### Análisis Detallado")
 
 # Create charts (preserve sophisticated visualization)
-import plotly.express as px
 
 # Sentiment distribution pie chart with theme integration
 if results.get('sentiment_percentages'):

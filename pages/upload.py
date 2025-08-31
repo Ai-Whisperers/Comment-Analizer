@@ -4,6 +4,7 @@ Clean button implementation without deep nesting
 """
 
 import sys
+import streamlit as st
 from pathlib import Path
 
 # Add shared modules to path
@@ -11,9 +12,16 @@ current_dir = Path(__file__).parent.parent
 if str(current_dir) not in sys.path:
     sys.path.insert(0, str(current_dir))
 
-import streamlit as st
 from shared.styling.theme_manager_full import ThemeManager, UIComponents
 from shared.business.file_processor import FileProcessor
+
+# Try to import memory monitoring functions
+try:
+    sys.path.insert(0, str(current_dir / "src"))
+    from main import get_memory_usage, is_streamlit_cloud
+    MEMORY_MONITORING_AVAILABLE = True
+except ImportError:
+    MEMORY_MONITORING_AVAILABLE = False
 
 # Initialize styling and components (PRESERVE MODERN UX)
 if 'theme_manager' not in st.session_state:
@@ -108,23 +116,24 @@ with st.sidebar:
     st.markdown("### Estado del Sistema")
     
     try:
-        # Import memory functions
-        sys.path.insert(0, str(current_dir / "src"))
-        from main import get_memory_usage, is_streamlit_cloud
-        
-        memory_mb = get_memory_usage()
-        if memory_mb > 0:
-            memory_limit = 690 if is_streamlit_cloud() else 2048
-            memory_pct = (memory_mb / memory_limit) * 100
-            status = "Alto" if memory_pct > 80 else ("Medio" if memory_pct > 60 else "Normal")
-            color = "red" if memory_pct > 80 else ("orange" if memory_pct > 60 else "green")
-            
-            st.metric(
-                f"Memoria ({status})",
-                f"{memory_mb:.0f}MB", 
-                f"{memory_pct:.1f}% usado"
-            )
-    except:
+        if MEMORY_MONITORING_AVAILABLE:
+            memory_mb = get_memory_usage()
+            if memory_mb > 0:
+                memory_limit = 690 if is_streamlit_cloud() else 2048
+                memory_pct = (memory_mb / memory_limit) * 100
+                status = "Alto" if memory_pct > 80 else ("Medio" if memory_pct > 60 else "Normal")
+                color = "red" if memory_pct > 80 else ("orange" if memory_pct > 60 else "green")
+                
+                st.metric(
+                    f"Memoria ({status})",
+                    f"{memory_mb:.0f}MB", 
+                    f"{memory_pct:.1f}% usado"
+                )
+            else:
+                st.info("Datos de memoria no disponibles")
+        else:
+            st.info("Monitoreo de memoria no disponible")
+    except Exception as e:
         st.info("Monitoreo de memoria no disponible")
     
     # Navigation

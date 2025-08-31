@@ -4,6 +4,7 @@ Simple architecture with sophisticated styling maintained
 """
 
 import sys
+import streamlit as st
 from pathlib import Path
 
 # Add shared modules to path
@@ -11,7 +12,6 @@ current_dir = Path(__file__).parent.parent
 if str(current_dir) not in sys.path:
     sys.path.insert(0, str(current_dir))
 
-import streamlit as st
 from shared.styling.theme_manager_full import ThemeManager, UIComponents
 from shared.business.file_processor import FileProcessor
 

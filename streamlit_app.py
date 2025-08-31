@@ -3,9 +3,9 @@ Multi-Page Streamlit App - Simplified Architecture
 Preserves all modern styling while fixing button reliability issues
 """
 
+import sys
 import streamlit as st
 from pathlib import Path
-import sys
 
 # Add current directory to path for imports
 current_dir = Path(__file__).parent.absolute()
