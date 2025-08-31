@@ -10,53 +10,68 @@ class ThemeManager:
     """Manages color themes and CSS generation for the application"""
     
     def __init__(self) -> None:
-        # Coherent Web3 color system with consistent saturation and brightness
+        # Enhanced Web3 Glassmorphism Color System
         self.color_systems = {
             'dark': {
-                # Primary gradient spectrum
+                # Primary gradient spectrum - Enhanced vibrancy
                 'primary': '#8B5CF6',        # Main violet
                 'primary_light': '#A78BFA',  # Lighter violet
                 'primary_dark': '#7C3AED',   # Darker violet
-                'primary_glow': '#B794F6',   # Glow effect violet
+                'primary_glow': '#DDD6FE',   # Enhanced glow effect
+                'primary_ultra': '#C4B5FD',  # Ultra light variant
                 
-                # Secondary gradient spectrum  
+                # Secondary gradient spectrum - Enhanced  
                 'secondary': '#06B6D4',       # Cyan
                 'secondary_light': '#22D3EE', # Light cyan
                 'secondary_dark': '#0891B2',  # Dark cyan
-                'secondary_glow': '#67E8F9',  # Glow cyan
+                'secondary_glow': '#CFFAFE',  # Enhanced cyan glow
+                'secondary_ultra': '#A5F3FC', # Ultra light cyan
                 
-                # Accent colors for special elements
+                # Accent colors for special elements - Enhanced
                 'accent': '#F59E0B',          # Amber
                 'accent_light': '#FCD34D',    # Light amber
+                'accent_glow': '#FEF3C7',     # Amber glow
+                'accent_pink': '#EC4899',     # Pink accent
+                'accent_green': '#10B981',    # Green accent
                 
-                # Semantic colors
+                # Semantic colors - Enhanced contrast
                 'positive': '#10B981',        # Emerald
                 'positive_light': '#34D399',
+                'positive_glow': '#D1FAE5',
                 'negative': '#EF4444',        # Red
                 'negative_light': '#F87171',
+                'negative_glow': '#FEE2E2',
                 'neutral': '#6B7280',         # Gray
                 'neutral_light': '#9CA3AF',
+                'neutral_glow': '#F3F4F6',
                 
-                # Background gradient system
-                'bg_primary': '#0A0A0F',      # Deep black
-                'bg_secondary': '#12111A',    # Slightly lighter
+                # Enhanced background system
+                'bg_primary': '#0D0B14',      # Deep space black
+                'bg_secondary': '#141219',    # Dark purple
                 'bg_tertiary': '#1A1825',     # Card background
-                'bg_gradient_start': '#0F0E13',
-                'bg_gradient_mid': '#1A1825', 
-                'bg_gradient_end': '#16151F',
+                'bg_elevated': '#1F1D2B',     # Elevated surfaces
+                'bg_gradient_start': '#0A0A0F',
+                'bg_gradient_mid': '#141219', 
+                'bg_gradient_end': '#1A1825',
+                'bg_gradient_accent': '#1C1B29',
                 
-                # Glass effects with consistent opacity
-                'glass_bg': 'rgba(139, 92, 246, 0.03)',
-                'glass_bg_hover': 'rgba(139, 92, 246, 0.06)',
-                'glass_border': 'rgba(139, 92, 246, 0.15)',
-                'glass_border_hover': 'rgba(139, 92, 246, 0.25)',
-                'glass_blur': '16px',
+                # Advanced glass effects
+                'glass_bg': 'rgba(139, 92, 246, 0.04)',
+                'glass_bg_hover': 'rgba(139, 92, 246, 0.08)',
+                'glass_bg_active': 'rgba(139, 92, 246, 0.12)',
+                'glass_border': 'rgba(255, 255, 255, 0.12)',
+                'glass_border_hover': 'rgba(255, 255, 255, 0.20)',
+                'glass_border_active': 'rgba(255, 255, 255, 0.30)',
+                'glass_blur': '20px',
+                'glass_shadow': 'rgba(139, 92, 246, 0.25)',
                 
-                # Text hierarchy
-                'text_primary': '#FFFFFF',
-                'text_secondary': '#E5E7EB',
-                'text_tertiary': '#9CA3AF',
-                'text_muted': '#6B7280'
+                # Enhanced text hierarchy
+                'text_primary': '#F8FAFC',    # Pure white
+                'text_secondary': '#E2E8F0',  # Light gray
+                'text_tertiary': '#CBD5E1',   # Medium gray
+                'text_muted': '#94A3B8',      # Muted gray
+                'text_accent': '#C4B5FD',     # Purple accent text
+                'text_glow': '#DDD6FE',       # Glowing text
             },
             'light': {
                 # Primary gradient spectrum
@@ -292,42 +307,121 @@ class ThemeManager:
         """
     
     def generate_glass_effects(self) -> str:
-        """Generate consistent glassmorphism styles"""
+        """Generate advanced glassmorphism styles for Web3 aesthetic"""
         return """
-        /* Base glass effect */
+        /* Advanced glass effect with enhanced depth */
         .glass {
             backdrop-filter: blur(var(--glass-blur));
             -webkit-backdrop-filter: blur(var(--glass-blur));
-            background: var(--glass-bg);
+            background: linear-gradient(135deg, 
+                rgba(255, 255, 255, 0.1), 
+                rgba(255, 255, 255, 0.05));
             border: 1px solid var(--glass-border);
-            border-radius: 16px;
+            border-radius: 20px;
+            box-shadow: 
+                0 8px 32px rgba(139, 92, 246, 0.15),
+                inset 0 1px 0 rgba(255, 255, 255, 0.1),
+                inset 0 -1px 0 rgba(0, 0, 0, 0.1);
             transition: all var(--duration-normal) var(--easing-default);
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .glass::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 1px;
+            background: linear-gradient(90deg, 
+                transparent, 
+                rgba(255, 255, 255, 0.4), 
+                transparent);
         }
         
         .glass:hover {
-            background: var(--glass-bg-hover);
+            background: linear-gradient(135deg, 
+                rgba(255, 255, 255, 0.15), 
+                rgba(255, 255, 255, 0.08));
             border-color: var(--glass-border-hover);
-            transform: translateY(-2px);
-            box-shadow: var(--elevation-md);
+            transform: translateY(-4px);
+            box-shadow: 
+                0 20px 60px rgba(139, 92, 246, 0.25),
+                inset 0 1px 0 rgba(255, 255, 255, 0.2),
+                0 0 0 1px rgba(139, 92, 246, 0.1);
         }
         
-        /* Glass card variant */
+        /* Advanced glass card with Web3 aesthetic */
         .glass-card {
             backdrop-filter: blur(var(--glass-blur));
             -webkit-backdrop-filter: blur(var(--glass-blur));
-            background: var(--glass-bg);
+            background: linear-gradient(135deg, 
+                rgba(255, 255, 255, 0.08), 
+                rgba(255, 255, 255, 0.04));
             border: 1px solid var(--glass-border);
-            border-radius: 20px;
-            padding: 1.5rem;
-            box-shadow: var(--elevation-sm);
+            border-radius: 24px;
+            padding: 2rem;
+            box-shadow: 
+                0 8px 32px rgba(139, 92, 246, 0.12),
+                inset 0 1px 0 rgba(255, 255, 255, 0.1);
             transition: all var(--duration-normal) var(--easing-default);
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .glass-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background: linear-gradient(90deg, 
+                var(--primary), 
+                var(--secondary), 
+                var(--accent));
+            transform: scaleX(0);
+            transform-origin: left;
+            transition: transform var(--duration-slow) var(--easing-default);
+        }
+        
+        .glass-card::after {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: conic-gradient(
+                transparent,
+                rgba(139, 92, 246, 0.03),
+                transparent,
+                rgba(6, 182, 212, 0.03),
+                transparent);
+            animation: rotate 20s linear infinite;
+            z-index: -1;
         }
         
         .glass-card:hover {
-            background: var(--glass-bg-hover);
+            background: linear-gradient(135deg, 
+                rgba(255, 255, 255, 0.12), 
+                rgba(255, 255, 255, 0.06));
             border-color: var(--glass-border-hover);
-            transform: translateY(-4px);
-            box-shadow: var(--elevation-lg);
+            transform: translateY(-6px) scale(1.02);
+            box-shadow: 
+                0 20px 60px rgba(139, 92, 246, 0.2),
+                inset 0 1px 0 rgba(255, 255, 255, 0.2),
+                0 0 0 1px rgba(139, 92, 246, 0.1);
+        }
+        
+        .glass-card:hover::before {
+            transform: scaleX(1);
+        }
+        
+        @keyframes rotate {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
         }
         
         /* Glass button */
