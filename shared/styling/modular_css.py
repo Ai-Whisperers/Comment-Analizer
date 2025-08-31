@@ -71,7 +71,8 @@ class ModularStyleManager:
     
     def _load_css_file(self, filename: str) -> bool:
         """
-        Load individual CSS file using external link (proper separation)
+        Load individual CSS file with Streamlit-compatible approach
+        Uses cached file reading with minimal inline injection
         
         Args:
             filename: Name of CSS file in static/css directory
@@ -81,24 +82,69 @@ class ModularStyleManager:
         """
         css_path = self.static_dir / filename
         
-        # Check if file exists locally (for development feedback)
+        # Check if file exists
         if not css_path.exists():
             logger.error(f"CSS file not found: {css_path}")
-            # Continue anyway - file might be available via static serving
+            return False
         
         try:
-            # Use proper external CSS link (not inline injection)
-            css_url = f"static/css/{filename}"
-            st.markdown(
-                f'<link rel="stylesheet" type="text/css" href="{css_url}">',
-                unsafe_allow_html=True
-            )
-            logger.debug(f"Successfully loaded CSS: {css_url}")
-            return True
+            # Read CSS file and inject as cached content
+            css_content = self._get_cached_css_content(str(css_path))
+            if css_content:
+                st.markdown(f"<style>{css_content}</style>", unsafe_allow_html=True)
+                logger.debug(f"Successfully loaded CSS: {filename}")
+                return True
+            else:
+                logger.error(f"CSS file is empty: {filename}")
+                return False
             
         except Exception as e:
             logger.error(f"Failed to load CSS file {filename}: {e}")
             return False
+    
+    @lru_cache(maxsize=16)
+    def _get_cached_css_content(self, css_path: str) -> Optional[str]:
+        """
+        Get CSS file content with caching for performance
+        
+        Args:
+            css_path: Full path to CSS file
+            
+        Returns:
+            str: CSS content or None if failed
+        """
+        try:
+            with open(css_path, 'r', encoding='utf-8') as f:
+                content = f.read()
+                # Minify CSS (remove comments and extra whitespace)
+                return self._minify_css(content)
+        except Exception as e:
+            logger.error(f"Failed to read CSS file {css_path}: {e}")
+            return None
+    
+    def _minify_css(self, css_content: str) -> str:
+        """
+        Basic CSS minification to reduce payload
+        
+        Args:
+            css_content: Raw CSS content
+            
+        Returns:
+            str: Minified CSS
+        """
+        import re
+        
+        # Remove comments
+        css_content = re.sub(r'/\*.*?\*/', '', css_content, flags=re.DOTALL)
+        
+        # Remove extra whitespace
+        css_content = re.sub(r'\s+', ' ', css_content)
+        css_content = re.sub(r'\s*{\s*', '{', css_content)
+        css_content = re.sub(r'\s*}\s*', '}', css_content)
+        css_content = re.sub(r'\s*;\s*', ';', css_content)
+        css_content = re.sub(r'\s*:\s*', ':', css_content)
+        
+        return css_content.strip()
     
     def _inject_minimal_theme_vars(self) -> None:
         """
