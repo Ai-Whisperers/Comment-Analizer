@@ -23,11 +23,8 @@ if 'theme_manager' not in st.session_state:
 theme = st.session_state.theme_manager
 ui = st.session_state.ui
 
-# Apply sophisticated styling (SAME AS ORIGINAL)
-dark_theme = theme.get_theme(st.session_state.get('dark_mode', True))
-st.markdown(f"<style>{theme.generate_css_variables(dark_theme)}</style>", unsafe_allow_html=True)
-st.markdown(f"<style>{theme.generate_base_styles(dark_theme)}</style>", unsafe_allow_html=True)
-st.markdown(f"<style>{theme.generate_animations()}</style>", unsafe_allow_html=True)
+# Apply complete glassmorphism Web3 styling
+st.markdown(theme.get_complete_css(st.session_state.get('dark_mode', True)), unsafe_allow_html=True)
 
 # Modern header (PRESERVED)
 st.markdown(
