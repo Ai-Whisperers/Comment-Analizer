@@ -248,7 +248,7 @@ class LegacyFallbackManager:
     def apply_fallback_styles(dark_mode: bool = True) -> None:
         """Apply fallback styles if external CSS fails"""
         st.markdown(LegacyFallbackManager.get_minimal_css(dark_mode), unsafe_allow_html=True)
-        st.info("⚠️ Using fallback styling - some visual effects may be limited")
+        st.info("Using fallback styling - some visual effects may be limited")
 
 # Convenience function for easy integration
 def initialize_modular_styles(dark_mode: bool = True, use_fallback: bool = True) -> bool:

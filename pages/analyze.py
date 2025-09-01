@@ -107,7 +107,7 @@ if 'analysis_results' in st.session_state:
     with col1:
         st.markdown(
             ui.status_badge(
-                icon="📊",
+                icon="",
                 text=f"Total: {results.get('total', 0)} comentarios",
                 badge_type="neutral"
             ),
@@ -120,7 +120,7 @@ if 'analysis_results' in st.session_state:
         
         st.markdown(
             ui.status_badge(
-                icon="💭",
+                icon="",
                 text=f"Sentimiento: {dominant_sentiment}",
                 badge_type=badge_type
             ),
@@ -131,7 +131,7 @@ if 'analysis_results' in st.session_state:
         quality = results.get('insights', {}).get('analysis_quality', 'basic')
         st.markdown(
             ui.status_badge(
-                icon="⭐",
+                icon="",
                 text=f"Calidad: {quality}",
                 badge_type="positive" if quality == "high" else "neutral"
             ),

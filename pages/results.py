@@ -271,7 +271,7 @@ if is_ai_analysis:
             st.info(f"{i}. {rec}")
             
     # Add AI analysis explanation
-    with st.expander("ℹ️ Acerca de las Recomendaciones IA", expanded=False):
+    with st.expander("Acerca de las Recomendaciones IA", expanded=False):
         st.markdown("""
         **Las recomendaciones estratégicas** están generadas por inteligencia artificial basándose en:
         - Patrones detectados en los comentarios

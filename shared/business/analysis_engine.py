@@ -325,21 +325,21 @@ def create_recommendations(results: Dict, enhanced_ai: bool = False) -> List[str
         
         # Advanced strategic recommendations
         if satisfaction_index > 80:
-            recommendations.append("🎯 EXCELENCIA: Capitalizar alta satisfacción - implementar programa de referidos")
+            recommendations.append("EXCELENCIA: Capitalizar alta satisfacción - implementar programa de referidos")
         elif satisfaction_index < 40:
-            recommendations.append("🚨 CRÍTICO: Plan de mejora urgente - satisfacción por debajo del 40%")
+            recommendations.append("CRÍTICO: Plan de mejora urgente - satisfacción por debajo del 40%")
         
         if emotional_intensity == 'muy_alto':
-            recommendations.append("⚡ INTENSIDAD ALTA: Comentarios muy emocionales - respuesta personalizada recomendada")
+            recommendations.append("INTENSIDAD ALTA: Comentarios muy emocionales - respuesta personalizada recomendada")
         
         # Priority area specific recommendations
         for area in priority_areas:
             if 'velocidad' in area:
-                recommendations.append("🚀 VELOCIDAD: Optimizar infraestructura de red en zonas críticas")
+                recommendations.append("VELOCIDAD: Optimizar infraestructura de red en zonas críticas")
             elif 'precio' in area:
-                recommendations.append("💰 PRECIO: Evaluar estrategia de precios vs competencia")
+                recommendations.append("PRECIO: Evaluar estrategia de precios vs competencia")
             elif 'servicio' in area:
-                recommendations.append("🎯 SERVICIO: Capacitación adicional al equipo de atención")
+                recommendations.append("SERVICIO: Capacitación adicional al equipo de atención")
     
     if not recommendations:
         recommendations.append("Mantener calidad actual del servicio - comentarios en rango normal")

@@ -26,16 +26,16 @@ if src_dir.exists() and str(src_dir) not in sys.path:
 import streamlit as st
 
 # CRITICAL: Only import main when we're actually running the app
-logger.info("🚀 Starting Comment Analyzer...")
+logger.info("Starting Comment Analyzer...")
 
 try:
     # Import the main module (this will execute the UI)
     logger.info("Loading main application...")
     import main
-    logger.info("✅ Application loaded successfully")
+    logger.info("Application loaded successfully")
     
 except Exception as e:
     logger.error(f"Failed to load application: {e}")
-    st.error("🚨 Error loading application")
+    st.error("Error loading application")
     st.error(f"Details: {str(e)}")
     st.error("Please check the deployment logs for more information")

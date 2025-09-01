@@ -15,7 +15,7 @@ if str(current_dir) not in sys.path:
 # Page configuration (PRESERVE PROFESSIONAL SETUP)
 st.set_page_config(
     page_title="Personal Paraguay — Análisis de Comentarios",
-    page_icon="📊", 
+    page_icon=None, 
     layout="wide",
     initial_sidebar_state="expanded"
 )
@@ -26,14 +26,14 @@ if 'dark_mode' not in st.session_state:
 
 # Navigation setup
 pages = {
-    "🔤 Upload File": "pages/upload.py",
-    "⚙️ Process & Analyze": "pages/analyze.py", 
-    "📊 View Results": "pages/results.py"
+    "Upload File": "pages/upload.py",
+    "Process & Analyze": "pages/analyze.py", 
+    "View Results": "pages/results.py"
 }
 
 # Sidebar navigation with modern styling
 with st.sidebar:
-    st.markdown("### 🧭 Navigation")
+    st.markdown("### Navigation")
     
     # Page selection
     selected_page = st.selectbox(
@@ -43,13 +43,13 @@ with st.sidebar:
     )
     
     # Theme toggle (PRESERVE MODERN FEATURE)
-    if st.button("🌙/☀️ Toggle Theme", key="theme_toggle"):
+    if st.button("Toggle Theme", key="theme_toggle"):
         st.session_state.dark_mode = not st.session_state.dark_mode
         st.rerun()
     
     # Memory monitoring (PRESERVE MONITORING)
     st.markdown("---")
-    st.markdown("### 💾 System Status")
+    st.markdown("### System Status")
     try:
         # Simple memory display
         st.info("Memory monitoring active")
@@ -57,7 +57,7 @@ with st.sidebar:
         pass
     
     st.markdown("---")
-    st.markdown("### ℹ️ App Info")
+    st.markdown("### App Info")
     st.markdown("""
     **Architecture**: Multi-page
     **Styling**: Modern preserved
