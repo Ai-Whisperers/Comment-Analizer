@@ -198,6 +198,20 @@ if 'analysis_results' in st.session_state:
     results = st.session_state.analysis_results
     is_ai_analysis = st.session_state.get('analysis_type') == 'ai'
     
+    # DEBUG: Show what data we actually received
+    st.text(f"🔍 DEBUG - Total comments: {results.get('total', 'MISSING')}")
+    st.text(f"🔍 DEBUG - Sentiment percentages keys: {list(results.get('sentiment_percentages', {}).keys())}")
+    st.text(f"🔍 DEBUG - Emotion summary: {results.get('emotion_summary', 'MISSING')}")
+    st.text(f"🔍 DEBUG - Insights keys: {list(results.get('insights', {}).keys())}")
+    st.text(f"🔍 DEBUG - AI analysis type: {is_ai_analysis}")
+    
+    # DEBUG: Show raw sentiment percentages
+    sent_pct = results.get('sentiment_percentages', {})
+    if sent_pct:
+        st.text(f"🔍 DEBUG - Sentiment data: {sent_pct}")
+    else:
+        st.text("🔍 DEBUG - NO sentiment data found!")
+    
     # Analysis method indicator
     if is_ai_analysis:
         st.markdown(
