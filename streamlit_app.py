@@ -31,38 +31,10 @@ try:
 except ImportError:
     MEMORY_MONITORING_AVAILABLE = False
 
-# Navigation setup
-pages = {
-    "Página Principal": "pages/home.py",
-    "Subir": "pages/upload.py",
-    "Analizar": "pages/analyze.py", 
-    "Resultados": "pages/results.py"
-}
-
-# Ensure home page is the default landing page
-if 'default_page' not in st.session_state:
-    st.session_state.default_page = "Página Principal"
-
-# Sidebar navigation with modern styling
+# Streamlit automatically generates navigation from pages/ directory
+# Sidebar for additional functionality
 with st.sidebar:
-    st.markdown("### Navegación")
-    
-    # Page selection with robust default handling
-    page_options = list(pages.keys())
-    
-    # Robust default index calculation
-    try:
-        default_index = page_options.index(st.session_state.default_page)
-    except (ValueError, KeyError):
-        # Fallback to first page if default_page is invalid
-        st.session_state.default_page = page_options[0]
-        default_index = 0
-    
-    selected_page = st.selectbox(
-        "Seleccionar Página",
-        options=page_options,
-        index=default_index
-    )
+    st.markdown("### Herramientas")
     
     # Theme toggle (PRESERVE MODERN FEATURE)
     if st.button("Cambiar Tema", key="theme_toggle"):
@@ -110,18 +82,6 @@ with st.sidebar:
     **Estilo**: Moderno preservado
     **Rendimiento**: Optimizado
     """)
-
-# Load selected page
-page_file = pages[selected_page]
-
-try:
-    # Import and run the selected page
-    page_module = page_file.replace('/', '.').replace('.py', '')
-    exec(f"import {page_module}")
-    
-except Exception as e:
-    st.error(f"Error cargando página: {e}")
-    st.error("Por favor revisa la implementación de la página")
 
 # Global footer (PRESERVE SOPHISTICATED STYLING)
 st.markdown("---")
