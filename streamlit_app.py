@@ -47,9 +47,16 @@ if 'default_page' not in st.session_state:
 with st.sidebar:
     st.markdown("### Navegación")
     
-    # Page selection with explicit default to upload page
+    # Page selection with robust default handling
     page_options = list(pages.keys())
-    default_index = page_options.index(st.session_state.default_page)
+    
+    # Robust default index calculation
+    try:
+        default_index = page_options.index(st.session_state.default_page)
+    except (ValueError, KeyError):
+        # Fallback to first page if default_page is invalid
+        st.session_state.default_page = page_options[0]
+        default_index = 0
     
     selected_page = st.selectbox(
         "Seleccionar Página",
