@@ -187,17 +187,24 @@ class FileProcessor:
                         ai_results = ai_adapter.process_uploaded_file_with_ai(mock_file)
                         
                         if ai_results and ai_results.get('insights'):
-                            logger.info("✅ REAL AI analysis successful - using OpenAI results")
+                            logger.info("✅ REAL AI analysis successful - normalizing for UI compatibility")
                             
-                            # Use AI results for emotion summary
-                            emotion_summary = ai_results.get('emotion_summary', {})
+                            # Import AI output mapper
+                            from shared.utils.ai_output_mapper import normalize_ai_for_ui
                             
-                            # Get sentiments from AI results
-                            sentiments = ai_results.get('sentiments', [])
+                            # Normalize AI results for UI compatibility
+                            normalized_ai_results = normalize_ai_for_ui(ai_results)
                             
-                            # If no sentiments from AI, convert emotions
-                            if not sentiments and emotion_summary:
-                                sentiments = self._convert_emotions_to_sentiments(emotion_summary)
+                            # Use normalized results
+                            emotion_summary = normalized_ai_results.get('emotion_summary', {})
+                            sentiments = normalized_ai_results.get('sentiments', [])
+                            
+                            # Update insights with normalized values
+                            if 'insights' in normalized_ai_results:
+                                # Store normalized insights for later use
+                                normalized_insights = normalized_ai_results['insights']
+                            
+                            logger.info("✅ AI results normalized for UI compatibility")
                         else:
                             logger.warning("AI analysis failed - falling back to enhanced pattern matching")
                             raise Exception("AI analysis returned no results")
