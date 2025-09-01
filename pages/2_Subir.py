@@ -223,20 +223,20 @@ if 'analysis_results' in st.session_state:
             emotion_df = pd.DataFrame(list(emotion_distribution.items()), columns=['Emoción', 'Frecuencia'])
             emotion_df = emotion_df.sort_values('Frecuencia', ascending=False).head(10)  # Top 10 emotions
             
-            fig_emotions = px.bar(
+            fig_emotions_main = px.bar(
                 emotion_df,
                 x='Emoción',
                 y='Frecuencia', 
                 title="Distribución de Emociones Específicas (Top 10)"
             )
-            fig_emotions.update_layout(chart_theme['layout'])
-            st.plotly_chart(fig_emotions, use_container_width=True)
+            fig_emotions_main.update_layout(chart_theme['layout'])
+            st.plotly_chart(fig_emotions_main, use_container_width=True, key="emotions_chart_main")
             
             # Emotion intensity display
             avg_intensity = emotion_summary.get('avg_intensity', 0)
             col_intensity1, col_intensity2 = st.columns(2)
             with col_intensity1:
-                st.metric("Intensidad Emocional Promedio", f"{avg_intensity}/10")
+                st.metric("Intensidad Emocional Promedio", f"{avg_intensity}/10", key="emotion_intensity_main")
             with col_intensity2:
                 intensity_level = "Alta" if avg_intensity > 7 else ("Media" if avg_intensity > 4 else "Baja")
                 st.markdown(
@@ -296,7 +296,8 @@ if 'analysis_results' in st.session_state:
             st.metric(
                 "Índice de Satisfacción", 
                 f"{satisfaction_index}/100",
-                delta=satisfaction_level
+                delta=satisfaction_level,
+                key="satisfaction_index_metric"
             )
         
         with col2:
@@ -348,7 +349,7 @@ if 'analysis_results' in st.session_state:
             # Emotion intensity metric
             col_intensity1, col_intensity2 = st.columns(2)
             with col_intensity1:
-                st.metric("Intensidad Emocional Promedio", f"{avg_intensity}/10")
+                st.metric("Intensidad Emocional Promedio", f"{avg_intensity}/10", key="emotion_intensity_detailed")
             with col_intensity2:
                 intensity_level = "Alta" if avg_intensity > 7 else ("Media" if avg_intensity > 4 else "Baja")
                 st.markdown(
@@ -367,14 +368,14 @@ if 'analysis_results' in st.session_state:
                 emotion_df = pd.DataFrame(list(emotion_distribution.items()), columns=['Emoción', 'Frecuencia'])
                 emotion_df = emotion_df.sort_values('Frecuencia', ascending=False).head(10)  # Top 10 emotions
                 
-                fig_emotions = px.bar(
+                fig_emotions_detailed = px.bar(
                     emotion_df,
                     x='Emoción',
                     y='Frecuencia', 
                     title="Distribución de Emociones Específicas (Top 10)"
                 )
-                fig_emotions.update_layout(chart_theme['layout'])
-                st.plotly_chart(fig_emotions, use_container_width=True)
+                fig_emotions_detailed.update_layout(chart_theme['layout'])
+                st.plotly_chart(fig_emotions_detailed, use_container_width=True, key="emotions_chart_detailed")
     
     # Detailed sentiment analysis charts
     if results.get('sentiment_percentages'):
@@ -391,7 +392,7 @@ if 'analysis_results' in st.session_state:
             title="Distribución de Sentimientos"
         )
         fig_sentiment.update_layout(chart_theme['layout'])
-        st.plotly_chart(fig_sentiment, use_container_width=True)
+        st.plotly_chart(fig_sentiment, use_container_width=True, key="sentiment_pie_chart")
     
     # Theme analysis chart
     if results.get('theme_counts'):
@@ -408,7 +409,7 @@ if 'analysis_results' in st.session_state:
             title="Temas Principales Identificados"
         )
         fig_themes.update_layout(chart_theme['layout'])
-        st.plotly_chart(fig_themes, use_container_width=True)
+        st.plotly_chart(fig_themes, use_container_width=True, key="themes_bar_chart")
     
     # AI Strategic Recommendations (if IA analysis)
     if is_ai_analysis:
