@@ -202,9 +202,15 @@ class FileProcessor:
                             # Normalize AI results for UI compatibility
                             normalized_ai_results = normalize_ai_for_ui(ai_results)
                             
-                            # Use normalized results
+                            # Use normalized results and integrate into final results
                             emotion_summary = normalized_ai_results.get('emotion_summary', {})
                             sentiments = normalized_ai_results.get('sentiments', [])
+                            sentiment_percentages = normalized_ai_results.get('sentiment_percentages', {})
+                            
+                            # Store ALL normalized data in results for UI
+                            results['emotion_summary'] = emotion_summary
+                            results['sentiments'] = sentiments  
+                            results['sentiment_percentages'] = sentiment_percentages
                             
                             # Store normalized insights for final results
                             normalized_insights = normalized_ai_results.get('insights', {})
