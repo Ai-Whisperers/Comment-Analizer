@@ -147,6 +147,10 @@ class FileProcessor:
             unique_comments = comment_data['unique_comments']
             comment_frequencies = comment_data['comment_frequencies']
             
+            # Initialize variables for AI processing
+            normalized_insights = {}
+            use_normalized_insights = False
+            
             if use_ai_insights:
                 # Use REAL AI analysis with OpenAI integration
                 try:
@@ -169,17 +173,33 @@ class FileProcessor:
                         logger.info("OpenAI adapter available - using REAL AI analysis")
                         
                         # Create mock uploaded file object for AI adapter
+                        from io import StringIO, BytesIO
+                        
                         class MockUploadedFile:
                             def __init__(self, comments_list, filename="analysis.csv"):
                                 self.comments_df = pd.DataFrame({'Comentario Final': comments_list})
                                 self.name = filename
                                 self.size = len(str(comments_list))
+                                # Create a proper file-like object
+                                csv_content = self.comments_df.to_csv(index=False)
+                                self._content = BytesIO(csv_content.encode('utf-8'))
+                                self._content.seek(0)
                             
-                            def read(self):
-                                return self.comments_df.to_csv(index=False).encode()
+                            def read(self, size=-1):
+                                return self._content.read(size)
                             
                             def seek(self, position):
-                                pass
+                                return self._content.seek(position)
+                            
+                            def tell(self):
+                                return self._content.tell()
+                            
+                            def readline(self):
+                                return self._content.readline()
+                            
+                            def close(self):
+                                if hasattr(self._content, 'close'):
+                                    self._content.close()
                         
                         mock_file = MockUploadedFile(unique_comments)
                         
@@ -199,10 +219,9 @@ class FileProcessor:
                             emotion_summary = normalized_ai_results.get('emotion_summary', {})
                             sentiments = normalized_ai_results.get('sentiments', [])
                             
-                            # Update insights with normalized values
-                            if 'insights' in normalized_ai_results:
-                                # Store normalized insights for later use
-                                normalized_insights = normalized_ai_results['insights']
+                            # Store normalized insights for final results
+                            normalized_insights = normalized_ai_results.get('insights', {})
+                            use_normalized_insights = True
                             
                             logger.info("✅ AI results normalized for UI compatibility")
                         else:
@@ -276,11 +295,20 @@ class FileProcessor:
             # Add emotion data if AI analysis was used
             if use_ai_insights and emotion_summary:
                 results['emotion_summary'] = emotion_summary
-                results['enhanced_results'] = enhanced_results
+                if 'enhanced_results' in locals():
+                    results['enhanced_results'] = enhanced_results
             
-            # Add insights and recommendations (enhanced with AI if requested)
-            results['insights'] = generate_insights_summary(results, enhanced_ai=use_ai_insights)
-            results['recommendations'] = create_recommendations(results, enhanced_ai=use_ai_insights)
+            # Use normalized IA insights if available, otherwise generate standard insights
+            if use_normalized_insights and normalized_insights:
+                logger.info("Using normalized IA insights for results")
+                results['insights'] = normalized_insights
+                
+                # Generate recommendations based on IA results
+                results['recommendations'] = create_recommendations(results, enhanced_ai=True)
+            else:
+                # Generate standard insights and recommendations
+                results['insights'] = generate_insights_summary(results, enhanced_ai=use_ai_insights)
+                results['recommendations'] = create_recommendations(results, enhanced_ai=use_ai_insights)
             
             return results
             
