@@ -15,10 +15,9 @@ if str(current_dir) not in sys.path:
 from shared.styling.theme_manager_full import ThemeManager, UIComponents
 from shared.business.file_processor import FileProcessor
 
-# Try to import memory monitoring functions
+# Import memory monitoring functions
 try:
-    sys.path.insert(0, str(current_dir / "src"))
-    from main import get_memory_usage, is_streamlit_cloud
+    from shared.utils.memory_monitor import get_memory_status, optimize_memory, format_memory_display
     MEMORY_MONITORING_AVAILABLE = True
 except ImportError:
     MEMORY_MONITORING_AVAILABLE = False
@@ -154,24 +153,34 @@ with st.sidebar:
     
     try:
         if MEMORY_MONITORING_AVAILABLE:
-            memory_mb = get_memory_usage()
-            if memory_mb > 0:
-                memory_limit = 690 if is_streamlit_cloud() else 2048
-                memory_pct = (memory_mb / memory_limit) * 100
-                status = "Alto" if memory_pct > 80 else ("Medio" if memory_pct > 60 else "Normal")
-                color = "red" if memory_pct > 80 else ("orange" if memory_pct > 60 else "green")
+            memory_status = get_memory_status()
+            
+            if memory_status['available']:
+                label, value, delta = format_memory_display(memory_status)
                 
-                st.metric(
-                    f"Memoria ({status})",
-                    f"{memory_mb:.0f}MB", 
-                    f"{memory_pct:.1f}% usado"
-                )
+                st.metric(label, value, delta)
+                
+                # Show recommendation for high memory usage
+                if memory_status['status'] != 'Normal':
+                    st.warning(memory_status['recommendation'])
+                    
+                    # Memory cleanup button for high usage
+                    if memory_status['status'] == 'Alto':
+                        if st.button("Limpiar Memoria", key="memory_cleanup_upload", type="secondary"):
+                            if optimize_memory():
+                                st.success("Memoria optimizada")
+                                st.rerun()
+                            else:
+                                st.error("Error en optimización")
+                
+                # Environment info
+                st.caption(f"Entorno: {memory_status['environment']}")
             else:
-                st.info("Datos de memoria no disponibles")
+                st.info(memory_status['error'])
         else:
             st.info("Monitoreo de memoria no disponible")
     except Exception as e:
-        st.info("Monitoreo de memoria no disponible")
+        st.info(f"Error en monitoreo: {str(e)}")
     
     # Navigation
     st.markdown("---")

@@ -24,6 +24,13 @@ st.set_page_config(
 if 'dark_mode' not in st.session_state:
     st.session_state.dark_mode = True
 
+# Import memory monitoring
+try:
+    from shared.utils.memory_monitor import get_memory_status, optimize_memory, format_memory_display
+    MEMORY_MONITORING_AVAILABLE = True
+except ImportError:
+    MEMORY_MONITORING_AVAILABLE = False
+
 # Navigation setup
 pages = {
     "Cargar Archivo": "pages/upload.py",
@@ -54,14 +61,39 @@ with st.sidebar:
         st.session_state.dark_mode = not st.session_state.dark_mode
         st.rerun()
     
-    # Memory monitoring (PRESERVE MONITORING)
+    # Enhanced memory monitoring with glassmorphism styling
     st.markdown("---")
     st.markdown("### Estado del Sistema")
     try:
-        # Simple memory display
-        st.info("Monitoreo de memoria activo")
-    except:
-        pass
+        if MEMORY_MONITORING_AVAILABLE:
+            memory_status = get_memory_status()
+            
+            if memory_status['available']:
+                label, value, delta = format_memory_display(memory_status)
+                
+                st.metric(label, value, delta)
+                
+                # Show recommendation for high memory usage
+                if memory_status['status'] != 'Normal':
+                    st.warning(memory_status['recommendation'])
+                    
+                    # Memory cleanup button for high usage
+                    if memory_status['status'] == 'Alto':
+                        if st.button("Limpiar Memoria", key="memory_cleanup_main", type="secondary"):
+                            if optimize_memory():
+                                st.success("Memoria optimizada")
+                                st.rerun()
+                            else:
+                                st.error("Error en optimización")
+                
+                # Environment info
+                st.caption(f"Entorno: {memory_status['environment']}")
+            else:
+                st.info(memory_status['error'])
+        else:
+            st.info("Monitoreo de memoria no disponible")
+    except Exception as e:
+        st.info(f"Error en monitoreo: {str(e)}")
     
     st.markdown("---")
     st.markdown("### Información de la App")
