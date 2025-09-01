@@ -62,7 +62,8 @@ uploaded_file = st.file_uploader(
 )
 
 # ENHANCED FILE UPLOAD WITH PREVIEW
-if uploaded_file:
+# Prevent reprocessing of same file
+if uploaded_file and st.session_state.get('file_processed') != uploaded_file.name:
     # File validation display
     processor = FileProcessor()
     validation = processor.validate_file(uploaded_file)
@@ -141,9 +142,9 @@ if uploaded_file:
                         if results:
                             st.session_state.analysis_results = results
                             st.session_state.analysis_type = "ai"
+                            st.session_state.file_processed = uploaded_file.name
                             ai_progress_placeholder.empty()
                             st.success("Análisis IA completado con insights avanzados!")
-                            st.rerun()
                         else:
                             ai_progress_placeholder.empty()
                             st.error("Error procesando archivo con IA")
@@ -177,9 +178,9 @@ if uploaded_file:
                         if results:
                             st.session_state.analysis_results = results
                             st.session_state.analysis_type = "quick"
+                            st.session_state.file_processed = uploaded_file.name
                             progress_placeholder.empty()
                             st.info("Análisis básico completado. Para insights avanzados, configure API key.")
-                            st.rerun()
                         else:
                             progress_placeholder.empty()
                             st.error("Error procesando archivo")
@@ -189,6 +190,15 @@ if uploaded_file:
                         st.error(f"Error durante análisis: {str(e)}")
     else:
         st.error(f"Error: {validation['error_message']}")
+
+# Show reset button if file was processed
+if uploaded_file and st.session_state.get('file_processed') == uploaded_file.name:
+    if st.button("🔄 Analizar Nuevo Archivo", type="secondary", key="reset_analysis"):
+        # Clear session state to allow new analysis
+        for key in ['analysis_results', 'analysis_type', 'file_processed']:
+            if key in st.session_state:
+                del st.session_state[key]
+        st.rerun()
 
 # ENHANCED AI RESULTS SECTION WITH DETAILED INSIGHTS
 if 'analysis_results' in st.session_state:
