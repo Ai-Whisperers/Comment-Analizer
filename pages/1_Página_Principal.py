@@ -257,8 +257,8 @@ st.markdown("## ¿Listo para Comenzar?")
 col1, col2, col3 = st.columns([1, 2, 1])
 
 with col2:
-    if st.button("Comenzar Análisis", type="primary", use_container_width=True):
-        st.switch_page("pages/upload.py")
+    if st.button("Comenzar Análisis", type="primary", width='stretch', key="start_analysis"):
+        st.switch_page("pages/2_Subir.py")
 
 st.markdown("""
 <div style="text-align: center; margin-top: 2rem; color: var(--text-tertiary);">
