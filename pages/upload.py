@@ -57,7 +57,7 @@ uploaded_file = st.file_uploader(
     help="Sube un archivo Excel (.xlsx, .xls) o CSV con comentarios de clientes"
 )
 
-# SIMPLE, TOP-LEVEL BUTTON IMPLEMENTATION (NO DEEP NESTING)
+# ENHANCED FILE UPLOAD WITH PREVIEW
 if uploaded_file:
     # File validation display
     processor = FileProcessor()
@@ -65,6 +65,45 @@ if uploaded_file:
     
     if validation['valid']:
         st.success(f"Archivo válido: {uploaded_file.name} ({validation['file_size_mb']:.1f}MB)")
+        
+        # Enhanced file preview with statistics
+        try:
+            import pandas as pd
+            import io
+            
+            # Read file for preview
+            if uploaded_file.name.endswith('.csv'):
+                df_preview = pd.read_csv(uploaded_file, nrows=5)
+                df_full = pd.read_csv(uploaded_file)
+            else:
+                df_preview = pd.read_excel(uploaded_file, nrows=5)
+                df_full = pd.read_excel(uploaded_file)
+            
+            # Display file preview header with stats
+            st.markdown(
+                ui.file_preview_header(
+                    filename=uploaded_file.name,
+                    filesize=f"{validation['file_size_mb']:.1f}MB",
+                    rows=len(df_full),
+                    columns=len(df_full.columns)
+                ),
+                unsafe_allow_html=True
+            )
+            
+            # Show data preview
+            with st.expander("Vista previa de datos (primeras 5 filas)", expanded=True):
+                st.dataframe(df_preview, use_container_width=True)
+                
+                # Column analysis
+                col_info = []
+                for col in df_full.columns:
+                    col_type = "Comentarios" if any(keyword in col.lower() for keyword in ['comment', 'comentario', 'feedback']) else "Numérica" if df_full[col].dtype in ['int64', 'float64'] else "Texto"
+                    col_info.append(f"**{col}**: {col_type}")
+                
+                st.info("**Columnas detectadas:** " + " | ".join(col_info))
+            
+        except Exception as e:
+            st.warning(f"No se pudo generar vista previa: {str(e)}")
         
         # SIMPLE BUTTON - NO COMPLEX NESTING
         col1, col2, col3 = st.columns([1, 2, 1])

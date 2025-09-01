@@ -53,46 +53,118 @@ st.markdown("### Opciones de Análisis")
 col1, col2 = st.columns(2)
 
 with col1:
-    # SIMPLE BUTTON - NO DEEP NESTING
+    # FIXED BUTTON ARCHITECTURE WITH PROGRESS FEEDBACK
     if st.button("Análisis Rápido", type="primary", use_container_width=True, key="quick_analysis"):
+        # Enhanced progress feedback
+        progress_steps = ["Validando archivo", "Extrayendo comentarios", "Análisis de sentimientos", "Generando reportes"]
+        
+        progress_placeholder = st.empty()
+        
         with st.spinner("Procesando comentarios..."):
             try:
+                # Step 1: Validating file
+                progress_placeholder.markdown(
+                    ui.step_progress_indicator(progress_steps, 0),
+                    unsafe_allow_html=True
+                )
+                
+                # Step 2: Extracting comments
+                progress_placeholder.markdown(
+                    ui.step_progress_indicator(progress_steps, 1),
+                    unsafe_allow_html=True
+                )
+                
+                # Step 3: Processing
+                progress_placeholder.markdown(
+                    ui.step_progress_indicator(progress_steps, 2),
+                    unsafe_allow_html=True
+                )
+                
                 # Process file using business logic
                 results = processor.process_uploaded_file(uploaded_file)
                 
-                if results:
-                    st.session_state.analysis_results = results
-                    st.success("Análisis completado!")
-                    
-                    # Navigate to results
-                    if st.button("Ver Resultados", key="view_results_quick"):
-                        st.switch_page("pages/results.py")
-                else:
-                    st.error("Error procesando archivo")
-                    
-            except Exception as e:
-                st.error(f"Error durante análisis: {str(e)}")
-
-with col2:
-    # SIMPLE AI BUTTON - NO DEEP NESTING  
-    if st.button("Análisis con IA", type="secondary", use_container_width=True, key="ai_analysis"):
-        with st.spinner("Procesando con inteligencia artificial..."):
-            try:
-                # Process file using AI-enhanced business logic
-                results = processor.process_uploaded_file(uploaded_file, use_ai_insights=True)
+                # Step 4: Generating reports
+                progress_placeholder.markdown(
+                    ui.step_progress_indicator(progress_steps, 3),
+                    unsafe_allow_html=True
+                )
                 
                 if results:
                     st.session_state.analysis_results = results
-                    st.success("Análisis IA completado!")
-                    
-                    # Navigate to results
-                    if st.button("Ver Resultados IA", key="view_results_ai"):
-                        st.switch_page("pages/results.py")
+                    st.session_state.quick_analysis_complete = True
+                    progress_placeholder.empty()  # Clear progress
+                    st.success("Análisis completado!")
+                    st.rerun()
                 else:
+                    progress_placeholder.empty()
+                    st.error("Error procesando archivo")
+                    
+            except Exception as e:
+                progress_placeholder.empty()
+                st.error(f"Error durante análisis: {str(e)}")
+    
+    # Show results button after quick analysis completion
+    if st.session_state.get('quick_analysis_complete', False):
+        if st.button("Ver Resultados", type="primary", use_container_width=True, key="view_results_quick"):
+            st.session_state.quick_analysis_complete = False  # Reset flag
+            st.switch_page("pages/results.py")
+
+with col2:
+    # FIXED AI BUTTON ARCHITECTURE WITH ENHANCED PROGRESS
+    if st.button("Análisis con IA", type="secondary", use_container_width=True, key="ai_analysis"):
+        # Enhanced AI progress feedback
+        ai_steps = ["Preparando IA", "Análisis inteligente", "Extrayendo insights", "Generando recomendaciones"]
+        
+        ai_progress_placeholder = st.empty()
+        
+        with st.spinner("Procesando con inteligencia artificial..."):
+            try:
+                # Step 1: Preparing AI
+                ai_progress_placeholder.markdown(
+                    ui.step_progress_indicator(ai_steps, 0),
+                    unsafe_allow_html=True
+                )
+                
+                # Step 2: AI Analysis
+                ai_progress_placeholder.markdown(
+                    ui.step_progress_indicator(ai_steps, 1),
+                    unsafe_allow_html=True
+                )
+                
+                # Step 3: Extracting insights
+                ai_progress_placeholder.markdown(
+                    ui.step_progress_indicator(ai_steps, 2),
+                    unsafe_allow_html=True
+                )
+                
+                # Process file using AI-enhanced business logic
+                results = processor.process_uploaded_file(uploaded_file, use_ai_insights=True)
+                
+                # Step 4: Generating recommendations
+                ai_progress_placeholder.markdown(
+                    ui.step_progress_indicator(ai_steps, 3),
+                    unsafe_allow_html=True
+                )
+                
+                if results:
+                    st.session_state.analysis_results = results
+                    st.session_state.ai_analysis_complete = True
+                    ai_progress_placeholder.empty()  # Clear progress
+                    st.success("Análisis IA completado!")
+                    st.rerun()
+                else:
+                    ai_progress_placeholder.empty()
                     st.error("Error procesando archivo con IA")
                     
             except Exception as e:
+                ai_progress_placeholder.empty()
                 st.error(f"Error durante análisis IA: {str(e)}")
+    
+    # Show results button after AI analysis completion
+    if st.session_state.get('ai_analysis_complete', False):
+        if st.button("Ver Resultados IA", type="secondary", use_container_width=True, key="view_results_ai"):
+            st.session_state.ai_analysis_complete = False  # Reset flag
+            st.switch_page("pages/results.py")
 
 # Modern section divider (PRESERVED)
 st.markdown(ui.section_divider(), unsafe_allow_html=True)

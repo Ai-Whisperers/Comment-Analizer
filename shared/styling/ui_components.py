@@ -39,12 +39,18 @@ class UIComponents:
         """
     
     @staticmethod
-    def status_badge(icon: str, text: str, badge_type: str = "neutral") -> str:
-        """Generate status badge HTML with theme colors"""
+    def status_badge(icon: str, text: str, badge_type: str = "neutral", aria_label: str = "") -> str:
+        """Generate accessible status badge HTML with theme colors"""
+        aria_description = aria_label or f"Estado: {text}"
         return f"""
-        <div class="status-badge {badge_type}">
-            <span class="badge-icon">{icon}</span>
+        <div class="status-badge {badge_type}" 
+             role="status" 
+             aria-live="polite" 
+             aria-label="{aria_description}"
+             tabindex="0">
+            <span class="badge-icon" aria-hidden="true">{icon}</span>
             <span class="badge-text">{text}</span>
+            <span class="sr-only">{aria_description}</span>
         </div>
         """
     
@@ -78,27 +84,80 @@ class UIComponents:
         """
     
     @staticmethod
-    def progress_indicator(progress: float, text: str = "") -> str:
-        """Generate animated progress indicator"""
+    def file_preview_header(filename: str, filesize: str, rows: int, columns: int) -> str:
+        """Generate accessible file preview header with stats"""
+        aria_label = f"Vista previa del archivo {filename}: {rows} filas, {columns} columnas, tamaño {filesize}"
         return f"""
-        <div class="progress-container" style="margin: 1rem 0;">
-            <div class="progress-bar" style="
-                width: 100%;
-                height: 8px;
-                background: var(--glass-bg);
-                border-radius: 4px;
-                overflow: hidden;
-                position: relative;
-            ">
-                <div class="progress-fill" style="
-                    width: {progress}%;
-                    height: 100%;
-                    background: linear-gradient(90deg, var(--primary), var(--secondary));
-                    border-radius: 4px;
-                    transition: width 0.3s ease;
-                "></div>
+        <div class="file-preview" 
+             role="region" 
+             aria-label="{aria_label}"
+             tabindex="0">
+            <div class="file-preview-header">
+                <div class="file-preview-title">Vista Previa del Archivo</div>
+                <div class="file-preview-info">{filename}</div>
             </div>
-            {f'<p style="color: var(--text-secondary); font-size: var(--size-sm); margin-top: 0.5rem;">{text}</p>' if text else ''}
+            <div class="file-preview-stats" role="group" aria-label="Estadísticas del archivo">
+                <div class="file-stat" role="figure" aria-label="Tamaño del archivo: {filesize}">
+                    <div class="file-stat-value">{filesize}</div>
+                    <div class="file-stat-label">Tamaño</div>
+                </div>
+                <div class="file-stat" role="figure" aria-label="Número de filas: {rows}">
+                    <div class="file-stat-value">{rows}</div>
+                    <div class="file-stat-label">Filas</div>
+                </div>
+                <div class="file-stat" role="figure" aria-label="Número de columnas: {columns}">
+                    <div class="file-stat-value">{columns}</div>
+                    <div class="file-stat-label">Columnas</div>
+                </div>
+            </div>
+            <div class="sr-only">{aria_label}</div>
+        </div>
+        """
+    
+    @staticmethod
+    def progress_indicator(progress: float, text: str = "") -> str:
+        """Generate accessible progress indicator with glassmorphism styling"""
+        aria_label = f"Progreso del análisis: {progress}% completado"
+        return f"""
+        <div class="progress-indicator" 
+             role="progressbar" 
+             aria-valuenow="{progress}" 
+             aria-valuemin="0" 
+             aria-valuemax="100"
+             aria-label="{aria_label}"
+             tabindex="0">
+            <div class="progress-bar-container">
+                <div class="progress-bar-fill" style="width: {progress}%;"></div>
+            </div>
+            {f'<div class="progress-text">{text}</div>' if text else ''}
+            <div class="sr-only">{aria_label}</div>
+        </div>
+        """
+    
+    @staticmethod
+    def step_progress_indicator(steps: list, current_step: int) -> str:
+        """Generate accessible step-based progress indicator"""
+        steps_html = ""
+        for i, step in enumerate(steps):
+            status_class = "completed" if i < current_step else ("active" if i == current_step else "")
+            aria_current = 'aria-current="step"' if i == current_step else ''
+            steps_html += f'<div class="progress-step {status_class}" {aria_current}>{step}</div>'
+        
+        progress_percent = (current_step / len(steps)) * 100 if steps else 0
+        aria_label = f"Progreso por pasos: paso {current_step + 1} de {len(steps)}, {progress_percent:.0f}% completado"
+        
+        return f"""
+        <div class="progress-indicator" 
+             role="progressbar" 
+             aria-valuenow="{current_step}" 
+             aria-valuemin="0" 
+             aria-valuemax="{len(steps) - 1}"
+             aria-label="{aria_label}"
+             tabindex="0">
+            <div class="progress-steps" role="group" aria-label="Pasos del proceso">
+                {steps_html}
+            </div>
+            <div class="sr-only">{aria_label}</div>
         </div>
         """
     
