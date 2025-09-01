@@ -1,6 +1,6 @@
 """
-Multi-Page Streamlit App - Simplified Architecture
-Preserves all modern styling while fixing button reliability issues
+Personal Paraguay Comment Analyzer - Controlled Navigation
+Using st.navigation for complete control over navbar buttons
 """
 
 import sys
@@ -31,9 +31,18 @@ try:
 except ImportError:
     MEMORY_MONITORING_AVAILABLE = False
 
-# Streamlit automatically generates navigation from pages/ directory
-# Sidebar for additional functionality
+# Define pages with controlled navigation (Subir first, no streamlit app button)
+pages = [
+    st.Page("pages/2_Subir.py", title="Subir"),
+    st.Page("pages/1_Página_Principal.py", title="Página Principal")
+]
+
+# Create navigation with sidebar position (prevents streamlit app button)
+pg = st.navigation(pages, position="sidebar")
+
+# Sidebar additional functionality below navigation
 with st.sidebar:
+    st.markdown("---")
     st.markdown("### Herramientas")
     
     # Theme toggle (PRESERVE MODERN FEATURE)
@@ -82,6 +91,9 @@ with st.sidebar:
     **Estilo**: Moderno preservado
     **Rendimiento**: Optimizado
     """)
+
+# Run the selected page
+pg.run()
 
 # Global footer (PRESERVE SOPHISTICATED STYLING)
 st.markdown("---")
