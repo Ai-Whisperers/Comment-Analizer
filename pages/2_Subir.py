@@ -96,7 +96,7 @@ if uploaded_file:
             
             # Show data preview
             with st.expander("Vista previa de datos (primeras 5 filas)", expanded=True):
-                st.dataframe(df_preview, use_container_width=True)
+                st.dataframe(df_preview, width='stretch')
                 
                 # Column analysis
                 col_info = []
@@ -118,7 +118,7 @@ if uploaded_file:
         
         if api_key_available:
             # AI Analysis as primary option
-            if st.button("Iniciar Análisis con IA", type="primary", use_container_width=True, key="ai_analysis"):
+            if st.button("Iniciar Análisis con IA", type="primary", width='stretch', key="ai_analysis"):
                 # Enhanced AI progress feedback
                 ai_steps = ["Preparando IA", "Análisis inteligente", "Extrayendo insights", "Generando recomendaciones"]
                 ai_progress_placeholder = st.empty()
@@ -155,7 +155,7 @@ if uploaded_file:
             # Fallback to quick analysis if no API key
             st.warning("API key no disponible - usando análisis rápido como alternativa")
             
-            if st.button("Análisis Rápido (Fallback)", type="secondary", use_container_width=True, key="fallback_analysis"):
+            if st.button("Análisis Rápido (Fallback)", type="secondary", width='stretch', key="fallback_analysis"):
                 progress_steps = ["Validando archivo", "Extrayendo comentarios", "Análisis básico", "Generando reportes"]
                 progress_placeholder = st.empty()
                 
@@ -230,13 +230,13 @@ if 'analysis_results' in st.session_state:
                 title="Distribución de Emociones Específicas (Top 10)"
             )
             fig_emotions_main.update_layout(chart_theme['layout'])
-            st.plotly_chart(fig_emotions_main, use_container_width=True, key="emotions_chart_main")
+            st.plotly_chart(fig_emotions_main, width='stretch', key="emotions_chart_main")
             
             # Emotion intensity display
             avg_intensity = emotion_summary.get('avg_intensity', 0)
             col_intensity1, col_intensity2 = st.columns(2)
             with col_intensity1:
-                st.metric("Intensidad Emocional Promedio", f"{avg_intensity}/10", key="emotion_intensity_main")
+                st.metric("Intensidad Emocional Promedio", f"{avg_intensity}/10")
             with col_intensity2:
                 intensity_level = "Alta" if avg_intensity > 7 else ("Media" if avg_intensity > 4 else "Baja")
                 st.markdown(
@@ -296,8 +296,7 @@ if 'analysis_results' in st.session_state:
             st.metric(
                 "Índice de Satisfacción", 
                 f"{satisfaction_index}/100",
-                delta=satisfaction_level,
-                key="satisfaction_index_metric"
+                delta=satisfaction_level
             )
         
         with col2:
@@ -349,7 +348,7 @@ if 'analysis_results' in st.session_state:
             # Emotion intensity metric
             col_intensity1, col_intensity2 = st.columns(2)
             with col_intensity1:
-                st.metric("Intensidad Emocional Promedio", f"{avg_intensity}/10", key="emotion_intensity_detailed")
+                st.metric("Intensidad Emocional Promedio", f"{avg_intensity}/10")
             with col_intensity2:
                 intensity_level = "Alta" if avg_intensity > 7 else ("Media" if avg_intensity > 4 else "Baja")
                 st.markdown(
@@ -375,7 +374,7 @@ if 'analysis_results' in st.session_state:
                     title="Distribución de Emociones Específicas (Top 10)"
                 )
                 fig_emotions_detailed.update_layout(chart_theme['layout'])
-                st.plotly_chart(fig_emotions_detailed, use_container_width=True, key="emotions_chart_detailed")
+                st.plotly_chart(fig_emotions_detailed, width='stretch', key="emotions_chart_detailed")
     
     # Detailed sentiment analysis charts
     if results.get('sentiment_percentages'):
@@ -392,7 +391,7 @@ if 'analysis_results' in st.session_state:
             title="Distribución de Sentimientos"
         )
         fig_sentiment.update_layout(chart_theme['layout'])
-        st.plotly_chart(fig_sentiment, use_container_width=True, key="sentiment_pie_chart")
+        st.plotly_chart(fig_sentiment, width='stretch', key="sentiment_pie_chart")
     
     # Theme analysis chart
     if results.get('theme_counts'):
@@ -409,7 +408,7 @@ if 'analysis_results' in st.session_state:
             title="Temas Principales Identificados"
         )
         fig_themes.update_layout(chart_theme['layout'])
-        st.plotly_chart(fig_themes, use_container_width=True, key="themes_bar_chart")
+        st.plotly_chart(fig_themes, width='stretch', key="themes_bar_chart")
     
     # AI Strategic Recommendations (if IA analysis)
     if is_ai_analysis:
@@ -441,116 +440,6 @@ if 'analysis_results' in st.session_state:
         for i, rec in enumerate(recommendations, 1):
             st.info(f"{i}. {rec}")
     
-    # PROFESSIONAL EXCEL REPORT WITH ENHANCED UX
-    st.markdown("#### Descargar Reporte Profesional")
-    
-    try:
-        # Generate professional Excel with enhanced formatting
-        excel_buffer = generate_professional_excel(results, is_ai_analysis)
-        
-        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-        analysis_type = "IA_Avanzado" if is_ai_analysis else "Rapido"
-        filename = f"Personal_Paraguay_Analisis_{analysis_type}_{timestamp}.xlsx"
-        
-        # Enhanced download description based on content
-        if is_ai_analysis:
-            if results.get('emotion_summary'):
-                sheet_description = "7 hojas: Dashboard + Detallado + Sentimientos + IA Insights + Recomendaciones + Emociones + Diccionario"
-                download_label = f"Descargar Reporte IA Completo ({sheet_description})"
-            else:
-                sheet_description = "6 hojas: Dashboard + Detallado + Sentimientos + IA Insights + Recomendaciones + Diccionario"
-                download_label = f"Descargar Reporte IA Avanzado ({sheet_description})"
-        else:
-            sheet_description = "4 hojas: Dashboard + Detallado + Sentimientos + Diccionario"
-            download_label = f"Descargar Reporte Básico ({sheet_description})"
-        
-        # Professional download button with detailed description
-        col1, col2 = st.columns([3, 1])
-        
-        with col1:
-            st.download_button(
-                label=download_label,
-                data=excel_buffer.getvalue(),
-                file_name=filename,
-                mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-                use_container_width=True,
-                key="download_professional_excel"
-            )
-        
-        with col2:
-            st.markdown(
-                ui.status_badge(
-                    "", 
-                    f"Formato Professional", 
-                    "positive"
-                ),
-                unsafe_allow_html=True
-            )
-        
-        # Report content description
-        st.markdown("**Contenido del Reporte:**")
-        if is_ai_analysis:
-            st.markdown("""
-            - **Dashboard Ejecutivo**: Métricas clave y resumen
-            - **Análisis Detallado**: Comentarios individuales con sentimientos
-            - **Análisis de Sentimientos**: Distribución y temas principales
-            - **Insights IA Avanzados**: Métricas de inteligencia artificial
-            - **Recomendaciones Estratégicas**: Acciones prioritarias categorizadas
-            - **Análisis Emocional**: Emociones específicas detectadas (si disponible)
-            - **Diccionario de Datos**: Explicación de todas las métricas
-            """)
-        else:
-            st.markdown("""
-            - **Dashboard Ejecutivo**: Métricas básicas y resumen
-            - **Análisis Detallado**: Comentarios individuales con sentimientos
-            - **Análisis de Sentimientos**: Distribución básica
-            - **Diccionario de Datos**: Explicación de métricas básicas
-            """)
-        
-    except Exception as e:
-        st.error(f"Error generando reporte profesional: {e}")
-        
-        # Fallback to basic Excel if professional generation fails
-        st.warning("Usando generador básico como alternativa...")
-        try:
-            basic_output = BytesIO()
-            with pd.ExcelWriter(basic_output, engine='xlsxwriter') as writer:
-                # Basic results sheet
-                results_df = pd.DataFrame({
-                    'Comentario': results.get('comments', []),
-                    'Sentimiento': results.get('sentiments', [])
-                })
-                results_df.to_excel(writer, sheet_name='Resultados', index=False)
-            
-            st.download_button(
-                label="Descargar Reporte Básico (Fallback)",
-                data=basic_output.getvalue(),
-                file_name=f"analisis_basico_{datetime.now().strftime('%Y%m%d_%H%M%S')}.xlsx",
-                mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-                key="download_basic_excel"
-            )
-        except Exception as basic_error:
-            st.error(f"Error en generador básico: {basic_error}")
-    
-    # Reset button for new analysis
-    col1, col2 = st.columns(2)
-    with col1:
-        if st.button("Nuevo Análisis", key="new_analysis", type="secondary", use_container_width=True):
-            # Clear analysis results
-            for key in ['analysis_results', 'analysis_type', 'uploaded_file']:
-                if key in st.session_state:
-                    del st.session_state[key]
-            st.rerun()
-    
-    with col2:
-        if st.button("Limpiar Memoria", key="cleanup_memory_results", type="secondary", use_container_width=True):
-            # Memory optimization after analysis
-            if MEMORY_MONITORING_AVAILABLE:
-                if optimize_memory():
-                    st.success("Memoria limpiada")
-                    st.rerun()
-                else:
-                    st.error("Error limpiando memoria")
 
 # Modern section divider (PRESERVED)
 st.markdown(ui.section_divider(), unsafe_allow_html=True)
@@ -573,52 +462,88 @@ with st.expander("Información de formato", expanded=False):
     - Columnas opcionales: NPS, Nota
     """)
 
+# EXCEL DOWNLOAD SECTION - MOVED TO END FOR BETTER UX
+if 'analysis_results' in st.session_state:
+    st.markdown(ui.section_divider(), unsafe_allow_html=True)
+    st.markdown("### Descargar Reporte Profesional")
+    st.info("**Importante**: Revise todos los insights anteriores antes de descargar el reporte completo")
+    
+    results = st.session_state.analysis_results
+    is_ai_analysis = st.session_state.get('analysis_type') == 'ai'
+    
+    try:
+        # Generate professional Excel with enhanced formatting
+        excel_buffer = generate_professional_excel(results, is_ai_analysis)
+        
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        analysis_type = "IA_Avanzado" if is_ai_analysis else "Rapido"
+        filename = f"Personal_Paraguay_Analisis_{analysis_type}_{timestamp}.xlsx"
+        
+        # Enhanced download description based on content
+        if is_ai_analysis:
+            if results.get('emotion_summary'):
+                sheet_description = "7 hojas completas"
+                download_label = f"Descargar Reporte IA Completo ({sheet_description})"
+            else:
+                sheet_description = "6 hojas avanzadas"
+                download_label = f"Descargar Reporte IA Avanzado ({sheet_description})"
+        else:
+            sheet_description = "4 hojas básicas"
+            download_label = f"Descargar Reporte Básico ({sheet_description})"
+        
+        # Professional download button with detailed description
+        col1, col2 = st.columns([3, 1])
+        
+        with col1:
+            st.download_button(
+                label=download_label,
+                data=excel_buffer.getvalue(),
+                file_name=filename,
+                mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                width='stretch',
+                key="download_professional_excel_final"
+            )
+        
+        with col2:
+            st.markdown(
+                ui.status_badge("", "Listo para Presentar", "positive"),
+                unsafe_allow_html=True
+            )
+        
+        # Report content summary
+        st.markdown("**Su reporte incluye:** Dashboard ejecutivo + Insights IA + Recomendaciones estratégicas + Datos detallados")
+        
+    except Exception as e:
+        st.error(f"Error generando reporte: {e}")
+    
+    # Action buttons for new analysis
+    st.markdown("#### Próximos Pasos")
+    col1, col2 = st.columns(2)
+    
+    with col1:
+        if st.button("Nuevo Análisis", key="new_analysis_final", type="secondary", width='stretch'):
+            # Clear analysis results
+            for key in ['analysis_results', 'analysis_type', 'uploaded_file']:
+                if key in st.session_state:
+                    del st.session_state[key]
+            st.rerun()
+    
+    with col2:
+        if st.button("Limpiar Memoria", key="cleanup_memory_final", type="secondary", width='stretch'):
+            # Memory optimization after analysis
+            if MEMORY_MONITORING_AVAILABLE:
+                if optimize_memory():
+                    st.success("Memoria limpiada")
+                    st.rerun()
+                else:
+                    st.error("Error limpiando memoria")
+
 # Modern gradient footer (PRESERVED)
 st.markdown(
     ui.gradient_footer(
-        primary_text="Cargar Archivo | Analizador de Comentarios",
-        secondary_text="Impulsado por Análisis Avanzados"
+        primary_text="Análisis Inteligente | Personal Paraguay",
+        secondary_text="Plataforma Profesional de Insights con IA"
     ),
     unsafe_allow_html=True
 )
 
-# Memory monitoring in sidebar (PRESERVED FUNCTIONALITY)
-with st.sidebar:
-    st.markdown("### Estado del Sistema")
-    
-    try:
-        if MEMORY_MONITORING_AVAILABLE:
-            memory_status = get_memory_status()
-            
-            if memory_status['available']:
-                label, value, delta = format_memory_display(memory_status)
-                
-                st.metric(label, value, delta)
-                
-                # Show recommendation for high memory usage
-                if memory_status['status'] != 'Normal':
-                    st.warning(memory_status['recommendation'])
-                    
-                    # Memory cleanup button for high usage
-                    if memory_status['status'] == 'Alto':
-                        if st.button("Limpiar Memoria", key="memory_cleanup_upload", type="secondary"):
-                            if optimize_memory():
-                                st.success("Memoria optimizada")
-                                st.rerun()
-                            else:
-                                st.error("Error en optimización")
-                
-                # Environment info
-                st.caption(f"Entorno: {memory_status['environment']}")
-            else:
-                st.info(memory_status['error'])
-        else:
-            st.info("Monitoreo de memoria no disponible")
-    except Exception as e:
-        st.info(f"Error en monitoreo: {str(e)}")
-    
-    # Navigation
-    st.markdown("---")
-    st.markdown("### Navegación")
-    if st.button("Ver Resultados", disabled=('analysis_results' not in st.session_state)):
-        st.switch_page("pages/results.py")
