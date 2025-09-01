@@ -152,6 +152,18 @@ class ProfessionalExcelGenerator:
                 'num_format': 'dd/mm/yyyy hh:mm',
                 'align': 'center',
                 'border': 1
+            }),
+            'error': workbook.add_format({
+                'font_color': self.brand_colors['error'],
+                'bold': True,
+                'bg_color': '#FEE2E2',
+                'border': 1
+            }),
+            'warning': workbook.add_format({
+                'font_color': self.brand_colors['warning'],
+                'bold': True,
+                'bg_color': '#FEF3C7',
+                'border': 1
             })
         }
     
