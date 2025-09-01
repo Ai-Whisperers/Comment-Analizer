@@ -306,8 +306,12 @@ Return ONLY the JSON array with no additional text or explanation.
             
             # Log response for debugging
             logger.debug(f"OpenAI raw response ({len(response_text)} chars): {response_text[:1000]}...")
-            if len(response_text) >= 3800:  # Near token limit warning
-                logger.warning("Response near token limit - may be truncated")
+            
+            # Dynamic token limit warning based on calculated max_tokens
+            # Use 85% of max_tokens as warning threshold (conservative)
+            warning_threshold = int(max_tokens * 0.85 * 4)  # ~4 chars per token
+            if len(response_text) >= warning_threshold:
+                logger.warning(f"Response near token limit - may be truncated (response: {len(response_text)} chars, threshold: {warning_threshold}, max_tokens: {max_tokens})")
             
             # Robust JSON parsing - try direct parsing first
             try:
