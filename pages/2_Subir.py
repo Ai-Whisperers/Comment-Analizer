@@ -14,6 +14,7 @@ if str(current_dir) not in sys.path:
 
 from shared.styling.theme_manager_full import ThemeManager, UIComponents
 from shared.business.file_processor import FileProcessor
+from shared.business.excel_generator import generate_professional_excel
 import pandas as pd
 import plotly.express as px
 from datetime import datetime
@@ -401,104 +402,96 @@ if 'analysis_results' in st.session_state:
         for i, rec in enumerate(recommendations, 1):
             st.info(f"{i}. {rec}")
     
-    # Enhanced Excel download with AI-specific content
-    from datetime import datetime
-    from io import BytesIO
+    # PROFESSIONAL EXCEL REPORT WITH ENHANCED UX
+    st.markdown("#### Descargar Reporte Profesional")
     
     try:
-        output = BytesIO()
-        with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
-            # Results sheet
-            results_df = pd.DataFrame({
-                'Comentario': results.get('comments', []),
-                'Sentimiento': results.get('sentiments', [])
-            })
-            results_df.to_excel(writer, sheet_name='Resultados', index=False)
-            
-            # Summary sheet with AI enhancement
-            summary_data = [
-                ['Total Comentarios', results.get('total', 0)],
-                ['Positivos %', results.get('sentiment_percentages', {}).get('positivo', 0)],
-                ['Negativos %', results.get('sentiment_percentages', {}).get('negativo', 0)],
-                ['Neutrales %', results.get('sentiment_percentages', {}).get('neutral', 0)],
-                ['Método de Análisis', 'IA Avanzado' if is_ai_analysis else 'Análisis Rápido']
-            ]
-            
-            # Add AI-specific metrics if available
-            if is_ai_analysis:
-                insights = results.get('insights', {})
-                summary_data.extend([
-                    ['--- MÉTRICAS IA AVANZADAS ---', ''],
-                    ['Índice de Satisfacción (/100)', insights.get('customer_satisfaction_index', 0)],
-                    ['Intensidad Emocional', insights.get('emotional_intensity', 'medio')],
-                    ['Estabilidad de Sentimientos', insights.get('sentiment_stability', 'balanceado')],
-                    ['Calidad de Engagement', insights.get('engagement_quality', 'básico')]
-                ])
-            
-            summary_df = pd.DataFrame(summary_data, columns=['Métrica', 'Valor'])
-            summary_df.to_excel(writer, sheet_name='Resumen', index=False)
-            
-            # AI-specific sheets for enhanced analysis
-            if is_ai_analysis:
-                insights = results.get('insights', {})
-                priority_areas = insights.get('priority_action_areas', [])
-                
-                # AI Insights sheet
-                ai_insights_df = pd.DataFrame([
-                    ['Customer Satisfaction Index', insights.get('customer_satisfaction_index', 0)],
-                    ['Emotional Intensity', insights.get('emotional_intensity', 'medio')],
-                    ['Sentiment Stability', insights.get('sentiment_stability', 'balanceado')],
-                    ['Engagement Quality', insights.get('engagement_quality', 'básico')],
-                    ['Top Priority Area', priority_areas[0] if priority_areas else 'N/A'],
-                    ['Priority Areas Count', len(priority_areas)]
-                ], columns=['AI Metric', 'Value'])
-                ai_insights_df.to_excel(writer, sheet_name='Insights IA', index=False)
-                
-                # Emotion Analysis sheet (if emotion data is available)
-                if results.get('emotion_summary'):
-                    emotion_summary = results['emotion_summary']
-                    emotion_distribution = emotion_summary.get('distribution', {})
-                    avg_intensity = emotion_summary.get('avg_intensity', 0)
-                    
-                    if emotion_distribution:
-                        emotion_data = []
-                        for emotion, count in emotion_distribution.items():
-                            emotion_data.append([emotion.title(), count])
-                        
-                        emotion_df = pd.DataFrame(emotion_data, columns=['Emoción', 'Frecuencia'])
-                        emotion_df = emotion_df.sort_values('Frecuencia', ascending=False)
-                        
-                        # Add summary row
-                        summary_row = pd.DataFrame([
-                            ['--- RESUMEN EMOCIONAL ---', ''],
-                            ['Total Emociones Detectadas', len(emotion_distribution)],
-                            ['Intensidad Promedio (/10)', avg_intensity],
-                            ['Emoción Dominante', emotion_df.iloc[0]['Emoción'] if len(emotion_df) > 0 else 'N/A']
-                        ], columns=['Emoción', 'Frecuencia'])
-                        
-                        final_emotion_df = pd.concat([emotion_df, summary_row], ignore_index=True)
-                        final_emotion_df.to_excel(writer, sheet_name='Emociones Detalladas', index=False)
+        # Generate professional Excel with enhanced formatting
+        excel_buffer = generate_professional_excel(results, is_ai_analysis)
         
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-        analysis_type = "IA" if is_ai_analysis else "rapido"
-        filename = f"analisis_comentarios_{analysis_type}_{timestamp}.xlsx"
+        analysis_type = "IA_Avanzado" if is_ai_analysis else "Rapido"
+        filename = f"Personal_Paraguay_Analisis_{analysis_type}_{timestamp}.xlsx"
         
-        # Enhanced download button with analysis type
-        emotion_sheets = " + Emociones" if (is_ai_analysis and results.get('emotion_summary')) else ""
-        sheet_count = "4 hojas" if (is_ai_analysis and results.get('emotion_summary')) else ("3 hojas" if is_ai_analysis else "2 hojas")
-        download_label = f"Descargar Reporte IA ({sheet_count}){emotion_sheets}" if is_ai_analysis else "Descargar Reporte Básico (2 hojas)"
+        # Enhanced download description based on content
+        if is_ai_analysis:
+            if results.get('emotion_summary'):
+                sheet_description = "7 hojas: Dashboard + Detallado + Sentimientos + IA Insights + Recomendaciones + Emociones + Diccionario"
+                download_label = f"Descargar Reporte IA Completo ({sheet_description})"
+            else:
+                sheet_description = "6 hojas: Dashboard + Detallado + Sentimientos + IA Insights + Recomendaciones + Diccionario"
+                download_label = f"Descargar Reporte IA Avanzado ({sheet_description})"
+        else:
+            sheet_description = "4 hojas: Dashboard + Detallado + Sentimientos + Diccionario"
+            download_label = f"Descargar Reporte Básico ({sheet_description})"
         
-        st.download_button(
-            label=download_label,
-            data=output.getvalue(),
-            file_name=filename,
-            mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-            use_container_width=True,
-            key="download_excel"
-        )
+        # Professional download button with detailed description
+        col1, col2 = st.columns([3, 1])
+        
+        with col1:
+            st.download_button(
+                label=download_label,
+                data=excel_buffer.getvalue(),
+                file_name=filename,
+                mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                use_container_width=True,
+                key="download_professional_excel"
+            )
+        
+        with col2:
+            st.markdown(
+                ui.status_badge(
+                    "", 
+                    f"Formato Professional", 
+                    "positive"
+                ),
+                unsafe_allow_html=True
+            )
+        
+        # Report content description
+        st.markdown("**Contenido del Reporte:**")
+        if is_ai_analysis:
+            st.markdown("""
+            - **Dashboard Ejecutivo**: Métricas clave y resumen
+            - **Análisis Detallado**: Comentarios individuales con sentimientos
+            - **Análisis de Sentimientos**: Distribución y temas principales
+            - **Insights IA Avanzados**: Métricas de inteligencia artificial
+            - **Recomendaciones Estratégicas**: Acciones prioritarias categorizadas
+            - **Análisis Emocional**: Emociones específicas detectadas (si disponible)
+            - **Diccionario de Datos**: Explicación de todas las métricas
+            """)
+        else:
+            st.markdown("""
+            - **Dashboard Ejecutivo**: Métricas básicas y resumen
+            - **Análisis Detallado**: Comentarios individuales con sentimientos
+            - **Análisis de Sentimientos**: Distribución básica
+            - **Diccionario de Datos**: Explicación de métricas básicas
+            """)
         
     except Exception as e:
-        st.error(f"Error generando Excel: {e}")
+        st.error(f"Error generando reporte profesional: {e}")
+        
+        # Fallback to basic Excel if professional generation fails
+        st.warning("Usando generador básico como alternativa...")
+        try:
+            basic_output = BytesIO()
+            with pd.ExcelWriter(basic_output, engine='xlsxwriter') as writer:
+                # Basic results sheet
+                results_df = pd.DataFrame({
+                    'Comentario': results.get('comments', []),
+                    'Sentimiento': results.get('sentiments', [])
+                })
+                results_df.to_excel(writer, sheet_name='Resultados', index=False)
+            
+            st.download_button(
+                label="Descargar Reporte Básico (Fallback)",
+                data=basic_output.getvalue(),
+                file_name=f"analisis_basico_{datetime.now().strftime('%Y%m%d_%H%M%S')}.xlsx",
+                mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                key="download_basic_excel"
+            )
+        except Exception as basic_error:
+            st.error(f"Error en generador básico: {basic_error}")
     
     # Reset button for new analysis
     col1, col2 = st.columns(2)
