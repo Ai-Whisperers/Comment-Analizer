@@ -33,14 +33,15 @@ except ImportError:
 
 # Navigation setup
 pages = {
-    "Cargar Archivo": "pages/upload.py",
-    "Procesar y Analizar": "pages/analyze.py", 
-    "Ver Resultados": "pages/results.py"
+    "Página Principal": "pages/home.py",
+    "Subir": "pages/upload.py",
+    "Analizar": "pages/analyze.py", 
+    "Resultados": "pages/results.py"
 }
 
-# Ensure upload page is the default landing page
+# Ensure home page is the default landing page
 if 'default_page' not in st.session_state:
-    st.session_state.default_page = "Cargar Archivo"
+    st.session_state.default_page = "Página Principal"
 
 # Sidebar navigation with modern styling
 with st.sidebar:
