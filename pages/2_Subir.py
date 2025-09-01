@@ -210,7 +210,45 @@ if 'analysis_results' in st.session_state:
             unsafe_allow_html=True
         )
     
-    # Executive summary with 4-column layout
+    # EMOTION CHART FIRST (before executive summary)
+    if is_ai_analysis and results.get('emotion_summary'):
+        emotion_summary = results['emotion_summary']
+        emotion_distribution = emotion_summary.get('distribution', {})
+        
+        if emotion_distribution:
+            st.markdown("#### Análisis Emocional")
+            
+            chart_theme = theme.get_chart_theme(st.session_state.get('dark_mode', True))
+            
+            emotion_df = pd.DataFrame(list(emotion_distribution.items()), columns=['Emoción', 'Frecuencia'])
+            emotion_df = emotion_df.sort_values('Frecuencia', ascending=False).head(10)  # Top 10 emotions
+            
+            fig_emotions = px.bar(
+                emotion_df,
+                x='Emoción',
+                y='Frecuencia', 
+                title="Distribución de Emociones Específicas (Top 10)"
+            )
+            fig_emotions.update_layout(chart_theme['layout'])
+            st.plotly_chart(fig_emotions, use_container_width=True)
+            
+            # Emotion intensity display
+            avg_intensity = emotion_summary.get('avg_intensity', 0)
+            col_intensity1, col_intensity2 = st.columns(2)
+            with col_intensity1:
+                st.metric("Intensidad Emocional Promedio", f"{avg_intensity}/10")
+            with col_intensity2:
+                intensity_level = "Alta" if avg_intensity > 7 else ("Media" if avg_intensity > 4 else "Baja")
+                st.markdown(
+                    ui.status_badge(
+                        icon="",
+                        text=f"Nivel: {intensity_level}",
+                        badge_type="positive" if avg_intensity > 7 else ("neutral" if avg_intensity > 4 else "negative")
+                    ),
+                    unsafe_allow_html=True
+                )
+    
+    # Executive summary with 4-column layout (after emotion chart)
     st.markdown("#### Resumen Ejecutivo")
     col1, col2, col3, col4 = st.columns(4)
     
