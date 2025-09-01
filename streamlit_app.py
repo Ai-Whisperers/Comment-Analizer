@@ -31,15 +31,22 @@ pages = {
     "Ver Resultados": "pages/results.py"
 }
 
+# Ensure upload page is the default landing page
+if 'default_page' not in st.session_state:
+    st.session_state.default_page = "Cargar Archivo"
+
 # Sidebar navigation with modern styling
 with st.sidebar:
     st.markdown("### Navegación")
     
-    # Page selection
+    # Page selection with explicit default to upload page
+    page_options = list(pages.keys())
+    default_index = page_options.index(st.session_state.default_page)
+    
     selected_page = st.selectbox(
         "Seleccionar Página",
-        options=list(pages.keys()),
-        index=0
+        options=page_options,
+        index=default_index
     )
     
     # Theme toggle (PRESERVE MODERN FEATURE)
