@@ -36,6 +36,6 @@ try:
     
 except Exception as e:
     logger.error(f"Failed to load application: {e}")
-    st.error("Error loading application")
-    st.error(f"Details: {str(e)}")
-    st.error("Please check the deployment logs for more information")
+    st.error("Error cargando aplicación")
+    st.error(f"Detalles: {str(e)}")
+    st.error("Por favor revisa los logs de despliegue para más información")

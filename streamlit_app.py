@@ -26,42 +26,42 @@ if 'dark_mode' not in st.session_state:
 
 # Navigation setup
 pages = {
-    "Upload File": "pages/upload.py",
-    "Process & Analyze": "pages/analyze.py", 
-    "View Results": "pages/results.py"
+    "Cargar Archivo": "pages/upload.py",
+    "Procesar y Analizar": "pages/analyze.py", 
+    "Ver Resultados": "pages/results.py"
 }
 
 # Sidebar navigation with modern styling
 with st.sidebar:
-    st.markdown("### Navigation")
+    st.markdown("### Navegación")
     
     # Page selection
     selected_page = st.selectbox(
-        "Choose Page",
+        "Seleccionar Página",
         options=list(pages.keys()),
         index=0
     )
     
     # Theme toggle (PRESERVE MODERN FEATURE)
-    if st.button("Toggle Theme", key="theme_toggle"):
+    if st.button("Cambiar Tema", key="theme_toggle"):
         st.session_state.dark_mode = not st.session_state.dark_mode
         st.rerun()
     
     # Memory monitoring (PRESERVE MONITORING)
     st.markdown("---")
-    st.markdown("### System Status")
+    st.markdown("### Estado del Sistema")
     try:
         # Simple memory display
-        st.info("Memory monitoring active")
+        st.info("Monitoreo de memoria activo")
     except:
         pass
     
     st.markdown("---")
-    st.markdown("### App Info")
+    st.markdown("### Información de la App")
     st.markdown("""
-    **Architecture**: Multi-page
-    **Styling**: Modern preserved
-    **Performance**: Optimized
+    **Arquitectura**: Multipágina
+    **Estilo**: Moderno preservado
+    **Rendimiento**: Optimizado
     """)
 
 # Load selected page
@@ -73,16 +73,16 @@ try:
     exec(f"import {page_module}")
     
 except Exception as e:
-    st.error(f"Error loading page: {e}")
-    st.error("Please check the page implementation")
+    st.error(f"Error cargando página: {e}")
+    st.error("Por favor revisa la implementación de la página")
 
 # Global footer (PRESERVE SOPHISTICATED STYLING)
 st.markdown("---")
 st.markdown(
     """
     <div style='text-align: center; padding: 2rem; color: #666;'>
-        <p><strong>Personal Paraguay</strong> | Advanced Comment Analysis Platform</p>
-        <p>Multi-page architecture with preserved modern styling</p>
+        <p><strong>Personal Paraguay</strong> | Plataforma Avanzada de Análisis de Comentarios</p>
+        <p>Arquitectura multipágina con estilo moderno preservado</p>
     </div>
     """,
     unsafe_allow_html=True
