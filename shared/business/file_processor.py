@@ -5,6 +5,8 @@ Extracted from main.py to enable reuse across pages
 
 import pandas as pd
 import logging
+import sys
+import os
 from typing import Dict, List, Tuple, Optional
 from .analysis_engine import (
     analyze_sentiment_simple, clean_text_simple, 
@@ -12,6 +14,21 @@ from .analysis_engine import (
     calculate_sentiment_percentages, generate_insights_summary,
     create_recommendations
 )
+
+# Add src directory to path for AI imports (top level)
+current_dir = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
+src_dir = os.path.join(current_dir, 'src')
+if src_dir not in sys.path:
+    sys.path.insert(0, src_dir)
+
+# Import AI components at top level to avoid dynamic import issues
+try:
+    from ai_analysis_adapter import AIAnalysisAdapter
+    AI_AVAILABLE = True
+except ImportError as e:
+    logger.warning(f"AI components not available: {e}")
+    AIAnalysisAdapter = None
+    AI_AVAILABLE = False
 
 logger = logging.getLogger(__name__)
 
@@ -156,15 +173,10 @@ class FileProcessor:
                 try:
                     logger.info("Initializing real AI analysis with OpenAI...")
                     
-                    # Import and initialize AI adapter
-                    import sys
-                    import os
-                    current_dir = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
-                    src_dir = os.path.join(current_dir, 'src')
-                    if src_dir not in sys.path:
-                        sys.path.insert(0, src_dir)
-                    
-                    from ai_analysis_adapter import AIAnalysisAdapter
+                    # Check AI availability and initialize adapter
+                    if not AI_AVAILABLE or AIAnalysisAdapter is None:
+                        logger.warning("AI components not available - falling back to rule-based analysis")
+                        raise ImportError("AIAnalysisAdapter not available")
                     
                     # Initialize AI adapter
                     ai_adapter = AIAnalysisAdapter()
