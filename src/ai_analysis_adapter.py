@@ -576,8 +576,17 @@ class AIAnalysisAdapter:
         
         # Calculate other metrics using AI-enhanced data
         total_competitor_mentions = sum(len(comp) for comp in competitor_mentions)
+        
+        # Debug emotion analysis
+        logger.debug(f"[AI_PIPELINE] Emotion analysis count: {len(emotion_analysis)}")
+        if emotion_analysis:
+            logger.debug(f"[AI_PIPELINE] Sample emotion: {emotion_analysis[0]}")
+        
         dominant_emotions = Counter([ea['dominant'] for ea in emotion_analysis])
         avg_intensity = np.mean([ea['intensity'] for ea in emotion_analysis]) if emotion_analysis else 0
+        
+        logger.debug(f"[AI_PIPELINE] Dominant emotions: {dict(dominant_emotions)}")
+        logger.debug(f"[AI_PIPELINE] Avg intensity: {avg_intensity}")
         
         # Calculate additional metrics
         avg_rating = np.mean([r for r in nota_data[:len(comments)] if pd.notna(r)]) if has_nota else 0
