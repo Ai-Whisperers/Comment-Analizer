@@ -604,6 +604,12 @@ class AIAnalysisAdapter:
             'positive_count': sentiment_counts['positivo'],
             'neutral_count': sentiment_counts['neutral'],
             'negative_count': sentiment_counts['negativo'],
+            # Add sentiment_percentages format expected by UI
+            'sentiment_percentages': {
+                'positivo': round(positive_pct, 1),
+                'negativo': round(negative_pct, 1),
+                'neutral': round(neutral_pct, 1)
+            },
             'theme_counts': theme_counts,
             'theme_examples': theme_examples,
             'file_size': round(file_size_kb, 1),
