@@ -148,45 +148,91 @@ class FileProcessor:
             comment_frequencies = comment_data['comment_frequencies']
             
             if use_ai_insights:
-                # Use enhanced emotion detection for AI analysis
-                from .analysis_engine import analyze_emotions_enhanced
-                
-                # Analyze emotions for each comment
-                enhanced_results = []
-                all_emotions = []
-                total_intensity = 0
-                
-                for comment in unique_comments:
-                    emotion_result = analyze_emotions_enhanced(comment)
-                    enhanced_results.append({'emotions': emotion_result})
+                # Use REAL AI analysis with OpenAI integration
+                try:
+                    logger.info("Initializing real AI analysis with OpenAI...")
                     
-                    # Collect emotions for summary
-                    dominant = emotion_result['dominant_emotion']
-                    if dominant != 'neutral':
-                        all_emotions.append(dominant)
-                    total_intensity += emotion_result['intensity']
-                
-                # Create emotion summary
-                from collections import Counter
-                emotion_counts = Counter(all_emotions)
-                emotion_summary = {
-                    'distribution': dict(emotion_counts),
-                    'avg_intensity': round(total_intensity / len(unique_comments), 1) if unique_comments else 0
-                }
-                
-                # Convert emotions to sentiments for compatibility
-                sentiments = []
-                positive_emotions = ['satisfacción', 'alegría', 'optimismo', 'confianza', 'agradecimiento', 'tranquilidad', 'esperanza']
-                negative_emotions = ['frustración', 'enojo', 'preocupación', 'irritación', 'desilusión', 'ansiedad', 'pesimismo']
-                
-                for result in enhanced_results:
-                    emotion = result['emotions']['dominant_emotion']
-                    if emotion in positive_emotions:
-                        sentiments.append('positivo')
-                    elif emotion in negative_emotions:
-                        sentiments.append('negativo') 
+                    # Import and initialize AI adapter
+                    import sys
+                    import os
+                    current_dir = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
+                    src_dir = os.path.join(current_dir, 'src')
+                    if src_dir not in sys.path:
+                        sys.path.insert(0, src_dir)
+                    
+                    from ai_analysis_adapter import AIAnalysisAdapter
+                    
+                    # Initialize AI adapter
+                    ai_adapter = AIAnalysisAdapter()
+                    
+                    if ai_adapter.ai_available:
+                        logger.info("OpenAI adapter available - using REAL AI analysis")
+                        
+                        # Create mock uploaded file object for AI adapter
+                        class MockUploadedFile:
+                            def __init__(self, comments_list, filename="analysis.csv"):
+                                self.comments_df = pd.DataFrame({'Comentario Final': comments_list})
+                                self.name = filename
+                                self.size = len(str(comments_list))
+                            
+                            def read(self):
+                                return self.comments_df.to_csv(index=False).encode()
+                            
+                            def seek(self, position):
+                                pass
+                        
+                        mock_file = MockUploadedFile(unique_comments)
+                        
+                        # Get REAL AI analysis
+                        ai_results = ai_adapter.process_uploaded_file_with_ai(mock_file)
+                        
+                        if ai_results and ai_results.get('insights'):
+                            logger.info("✅ REAL AI analysis successful - using OpenAI results")
+                            
+                            # Use AI results for emotion summary
+                            emotion_summary = ai_results.get('emotion_summary', {})
+                            
+                            # Get sentiments from AI results
+                            sentiments = ai_results.get('sentiments', [])
+                            
+                            # If no sentiments from AI, convert emotions
+                            if not sentiments and emotion_summary:
+                                sentiments = self._convert_emotions_to_sentiments(emotion_summary)
+                        else:
+                            logger.warning("AI analysis failed - falling back to enhanced pattern matching")
+                            raise Exception("AI analysis returned no results")
                     else:
-                        sentiments.append('neutral')
+                        logger.warning("OpenAI not available - falling back to enhanced pattern matching")
+                        raise Exception("OpenAI adapter not available")
+                        
+                except Exception as e:
+                    logger.warning(f"AI analysis failed: {e} - using enhanced pattern matching fallback")
+                    
+                    # Fallback to enhanced emotion detection
+                    from .analysis_engine import analyze_emotions_enhanced
+                    
+                    enhanced_results = []
+                    all_emotions = []
+                    total_intensity = 0
+                    
+                    for comment in unique_comments:
+                        emotion_result = analyze_emotions_enhanced(comment)
+                        enhanced_results.append({'emotions': emotion_result})
+                        
+                        dominant = emotion_result['dominant_emotion']
+                        if dominant != 'neutral':
+                            all_emotions.append(dominant)
+                        total_intensity += emotion_result['intensity']
+                    
+                    from collections import Counter
+                    emotion_counts = Counter(all_emotions)
+                    emotion_summary = {
+                        'distribution': dict(emotion_counts),
+                        'avg_intensity': round(total_intensity / len(unique_comments), 1) if unique_comments else 0
+                    }
+                    
+                    # Convert emotions to sentiments
+                    sentiments = self._convert_emotions_to_sentiments(emotion_summary)
             else:
                 # Use basic sentiment analysis
                 sentiments = [analyze_sentiment_simple(comment) for comment in unique_comments]
@@ -271,3 +317,24 @@ class FileProcessor:
         except Exception as e:
             logger.error(f"Error processing file: {e}")
             raise
+    
+    def _convert_emotions_to_sentiments(self, emotion_summary: Dict) -> List[str]:
+        """Convert emotion distribution to sentiment list for compatibility"""
+        emotion_distribution = emotion_summary.get('distribution', {})
+        
+        # Emotion to sentiment mapping
+        positive_emotions = ['satisfacción', 'alegría', 'optimismo', 'confianza', 'agradecimiento', 'tranquilidad', 'esperanza']
+        negative_emotions = ['frustración', 'enojo', 'preocupación', 'irritación', 'desilusión', 'ansiedad', 'pesimismo']
+        
+        sentiments = []
+        
+        # Convert emotion counts to sentiment list
+        for emotion, count in emotion_distribution.items():
+            if emotion in positive_emotions:
+                sentiments.extend(['positivo'] * count)
+            elif emotion in negative_emotions:
+                sentiments.extend(['negativo'] * count)
+            else:
+                sentiments.extend(['neutral'] * count)
+        
+        return sentiments
