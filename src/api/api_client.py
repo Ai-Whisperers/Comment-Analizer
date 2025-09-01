@@ -333,7 +333,8 @@ def timeout_handler(timeout_seconds: int = TimeoutConfig.TOTAL_TIMEOUT):
 # Convenience function to create API client
 def create_robust_client(api_key: str = None) -> RobustAPIClient:
     """Create a robust API client with default configuration"""
-    api_key = api_key or Config.OPENAI_API_KEY
+    config_instance = Config()
+    api_key = api_key or config_instance.OPENAI_API_KEY
     return RobustAPIClient(api_key)
 
 

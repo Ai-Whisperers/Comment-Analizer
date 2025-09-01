@@ -53,7 +53,8 @@ class AIAnalysisOverseer:
             strict_mode: If True, blocks low-confidence results
             language: Output language ('es' for Spanish, 'en' for English)
         """
-        self.ai_available = bool(Config.OPENAI_API_KEY)
+        config_instance = Config()
+        self.ai_available = bool(config_instance.OPENAI_API_KEY)
         self.strict_mode = strict_mode
         self.use_cache = use_cache
         self.language = language
@@ -309,7 +310,8 @@ class AIAnalysisOverseer:
             try:
                 # Try to use the OpenAI client directly
                 from openai import OpenAI
-                client = OpenAI(api_key=Config.OPENAI_API_KEY)
+                config_instance = Config()
+                client = OpenAI(api_key=config_instance.OPENAI_API_KEY)
                 completion = client.chat.completions.create(
                     model=self.model,
                     messages=[{"role": "user", "content": prompt}],

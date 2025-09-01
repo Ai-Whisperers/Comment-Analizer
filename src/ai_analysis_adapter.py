@@ -51,12 +51,15 @@ class AIAnalysisAdapter:
             
             # Check for API key
             from src.config import Config
-            if not Config.OPENAI_API_KEY:
+            config_instance = Config()
+            api_key = config_instance.OPENAI_API_KEY
+            
+            if not api_key:
                 ai_logger.error("OpenAI API key not found in environment variables")
                 self.ai_available = False
                 return
                 
-            ai_logger.debug(f"API key found: {Config.OPENAI_API_KEY[:10]}...")
+            ai_logger.debug(f"API key found: {api_key[:10] if api_key else 'None'}...")
             
             self.openai_analyzer = OpenAIAnalyzer(use_cache=True)
             self.ai_available = True

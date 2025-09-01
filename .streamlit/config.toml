@@ -1,12 +1,32 @@
 [server]
-enableStaticServing = true
+# Disable file watching to prevent inotify limits
+fileWatcherType = "none"
+runOnSave = false
+
+# Optimize for production deployment
+port = 8501
+address = "0.0.0.0" 
+headless = true
+
+# Memory and performance optimization
+maxUploadSize = 2
+maxMessageSize = 50
 
 [browser]
 gatherUsageStats = false
 
 [theme]
+# Use custom CSS instead of built-in theming
 base = "dark"
 primaryColor = "#8B5CF6"
 backgroundColor = "#0D0B14"
 secondaryBackgroundColor = "#1A1825"
 textColor = "#F8FAFC"
+
+[global]
+# Production optimizations
+developmentMode = false
+logLevel = "warning"
+
+# Disable unnecessary features for production
+showWarningOnDirectExecution = false

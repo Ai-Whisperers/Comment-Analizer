@@ -29,7 +29,8 @@ class OpenAIAnalyzer:
     """Class to handle all AI analysis using OpenAI API"""
     
     def __init__(self, use_cache: bool = True):
-        if not Config.OPENAI_API_KEY:
+        config_instance = Config()
+        if not config_instance.OPENAI_API_KEY:
             raise ValueError("OpenAI API key not found. Please set OPENAI_API_KEY in environment variables.")
         
         # Use robust API client with timeout and retry handling
