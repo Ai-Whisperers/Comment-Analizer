@@ -141,7 +141,7 @@ class FileProcessor:
             logger.error(f"Error extracting comments: {e}")
             raise
     
-    def analyze_comments(self, comment_data: Dict, use_ai_insights: bool = False) -> Dict:
+    def analyze_comments(self, comment_data: Dict, use_ai_insights: bool = False, uploaded_file=None) -> Dict:
         """Perform sentiment analysis on comment data"""
         try:
             unique_comments = comment_data['unique_comments']
@@ -172,39 +172,14 @@ class FileProcessor:
                     if ai_adapter.ai_available:
                         logger.info("OpenAI adapter available - using REAL AI analysis")
                         
-                        # Create mock uploaded file object for AI adapter
-                        from io import StringIO, BytesIO
+                        # Use REAL uploaded file for AI analysis (not mock!)
+                        if uploaded_file is None:
+                            raise Exception("Real uploaded file required for AI analysis")
                         
-                        class MockUploadedFile:
-                            def __init__(self, comments_list, filename="analysis.csv"):
-                                self.comments_df = pd.DataFrame({'Comentario Final': comments_list})
-                                self.name = filename
-                                self.size = len(str(comments_list))
-                                # Create a proper file-like object
-                                csv_content = self.comments_df.to_csv(index=False)
-                                self._content = BytesIO(csv_content.encode('utf-8'))
-                                self._content.seek(0)
-                            
-                            def read(self, size=-1):
-                                return self._content.read(size)
-                            
-                            def seek(self, position):
-                                return self._content.seek(position)
-                            
-                            def tell(self):
-                                return self._content.tell()
-                            
-                            def readline(self):
-                                return self._content.readline()
-                            
-                            def close(self):
-                                if hasattr(self._content, 'close'):
-                                    self._content.close()
+                        logger.info(f"🔥 Using REAL uploaded file: {uploaded_file.name}")
                         
-                        mock_file = MockUploadedFile(unique_comments)
-                        
-                        # Get REAL AI analysis
-                        ai_results = ai_adapter.process_uploaded_file_with_ai(mock_file)
+                        # Get REAL AI analysis with actual user file
+                        ai_results = ai_adapter.process_uploaded_file_with_ai(uploaded_file)
                         
                         if ai_results and ai_results.get('insights'):
                             logger.info("✅ REAL AI analysis successful - normalizing for UI compatibility")
@@ -343,7 +318,7 @@ class FileProcessor:
             comment_data = self.extract_comments(df, comment_col)
             
             # Analyze comments with AI enhancement if requested
-            results = self.analyze_comments(comment_data, use_ai_insights)
+            results = self.analyze_comments(comment_data, use_ai_insights, uploaded_file)
             
             # Add file metadata
             results.update({

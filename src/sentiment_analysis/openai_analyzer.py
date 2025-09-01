@@ -342,6 +342,12 @@ Return ONLY the JSON array with no additional text or explanation.
             "emotions": ["neutral"]
         }
     
+    def analyze_batch(self, comments: List[str], progress_callback=None) -> List[Dict]:
+        """
+        Alias for analyze_comments_batch for compatibility with AI adapter
+        """
+        return self.analyze_comments_batch(comments)
+    
     def analyze_single_comment(self, comment: str) -> Dict:
         """Analyze a single comment"""
         results = self.analyze_comments_batch([comment])

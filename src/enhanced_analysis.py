@@ -42,6 +42,109 @@ class EnhancedAnalysis:
             })
         return results
     
+    def full_analysis(self, comment: str) -> Dict[str, Any]:
+        """
+        Perform full analysis on a single comment for compatibility with AI adapter
+        
+        Args:
+            comment: Single comment string
+            
+        Returns:
+            Dictionary with analysis results
+        """
+        if not comment:
+            return {
+                'text': comment,
+                'sentiment': 'neutral',
+                'confidence': 0.5,
+                'method': 'enhanced_rules',
+                'language': 'es',
+                'themes': [],
+                'pain_points': [],
+                'emotions': ['neutral']
+            }
+        
+        sentiment = self._analyze_sentiment(comment)
+        
+        # Convert sentiment format to match expected format
+        if sentiment == 'positivo':
+            mapped_sentiment = 'positive'
+            emotions = ['satisfacción']
+        elif sentiment == 'negativo':
+            mapped_sentiment = 'negative'
+            emotions = ['frustración']
+        else:
+            mapped_sentiment = 'neutral'
+            emotions = ['neutral']
+        
+        # Basic theme extraction
+        themes = self._extract_themes(comment)
+        pain_points = self._extract_pain_points(comment)
+        
+        return {
+            'text': comment,
+            'sentiment': mapped_sentiment,
+            'confidence': 0.7,
+            'method': 'enhanced_rules',
+            'language': 'es',
+            'themes': themes,
+            'pain_points': pain_points,
+            'emotions': emotions,
+            'translation': comment  # For Spanish comments, translation is the same
+        }
+    
+    def _extract_themes(self, text: str) -> List[str]:
+        """Extract basic themes from text"""
+        if not text:
+            return []
+        
+        text_lower = text.lower()
+        themes = []
+        
+        # Service quality themes
+        if any(word in text_lower for word in ['servicio', 'atención', 'calidad']):
+            themes.append('calidad_servicio')
+        
+        # Speed themes
+        if any(word in text_lower for word in ['velocidad', 'rápido', 'lento', 'conexión']):
+            themes.append('velocidad')
+        
+        # Price themes
+        if any(word in text_lower for word in ['precio', 'caro', 'barato', 'costo']):
+            themes.append('precio')
+        
+        # Technical themes
+        if any(word in text_lower for word in ['técnico', 'instalación', 'equipo', 'fibra']):
+            themes.append('soporte_tecnico')
+        
+        return themes[:3]  # Limit to 3 themes
+    
+    def _extract_pain_points(self, text: str) -> List[str]:
+        """Extract pain points from text"""
+        if not text:
+            return []
+        
+        text_lower = text.lower()
+        pain_points = []
+        
+        # Connection issues
+        if any(word in text_lower for word in ['se corta', 'desconecta', 'inestable']):
+            pain_points.append('conexión_inestable')
+        
+        # Speed issues
+        if any(word in text_lower for word in ['lento', 'lentitud', 'carga lento']):
+            pain_points.append('velocidad_baja')
+        
+        # Service issues
+        if any(word in text_lower for word in ['no funciona', 'falla', 'problema']):
+            pain_points.append('fallas_servicio')
+        
+        # Support issues
+        if any(word in text_lower for word in ['soporte', 'atención', 'demora']):
+            pain_points.append('soporte_deficiente')
+        
+        return pain_points
+    
     def _analyze_sentiment(self, text: str) -> str:
         """Basic sentiment analysis using extended rules"""
         if not text:

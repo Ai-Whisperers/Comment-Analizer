@@ -26,7 +26,10 @@ textColor = "#F8FAFC"
 [global]
 # Production optimizations
 developmentMode = false
-logLevel = "warning"
+
+[logger]
+# Modern logging configuration
+level = "warning"
 
 # Disable unnecessary features for production
 showWarningOnDirectExecution = false
