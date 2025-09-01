@@ -142,7 +142,18 @@ if uploaded_file:
                             st.session_state.analysis_results = results
                             st.session_state.analysis_type = "ai"
                             ai_progress_placeholder.empty()
+                            
+                            # DEBUG: Show data structure received
                             st.success("Análisis IA completado con insights avanzados!")
+                            st.write("**DEBUG - Estructura de datos recibida:**")
+                            st.write(f"Keys disponibles: {list(results.keys())}")
+                            if 'sentiment_percentages' in results:
+                                st.write(f"Sentiment percentages: {results['sentiment_percentages']}")
+                            if 'emotion_summary' in results:
+                                st.write(f"Emotion summary keys: {list(results['emotion_summary'].keys()) if results['emotion_summary'] else 'None'}")
+                            if 'insights' in results:
+                                st.write(f"Insights keys: {list(results['insights'].keys()) if results['insights'] else 'None'}")
+                                
                             st.rerun()
                         else:
                             ai_progress_placeholder.empty()
