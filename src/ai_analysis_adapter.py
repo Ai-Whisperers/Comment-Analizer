@@ -204,7 +204,35 @@ class AIAnalysisAdapter:
     
     def _clean_and_process_comments(self, raw_comments: List[str]) -> Tuple[List[str], List[int]]:
         """Clean comments and calculate frequencies using existing functions"""
-        from src.main import clean_text, remove_duplicates
+        # Import from correct locations (src.main is disabled)
+        try:
+            from src.utils.text_processing import clean_text
+            from shared.business.analysis_engine import remove_duplicates_simple as remove_duplicates
+        except ImportError:
+            # Fallback implementations
+            def clean_text(text):
+                import re
+                if not text or pd.isna(text):
+                    return ""
+                text = str(text).strip()
+                text = re.sub(r'[^\w\s]', ' ', text)
+                text = re.sub(r'\s+', ' ', text)
+                return text.lower()
+            
+            def remove_duplicates(comments):
+                seen = {}
+                unique_comments = []
+                frequencies = []
+                
+                for comment in comments:
+                    if comment in seen:
+                        seen[comment] += 1
+                    else:
+                        seen[comment] = 1
+                        unique_comments.append(comment)
+                
+                frequencies = [seen[comment] for comment in unique_comments]
+                return unique_comments, frequencies
         
         # Clean comments using existing function
         cleaned_comments = [clean_text(comment) for comment in raw_comments]
@@ -628,7 +656,36 @@ class AIAnalysisAdapter:
         logger.info("[AI_PIPELINE] Executing rule-based fallback analysis")
         
         # Import and use original analysis function
-        from src.main import analyze_sentiment_simple, extract_themes
+        # Import from correct locations (src.main is disabled)
+        try:
+            from shared.business.analysis_engine import analyze_sentiment_simple, extract_themes_simple as extract_themes
+        except ImportError:
+            # Fallback implementations
+            def analyze_sentiment_simple(text):
+                if not text:
+                    return 'neutral'
+                text_lower = str(text).lower()
+                positive_words = ['excelente', 'bueno', 'perfecto', 'satisfecho', 'genial']
+                negative_words = ['malo', 'terrible', 'pésimo', 'frustrado', 'molesto']
+                
+                pos_count = sum(1 for word in positive_words if word in text_lower)
+                neg_count = sum(1 for word in negative_words if word in text_lower)
+                
+                if pos_count > neg_count:
+                    return 'positivo'
+                elif neg_count > pos_count:
+                    return 'negativo'
+                else:
+                    return 'neutral'
+            
+            def extract_themes(comments):
+                themes = {'servicio': 0, 'precio': 0, 'velocidad': 0, 'calidad': 0}
+                examples = {}
+                for comment in comments:
+                    comment_lower = str(comment).lower()
+                    if any(word in comment_lower for word in ['servicio', 'atención']):
+                        themes['servicio'] += 1
+                return themes, examples
         
         # Perform rule-based analysis (identical to original)
         sentiments = [analyze_sentiment_simple(comment) for comment in comments]

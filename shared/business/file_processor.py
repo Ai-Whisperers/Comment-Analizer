@@ -223,6 +223,11 @@ class FileProcessor:
                             normalized_insights = normalized_ai_results.get('insights', {})
                             use_normalized_insights = True
                             
+                            # Debug logging to see what data we got
+                            logger.info(f"📊 Normalized sentiments count: {len(sentiments)}")
+                            logger.info(f"📊 Emotion summary: {emotion_summary}")
+                            logger.info(f"🧠 Normalized insights keys: {list(normalized_insights.keys())}")
+                            
                             logger.info("✅ AI results normalized for UI compatibility")
                         else:
                             logger.warning("AI analysis failed - falling back to enhanced pattern matching")
