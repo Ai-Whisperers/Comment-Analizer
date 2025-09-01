@@ -392,17 +392,32 @@ class AIAnalysisAdapter:
                 ai_logger.error(f"Result count mismatch: got {len(ai_results)}, expected {len(valid_comments)}")
                 return None
             
-            # Validate result format
-            for i, result in enumerate(ai_results[:3]):  # Check first 3 results
+            # Enhanced validation - check ALL results, not just first 3
+            required_fields = ['sentiment', 'confidence', 'themes', 'emotions']
+            invalid_count = 0
+            total_results = len(ai_results)
+            
+            for i, result in enumerate(ai_results):
                 if not isinstance(result, dict):
                     ai_logger.error(f"Invalid result type at index {i}: {type(result)}")
-                    return None
+                    invalid_count += 1
+                    continue
                     
-                required_fields = ['sentiment', 'confidence', 'themes', 'emotions']
-                missing_fields = [field for field in required_fields if field not in result]
+                missing_fields = [field for field in required_fields if field not in result or result[field] is None]
                 if missing_fields:
-                    ai_logger.warning(f"Missing fields in result {i}: {missing_fields}")
+                    ai_logger.warning(f"Result {i+1}/{total_results} missing fields: {missing_fields}")
+                    invalid_count += 1
             
+            # If >10% of results are invalid, force fallback to rule-based
+            invalid_percentage = (invalid_count / total_results) * 100 if total_results > 0 else 100
+            if invalid_percentage > 10:
+                ai_logger.error(f"Too many invalid results: {invalid_count}/{total_results} ({invalid_percentage:.1f}%)")
+                ai_logger.error("Forcing fallback to rule-based analysis")
+                return None
+            elif invalid_count > 0:
+                ai_logger.warning(f"Found {invalid_count}/{total_results} invalid results, but continuing...")
+            
+            ai_logger.info(f"✅ AI results validation passed: {total_results - invalid_count}/{total_results} valid")
             ai_logger.debug(f"Sample result: {ai_results[0] if ai_results else 'None'}")
             return ai_results
             

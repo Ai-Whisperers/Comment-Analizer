@@ -281,6 +281,12 @@ Return ONLY the JSON array with no additional text or explanation.
         try:
             start_time = time.time()
             
+            # Calculate dynamic max_tokens based on batch size
+            # Estimate: ~150 tokens per comment response + 500 buffer
+            estimated_response_tokens = len(comments) * 150 + 500
+            max_tokens = min(8000, max(4000, estimated_response_tokens))
+            logger.debug(f"Using max_tokens={max_tokens} for {len(comments)} comments")
+            
             # Make robust API call
             response = self.robust_client.chat_completion(
                 messages=[
@@ -289,7 +295,7 @@ Return ONLY the JSON array with no additional text or explanation.
                 ],
                 model=self.model,
                 temperature=0.1,
-                max_tokens=4000
+                max_tokens=max_tokens
             )
             
             # Log performance metrics
@@ -298,19 +304,45 @@ Return ONLY the JSON array with no additional text or explanation.
             
             response_text = response.choices[0].message.content
             
-            # Clean the response to extract JSON
-            json_match = re.search(r'\[.*\]', response_text, re.DOTALL)
-            if json_match:
-                json_text = json_match.group()
-                results = json.loads(json_text)
+            # Log response for debugging
+            logger.debug(f"OpenAI raw response ({len(response_text)} chars): {response_text[:1000]}...")
+            if len(response_text) >= 3800:  # Near token limit warning
+                logger.warning("Response near token limit - may be truncated")
+            
+            # Robust JSON parsing - try direct parsing first
+            try:
+                # Try direct JSON parsing (most reliable)
+                results = json.loads(response_text.strip())
+                logger.debug(f"Direct JSON parsing successful: {len(results)} results")
+            except json.JSONDecodeError:
+                # Fallback to regex extraction for responses with extra text
+                logger.debug("Direct JSON parsing failed, trying regex extraction...")
+                json_match = re.search(r'(\[[\s\S]*\])', response_text)
+                if json_match:
+                    clean_json = json_match.group(1)
+                    try:
+                        results = json.loads(clean_json)
+                        logger.debug(f"Regex JSON parsing successful: {len(results)} results")
+                    except json.JSONDecodeError as e:
+                        logger.error(f"Invalid JSON after regex extraction: {str(e)}")
+                        logger.error(f"Extracted JSON: {clean_json[:500]}...")
+                        raise AnalysisProcessingError(f"JSON parsing failed: {str(e)}")
+                else:
+                    logger.error(f"No JSON array found in response: {response_text[:500]}...")
+                    raise AnalysisProcessingError("No valid JSON array found in API response")
+            
+            # Validate results structure
+            if not isinstance(results, list):
+                logger.error(f"Expected JSON array, got: {type(results)}")
+                raise AnalysisProcessingError("API response is not a JSON array")
+            
+            # Validate and fill missing results
+            while len(results) < len(comments):
+                missing_idx = len(results)
+                logger.warning(f"Missing result for comment {missing_idx + 1}, adding default")
+                results.append(self._get_default_result(comments[missing_idx]))
                 
-                # Validate and fill missing results
-                while len(results) < len(comments):
-                    results.append(self._get_default_result(comments[len(results)]))
-                    
-                return results[:len(comments)]  # Ensure exact match
-            else:
-                raise AnalysisProcessingError("No valid JSON found in API response")
+            return results[:len(comments)]  # Ensure exact match
                 
         except (APIConnectionError, APITimeoutError, APIRateLimitError) as e:
             # Log specific API errors
