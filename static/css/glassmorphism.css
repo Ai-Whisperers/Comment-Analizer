@@ -563,6 +563,17 @@ section[data-testid="stSidebar"] .stButton > button:hover {
   }
 }
 
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
 @keyframes shimmer {
   0% { background-position: -200% center; }
   100% { background-position: 200% center; }
@@ -593,6 +604,25 @@ section[data-testid="stSidebar"] .stButton > button:hover {
 .animate-fadeInUp {
   animation: fadeInUp var(--duration-slow) var(--ease-out) forwards;
   opacity: 0;
+}
+
+.animate-fade-in {
+  animation: fadeIn var(--duration-slow) var(--ease-out) forwards;
+  opacity: 0;
+}
+
+.gradient-text-animated {
+  background: linear-gradient(90deg, 
+    var(--primary-purple) 0%, 
+    var(--secondary-cyan) 25%, 
+    var(--primary-purple) 50%, 
+    var(--secondary-cyan) 75%, 
+    var(--primary-purple) 100%);
+  background-size: 200% auto;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  animation: shimmer 3s linear infinite;
 }
 
 .animate-shimmer {
