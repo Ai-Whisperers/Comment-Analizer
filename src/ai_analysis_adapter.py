@@ -59,7 +59,7 @@ class AIAnalysisAdapter:
                 self.ai_available = False
                 return
                 
-            ai_logger.debug(f"API key found: {api_key[:10] if api_key else 'None'}...")
+            ai_logger.debug(f"API key found: {'*' * 10}... (length: {len(api_key) if api_key else 0})")
             
             self.openai_analyzer = OpenAIAnalyzer(use_cache=True)
             self.ai_available = True
