@@ -105,3 +105,49 @@ class ImprovedAnalysis:
                 themes.append(theme)
         
         return themes
+    
+    def calculate_real_nps(self, df_nps: pd.DataFrame) -> Dict[str, Any]:
+        """
+        Calculate NPS from DataFrame with NPS column
+        Compatible with AI adapter expectations
+        
+        Args:
+            df_nps: DataFrame with 'NPS' column (scores 0-10)
+            
+        Returns:
+            Dictionary with NPS analysis
+        """
+        if df_nps is None or df_nps.empty or 'NPS' not in df_nps.columns:
+            return {
+                'nps_score': 0,
+                'promoters': 0,
+                'detractors': 0,
+                'passives': 0,
+                'total_responses': 0
+            }
+        
+        nps_scores = df_nps['NPS'].dropna()
+        if len(nps_scores) == 0:
+            return {
+                'nps_score': 0,
+                'promoters': 0,
+                'detractors': 0,
+                'passives': 0,
+                'total_responses': 0
+            }
+        
+        # Standard NPS calculation
+        promoters = sum(1 for score in nps_scores if score >= 9)
+        detractors = sum(1 for score in nps_scores if score <= 6)
+        passives = sum(1 for score in nps_scores if 7 <= score <= 8)
+        total = len(nps_scores)
+        
+        nps_score = ((promoters - detractors) / total) * 100 if total > 0 else 0
+        
+        return {
+            'nps_score': round(nps_score, 1),
+            'promoters': promoters,
+            'detractors': detractors,
+            'passives': passives,
+            'total_responses': total
+        }
