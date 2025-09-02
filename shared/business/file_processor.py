@@ -164,6 +164,9 @@ class FileProcessor:
             unique_comments = comment_data['unique_comments']
             comment_frequencies = comment_data['comment_frequencies']
             
+            # Initialize results dictionary early to prevent NameError
+            results = {}
+            
             # Initialize variables for AI processing
             normalized_insights = {}
             use_normalized_insights = False
@@ -272,6 +275,7 @@ class FileProcessor:
             # Generate results with analysis method indicator
             analysis_method = 'AI_ENHANCED' if use_ai_insights else 'RULE_BASED_SIMPLE'
             
+            # Initialize results dictionary BEFORE any modifications
             results = {
                 'total': len(unique_comments),
                 'comments': unique_comments,

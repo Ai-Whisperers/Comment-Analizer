@@ -221,22 +221,37 @@ if 'analysis_results' in st.session_state:
             chart_theme = theme.get_chart_theme(st.session_state.get('dark_mode', True))
             
             emotion_df = pd.DataFrame(list(emotion_distribution.items()), columns=['Emoción', 'Frecuencia'])
-            emotion_df = emotion_df.sort_values('Frecuencia', ascending=False).head(10)  # Top 10 emotions
             
-            fig_emotions_main = px.bar(
-                emotion_df,
-                x='Emoción',
-                y='Frecuencia', 
-                title="Distribución de Emociones Específicas (Top 10)"
-            )
+            # Validate DataFrame before processing
+            if len(emotion_df) > 0:
+                emotion_df = emotion_df.sort_values('Frecuencia', ascending=False).head(10)  # Top 10 emotions
+                
+                fig_emotions_main = px.bar(
+                    emotion_df,
+                    x='Emoción',
+                    y='Frecuencia', 
+                    title="Distribución de Emociones Específicas (Top 10)"
+                )
+            else:
+                # Fallback for empty emotions
+                fig_emotions_main = px.bar(
+                    x=['Sin datos'],
+                    y=[0],
+                    title="Distribución de Emociones (Sin datos disponibles)"
+                )
             fig_emotions_main.update_layout(chart_theme['layout'])
             st.plotly_chart(fig_emotions_main, width='stretch', key="emotions_chart_main")
             
             # Emotion intensity display
             avg_intensity = emotion_summary.get('avg_intensity', 0)
+            
+            # Validate avg_intensity to prevent crashes
+            if avg_intensity is None or not isinstance(avg_intensity, (int, float)):
+                avg_intensity = 0
+                
             col_intensity1, col_intensity2 = st.columns(2)
             with col_intensity1:
-                st.metric("Intensidad Emocional Promedio", f"{avg_intensity}/10")
+                st.metric("Intensidad Emocional Promedio", f"{avg_intensity:.1f}/10")
             with col_intensity2:
                 intensity_level = "Alta" if avg_intensity > 7 else ("Media" if avg_intensity > 4 else "Baja")
                 st.markdown(
