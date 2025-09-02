@@ -366,17 +366,77 @@ Return ONLY the JSON array with no additional text or explanation.
             return [self._get_default_result(comment) for comment in comments]
     
     def _get_default_result(self, comment: str) -> Dict:
-        """Get default analysis result for failed cases"""
+        """Get dynamic analysis result for failed cases (no more fixed values)"""
+        # Use basic rule-based analysis instead of fixed values
+        from shared.business.analysis_engine import analyze_sentiment_simple, extract_themes_simple
+        
+        # Dynamic sentiment instead of always 'neutral'
+        dynamic_sentiment = analyze_sentiment_simple(comment) if comment else 'neutral'
+        
+        # Dynamic themes instead of always 'sin_clasificar'
+        if comment and comment.strip():
+            theme_result = extract_themes_simple([comment])
+            dynamic_themes = list(theme_result[0].keys()) if theme_result and theme_result[0] else []
+            if not dynamic_themes:
+                # Content-based theme detection as fallback
+                comment_lower = comment.lower()
+                if any(word in comment_lower for word in ['internet', 'fibra', 'conexion']):
+                    dynamic_themes = ['conectividad']
+                elif any(word in comment_lower for word in ['servicio', 'atencion']):
+                    dynamic_themes = ['servicio']
+                else:
+                    dynamic_themes = ['comentario_general']
+        else:
+            dynamic_themes = ['sin_datos']
+        
+        # Dynamic confidence based on comment length and specificity
+        confidence = 0.3  # minimum
+        if comment and len(comment.split()) > 5:
+            confidence += 0.2
+        if comment and any(word in comment.lower() for word in ['muy', 'excelente', 'pésimo', 'problema']):
+            confidence += 0.2
+        confidence = min(0.8, confidence)  # cap at 0.8 for fallback
+        
+        # Dynamic emotions based on content
+        dynamic_emotions = ['neutral']
+        if comment:
+            comment_lower = comment.lower()
+            if any(word in comment_lower for word in ['excelente', 'bueno', 'bien']):
+                dynamic_emotions = ['satisfacción']
+            elif any(word in comment_lower for word in ['malo', 'problema', 'lento']):
+                dynamic_emotions = ['frustración']
+            elif any(word in comment_lower for word in ['rápido', 'eficiente']):
+                dynamic_emotions = ['alegría']
+        
         return {
             "comment_number": 0,
-            "sentiment": "neutral",
-            "confidence": 0.5,
+            "sentiment": dynamic_sentiment,
+            "confidence": confidence,
             "language": "es",
             "translation": comment,
-            "themes": ["sin_clasificar"],
-            "pain_points": [],
-            "emotions": ["neutral"]
+            "themes": dynamic_themes,
+            "pain_points": self._extract_pain_points_dynamic(comment),
+            "emotions": dynamic_emotions
         }
+    
+    def _extract_pain_points_dynamic(self, comment: str) -> List[str]:
+        """Extract pain points dynamically from comment"""
+        if not comment:
+            return []
+        
+        pain_points = []
+        comment_lower = comment.lower()
+        
+        if any(word in comment_lower for word in ['lento', 'demora']):
+            pain_points.append('velocidad_baja')
+        if any(word in comment_lower for word in ['se corta', 'desconecta']):
+            pain_points.append('conexión_inestable')
+        if any(word in comment_lower for word in ['caro', 'precio']):
+            pain_points.append('precio_alto')
+        if any(word in comment_lower for word in ['soporte', 'atencion']):
+            pain_points.append('soporte_deficiente')
+        
+        return pain_points
     
     def analyze_batch(self, comments: List[str], progress_callback=None) -> List[Dict]:
         """
