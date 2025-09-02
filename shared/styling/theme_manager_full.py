@@ -317,12 +317,18 @@ class ThemeManager:
         return """
         /* Base glass effect with mobile optimization */
         .glass {
-            backdrop-filter: blur(var(--glass-blur));
-            -webkit-backdrop-filter: blur(var(--glass-blur));
             background: var(--glass-bg);
             border: 1px solid var(--glass-border);
             border-radius: 16px;
             transition: all var(--duration-normal) var(--easing-default);
+        }
+        
+        /* Progressive enhancement - only apply backdrop-filter if supported and not touch device */
+        @supports (backdrop-filter: blur(16px)) {
+            .glass {
+                backdrop-filter: blur(var(--glass-blur));
+                -webkit-backdrop-filter: blur(var(--glass-blur));
+            }
         }
         
         .glass:hover {
@@ -334,9 +340,12 @@ class ThemeManager:
         
         /* Mobile optimizations - reduced blur for performance */
         @media (max-width: 768px) {
-            .glass {
-                backdrop-filter: blur(8px);
-                -webkit-backdrop-filter: blur(8px);
+            /* Only apply reduced blur if backdrop-filter is supported */
+            @supports (backdrop-filter: blur(8px)) {
+                .glass {
+                    backdrop-filter: blur(8px) !important;
+                    -webkit-backdrop-filter: blur(8px) !important;
+                }
             }
         }
         

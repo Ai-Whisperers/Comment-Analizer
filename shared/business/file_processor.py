@@ -37,8 +37,13 @@ class FileProcessor:
     """Handles file processing operations without UI dependencies"""
     
     def __init__(self):
-        self.MAX_FILE_SIZE_MB = 1.5  # Conservative limit for Streamlit Cloud
-        self.MAX_COMMENTS = 200      # Conservative limit for stability
+        # Import configuration for flexible limits
+        from src.config import Config
+        self.config = Config()
+        
+        # Use configurable limits instead of hardcoded values
+        self.MAX_FILE_SIZE_MB = self.config.MAX_FILE_SIZE_MB
+        self.MAX_COMMENTS = self.config.MAX_COMMENTS
     
     def validate_file(self, uploaded_file) -> Dict[str, any]:
         """Validate uploaded file and return validation results"""

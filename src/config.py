@@ -45,6 +45,11 @@ class Config:
     OPENAI_MAX_TOKENS = int(os.getenv("OPENAI_MAX_TOKENS", "4000"))
     OPENAI_TEMPERATURE = float(os.getenv("OPENAI_TEMPERATURE", "0.7"))
     
+    # File Processing Limits - Configurable for different environments
+    MAX_FILE_SIZE_MB = float(os.getenv("MAX_FILE_SIZE_MB", "1.5"))  # Conservative for Streamlit Cloud
+    MAX_COMMENTS = int(os.getenv("MAX_COMMENTS", "200"))            # Conservative for stability
+    MAX_UPLOAD_SIZE_CLOUD = float(os.getenv("MAX_UPLOAD_SIZE_CLOUD", "2.0"))  # Streamlit Cloud limit
+    
     # API Timeout Settings (in seconds)
     API_TIMEOUT_SHORT = int(os.getenv("API_TIMEOUT_SHORT", "10"))  # For quick operations
     API_TIMEOUT_MEDIUM = int(os.getenv("API_TIMEOUT_MEDIUM", "30"))  # For standard operations

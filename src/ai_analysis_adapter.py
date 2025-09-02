@@ -110,40 +110,25 @@ class AIAnalysisAdapter:
             raise
     
     def _read_excel_file(self, uploaded_file) -> pd.DataFrame:
-        """Read Excel file with proper handling and memory cleanup"""
-        file_buffer = None
-        file_content = None
-        
+        """Read Excel file with proper memory management using context managers"""
         try:
             if hasattr(uploaded_file, 'read'):
+                # Reset file pointer to beginning
                 uploaded_file.seek(0)
-                file_content = uploaded_file.read()
-                file_buffer = BytesIO(file_content)
-                df = pd.read_excel(file_buffer)
+                
+                # Use context manager for automatic resource cleanup
+                with BytesIO(uploaded_file.read()) as file_buffer:
+                    df = pd.read_excel(file_buffer)
+                    return df
             else:
-                df = pd.read_excel(uploaded_file.content)
-            
-            # MICRO-FIX: Explicit cleanup of file objects
-            if file_buffer:
-                file_buffer.close()
-                del file_buffer
-            
-            if file_content:
-                del file_content
-            
-            if hasattr(uploaded_file, 'close'):
-                uploaded_file.close()
-            
-            return df
-            
+                # Handle file content directly with context manager
+                with BytesIO(uploaded_file.content) as file_buffer:
+                    df = pd.read_excel(file_buffer)
+                    return df
+                    
         except Exception as e:
-            # Clean up on error
-            if 'df' in locals():
-                del df
-            if file_buffer:
-                file_buffer.close()
-            if 'file_content' in locals():
-                del file_content
+            # Context managers automatically handle cleanup even on exceptions
+            logger.error(f"Failed to read Excel file: {str(e)}")
             raise
     
     def _extract_analysis_data(self, df: pd.DataFrame) -> Dict:
@@ -345,13 +330,14 @@ class AIAnalysisAdapter:
             ai_logger.error(f"Error occurred at analysis_type: {analysis_type}")
             ai_logger.debug(f"Full error traceback: {traceback.format_exc()}")
             
-            # Log diagnostic information
+            # Log diagnostic information (with proper error handling)
             try:
                 ai_logger.debug(f"File name: {uploaded_file.name if hasattr(uploaded_file, 'name') else 'Unknown'}")
                 ai_logger.debug(f"File size: {uploaded_file.size if hasattr(uploaded_file, 'size') else 'Unknown'}")
                 ai_logger.debug(f"AI available: {self.ai_available}")
-            except:
-                pass
+            except Exception as debug_error:
+                ai_logger.warning(f"Failed to log debug info: {debug_error}")
+                # Continue execution - debug logging failure is not critical
             
             return self._create_error_response(f"Critical analysis failure: {str(e)}")
         finally:
