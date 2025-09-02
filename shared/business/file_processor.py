@@ -25,7 +25,7 @@ if src_dir not in sys.path:
 
 # Import AI components at top level to avoid dynamic import issues
 try:
-    from ai_analysis_adapter import AIAnalysisAdapter
+    from src.ai_analysis_adapter import AIAnalysisAdapter
     AI_AVAILABLE = True
 except ImportError as e:
     logger.warning(f"AI components not available: {e}")
