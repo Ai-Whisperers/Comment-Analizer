@@ -253,12 +253,14 @@ if 'analysis_results' in st.session_state:
             with col_intensity1:
                 st.metric("Intensidad Emocional Promedio", f"{avg_intensity:.1f}/10")
             with col_intensity2:
-                intensity_level = "Alta" if avg_intensity > 7 else ("Media" if avg_intensity > 4 else "Baja")
+                # Type safety for avg_intensity comparisons
+                safe_intensity = float(avg_intensity) if isinstance(avg_intensity, (int, float)) and avg_intensity is not None else 0
+                intensity_level = "Alta" if safe_intensity > 7 else ("Media" if safe_intensity > 4 else "Baja")
                 st.markdown(
                     ui.status_badge(
                         icon="",
                         text=f"Nivel: {intensity_level}",
-                        badge_type="positive" if avg_intensity > 7 else ("neutral" if avg_intensity > 4 else "negative")
+                        badge_type="positive" if safe_intensity > 7 else ("neutral" if safe_intensity > 4 else "negative")
                     ),
                     unsafe_allow_html=True
                 )
@@ -307,7 +309,10 @@ if 'analysis_results' in st.session_state:
         with col1:
             # Customer Satisfaction Index
             satisfaction_index = insights.get('customer_satisfaction_index', 0)
-            satisfaction_level = "Alto" if satisfaction_index > 70 else ("Medio" if satisfaction_index > 40 else "Bajo")
+            
+            # Type safety for satisfaction_index comparisons
+            safe_satisfaction = float(satisfaction_index) if isinstance(satisfaction_index, (int, float)) and satisfaction_index is not None else 0
+            satisfaction_level = "Alto" if safe_satisfaction > 70 else ("Medio" if safe_satisfaction > 40 else "Bajo")
             st.metric(
                 "Índice de Satisfacción", 
                 f"{satisfaction_index}/100",
@@ -365,12 +370,14 @@ if 'analysis_results' in st.session_state:
             with col_intensity1:
                 st.metric("Intensidad Emocional Promedio", f"{avg_intensity}/10")
             with col_intensity2:
-                intensity_level = "Alta" if avg_intensity > 7 else ("Media" if avg_intensity > 4 else "Baja")
+                # Type safety for avg_intensity comparisons
+                safe_intensity = float(avg_intensity) if isinstance(avg_intensity, (int, float)) and avg_intensity is not None else 0
+                intensity_level = "Alta" if safe_intensity > 7 else ("Media" if safe_intensity > 4 else "Baja")
                 st.markdown(
                     ui.status_badge(
                         icon="",
                         text=f"Nivel: {intensity_level}",
-                        badge_type="positive" if avg_intensity > 7 else ("neutral" if avg_intensity > 4 else "negative")
+                        badge_type="positive" if safe_intensity > 7 else ("neutral" if safe_intensity > 4 else "negative")
                     ),
                     unsafe_allow_html=True
                 )
