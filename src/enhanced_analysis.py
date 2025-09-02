@@ -145,6 +145,58 @@ class EnhancedAnalysis:
         
         return pain_points
     
+    def calculate_nps_from_sentiment(self, sentiment: str, intensity: float) -> float:
+        """
+        Calculate NPS score from sentiment and intensity (replaces fixed values)
+        
+        Args:
+            sentiment: Sentiment classification ('positivo', 'negativo', 'neutral')
+            intensity: Emotion intensity (0.0-1.0)
+            
+        Returns:
+            NPS score (-100.0 to +100.0)
+        """
+        if not sentiment or intensity is None:
+            return 0.0
+            
+        # Ensure intensity is in valid range
+        intensity = max(0.0, min(1.0, float(intensity)))
+        
+        # Dynamic NPS calculation based on sentiment and intensity
+        if sentiment == 'positivo' or sentiment == 'positive':
+            # Positive sentiments: 0 to +100 based on intensity
+            base_score = 20  # minimum positive NPS
+            max_boost = 80   # maximum additional points
+            return base_score + (intensity * max_boost)
+            
+        elif sentiment == 'negativo' or sentiment == 'negative':
+            # Negative sentiments: -100 to 0 based on intensity  
+            base_score = -20  # minimum negative NPS
+            max_penalty = 80  # maximum additional penalty
+            return base_score - (intensity * max_penalty)
+            
+        else:  # neutral
+            # Neutral sentiments: -20 to +20 based on intensity
+            return -20.0 + (intensity * 40.0)
+            
+    def _calculate_emotion_intensity(self, emotions: List[str]) -> float:
+        """Calculate emotion intensity from detected emotions (dynamic calculation)"""
+        if not emotions or 'neutral' in emotions:
+            return 0.5
+        
+        # Define emotion intensity mapping
+        intense_emotions = ['enojo', 'frustración', 'alegría', 'satisfacción', 'amor', 'odio']
+        moderate_emotions = ['tristeza', 'esperanza', 'sorpresa', 'preocupación']
+        
+        max_intensity = 0.5
+        for emotion in emotions:
+            if emotion.lower() in intense_emotions:
+                max_intensity = max(max_intensity, 0.8)
+            elif emotion.lower() in moderate_emotions:
+                max_intensity = max(max_intensity, 0.6)
+        
+        return max_intensity
+    
     def _analyze_sentiment(self, text: str) -> str:
         """Basic sentiment analysis using extended rules"""
         if not text:

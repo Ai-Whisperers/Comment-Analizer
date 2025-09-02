@@ -151,3 +151,145 @@ class ImprovedAnalysis:
             'passives': passives,
             'total_responses': total
         }
+    
+    def analyze_comment_quality(self, comment: str) -> Dict[str, Any]:
+        """Analyze comment quality metrics (replaces fixed values)"""
+        if not comment or not comment.strip():
+            return {
+                'quality_score': 0.0,
+                'completeness': 'incomplete', 
+                'clarity': 0.0,
+                'constructiveness': 0.0
+            }
+        
+        comment_lower = comment.lower()
+        word_count = len(comment.split())
+        
+        # Dynamic quality calculation based on content
+        has_specifics = any(keyword in comment_lower for keyword in 
+                           ['problema', 'error', 'falla', 'bien', 'mal', 'servicio', 'velocidad'])
+        has_details = any(word in comment_lower for word in
+                         ['porque', 'cuando', 'donde', 'como', 'siempre', 'nunca'])
+        
+        quality_score = min(1.0, word_count / 20.0)
+        if has_specifics:
+            quality_score += 0.2
+        if has_details:
+            quality_score += 0.1
+        
+        return {
+            'quality_score': min(1.0, quality_score),
+            'completeness': 'complete' if word_count > 10 else ('partial' if word_count > 3 else 'incomplete'),
+            'clarity': 1.0 if has_specifics else (0.7 if has_details else 0.3),
+            'constructiveness': 0.9 if has_specifics and has_details else (0.6 if has_specifics else 0.3)
+        }
+    
+    def detect_themes_improved(self, comment: str) -> List[str]:
+        """Enhanced theme detection (replaces fixed 'sin_clasificar')"""
+        if not comment or not comment.strip():
+            return []
+        
+        # Use existing theme detection but expand it
+        themes = self._extract_themes(comment)
+        comment_lower = comment.lower()
+        
+        # Add specific telecom themes  
+        if any(word in comment_lower for word in ['fibra', 'internet', 'wifi', 'conexion']):
+            themes.append('conectividad')
+        if any(word in comment_lower for word in ['instalacion', 'tecnico', 'visita']):
+            themes.append('instalacion')
+        if any(word in comment_lower for word in ['factura', 'cobro', 'pago', 'plan']):
+            themes.append('facturacion')
+        if any(word in comment_lower for word in ['atencion', 'soporte', 'ayuda', 'call']):
+            themes.append('atencion_cliente')
+        
+        # Return at least one theme, never empty
+        return themes if themes else ['comentario_general']
+    
+    def analyze_service_issues(self, comment: str) -> List[Dict[str, Any]]:
+        """Detect service-related issues (dynamic detection)"""
+        if not comment or not comment.strip():
+            return []
+        
+        issues = []
+        comment_lower = comment.lower()
+        
+        # Performance issues
+        if any(word in comment_lower for word in ['lento', 'demora', 'espera', 'carga']):
+            severity = 'high' if 'muy lento' in comment_lower else 'medium'
+            issues.append({'issue': 'performance', 'severity': severity})
+        
+        # Connection issues  
+        if any(word in comment_lower for word in ['se corta', 'desconecta', 'inestable', 'intermitente']):
+            issues.append({'issue': 'connectivity', 'severity': 'high'})
+        
+        # Support issues
+        if any(word in comment_lower for word in ['atencion', 'soporte', 'servicio malo', 'no responden']):
+            issues.append({'issue': 'customer_support', 'severity': 'medium'})
+        
+        # Billing issues
+        if any(word in comment_lower for word in ['factura', 'cobro', 'precio', 'caro']):
+            issues.append({'issue': 'billing', 'severity': 'low'})
+        
+        return issues
+    
+    def enhanced_sentiment_analysis(self, comment: str, nota: int = None) -> Dict[str, Any]:
+        """Enhanced sentiment analysis with rating correlation (dynamic confidence)"""
+        if not comment or not comment.strip():
+            return {
+                'sentiment': 'neutral',
+                'intensity': 0.0,
+                'emotional_indicators': [],
+                'sentiment_confidence': 0.0
+            }
+        
+        # Use existing sentiment analysis
+        basic_sentiment = self._analyze_sentiment_with_context(comment)
+        
+        # Calculate dynamic intensity based on content
+        comment_lower = comment.lower()
+        intensity_words = {
+            'high': ['excelente', 'pésimo', 'horrible', 'increíble', 'fantástico', 'terrible'],
+            'medium': ['bueno', 'malo', 'regular', 'normal'],
+            'low': ['ok', 'bien', 'más o menos']
+        }
+        
+        intensity = 0.5  # default
+        if any(word in comment_lower for word in intensity_words['high']):
+            intensity = 0.8
+        elif any(word in comment_lower for word in intensity_words['medium']):
+            intensity = 0.6
+        elif any(word in comment_lower for word in intensity_words['low']):
+            intensity = 0.4
+        
+        # Correlate with rating if available
+        if nota is not None:
+            if nota <= 3:
+                sentiment = 'negativo'
+                intensity = max(intensity, (4 - nota) / 3.0)
+            elif nota >= 8:
+                sentiment = 'positivo'
+                intensity = max(intensity, (nota - 7) / 3.0)
+            else:
+                sentiment = basic_sentiment
+                
+        else:
+            sentiment = basic_sentiment
+        
+        # Extract emotional indicators dynamically
+        emotional_indicators = []
+        if 'excelente' in comment_lower or 'fantástico' in comment_lower:
+            emotional_indicators.append('satisfacción')
+        if 'problema' in comment_lower or 'malo' in comment_lower:
+            emotional_indicators.append('frustración')
+        if 'rápido' in comment_lower:
+            emotional_indicators.append('eficiencia')
+        if 'lento' in comment_lower:
+            emotional_indicators.append('impaciencia')
+        
+        return {
+            'sentiment': sentiment,
+            'intensity': min(1.0, intensity),
+            'emotional_indicators': emotional_indicators if emotional_indicators else ['neutral'],
+            'sentiment_confidence': min(1.0, intensity + 0.2)
+        }
