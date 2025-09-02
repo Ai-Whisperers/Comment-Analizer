@@ -552,7 +552,17 @@ class AIAnalysisAdapter:
         # Calculate NPS (inline logic to avoid dependency issues)
         if has_nps and nps_data:
             # Simple inline NPS calculation
-            nps_scores = [score for score in nps_data[:len(comments)] if pd.notna(score)]
+            # Convert NPS data to numeric values
+            nps_scores = []
+            for score in nps_data[:len(comments)]:
+                if pd.notna(score):
+                    try:
+                        numeric_score = float(score)
+                        nps_scores.append(numeric_score)
+                    except (ValueError, TypeError):
+                        # Skip invalid scores
+                        continue
+                        
             if nps_scores:
                 promoters = sum(1 for score in nps_scores if score >= 9)
                 detractors = sum(1 for score in nps_scores if score <= 6)
@@ -787,7 +797,17 @@ class AIAnalysisAdapter:
         # Calculate NPS
         if has_nps and nps_data:
             # Simple inline NPS calculation (fallback version)
-            nps_scores = [score for score in nps_data[:len(comments)] if pd.notna(score)]
+            # Convert NPS data to numeric values
+            nps_scores = []
+            for score in nps_data[:len(comments)]:
+                if pd.notna(score):
+                    try:
+                        numeric_score = float(score)
+                        nps_scores.append(numeric_score)
+                    except (ValueError, TypeError):
+                        # Skip invalid scores
+                        continue
+                        
             if nps_scores:
                 promoters = sum(1 for score in nps_scores if score >= 9)
                 detractors = sum(1 for score in nps_scores if score <= 6)
