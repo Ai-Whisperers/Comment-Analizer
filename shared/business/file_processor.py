@@ -197,26 +197,20 @@ class FileProcessor:
                         ai_results = ai_adapter.process_uploaded_file_with_ai(uploaded_file)
                         
                         if ai_results and ai_results.get('insights'):
-                            logger.info("✅ REAL AI analysis successful - normalizing for UI compatibility")
+                            logger.info("✅ REAL AI analysis successful - using direct AI adapter results")
                             
-                            # Import AI output mapper
-                            from shared.utils.ai_output_mapper import normalize_ai_for_ui
+                            # Use AI adapter results directly (no mapper processing that corrupts data)
+                            emotion_summary = ai_results.get('emotion_summary', {})
+                            sentiments = ai_results.get('sentiments', [])
+                            sentiment_percentages = ai_results.get('sentiment_percentages', {})
                             
-                            # Normalize AI results for UI compatibility
-                            normalized_ai_results = normalize_ai_for_ui(ai_results)
-                            
-                            # Use normalized results and integrate into final results
-                            emotion_summary = normalized_ai_results.get('emotion_summary', {})
-                            sentiments = normalized_ai_results.get('sentiments', [])
-                            sentiment_percentages = normalized_ai_results.get('sentiment_percentages', {})
-                            
-                            # Store ALL normalized data in results for UI
+                            # Store ALL AI data directly in results for UI
                             results['emotion_summary'] = emotion_summary
                             results['sentiments'] = sentiments  
                             results['sentiment_percentages'] = sentiment_percentages
                             
-                            # Store normalized insights for final results
-                            normalized_insights = normalized_ai_results.get('insights', {})
+                            # Store AI insights for final results
+                            normalized_insights = ai_results.get('insights', {})
                             use_normalized_insights = True
                             
                             # Debug logging to see what data we got
