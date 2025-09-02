@@ -284,6 +284,29 @@ class AIAnalysisAdapter:
 
     def process_uploaded_file_with_ai(self, uploaded_file) -> Optional[Dict]:
         """
+        Main entry point - now uses modular orchestrator when available
+        Maintains backward compatibility with legacy implementation
+        """
+        # Try using new modular orchestrator first
+        try:
+            from src.analysis_orchestrator import AnalysisOrchestrator
+            orchestrator = AnalysisOrchestrator()
+            
+            if orchestrator.ai_available:
+                logger.info("🆕 Using new modular orchestrator for analysis")
+                return orchestrator.process_uploaded_file_with_ai(uploaded_file)
+            else:
+                logger.info("🔄 Orchestrator AI not available, using legacy implementation")
+                
+        except Exception as orchestrator_error:
+            logger.warning(f"Modular orchestrator failed: {orchestrator_error}, using legacy implementation")
+        
+        # Fallback to legacy implementation
+        logger.info("📱 Using legacy AI adapter implementation")
+        return self._legacy_process_uploaded_file_with_ai(uploaded_file)
+    
+    def _legacy_process_uploaded_file_with_ai(self, uploaded_file) -> Optional[Dict]:
+        """
         Process uploaded file using AI analysis with fallback to rule-based analysis.
         Refactored to reduce deep nesting and improve maintainability.
         """
