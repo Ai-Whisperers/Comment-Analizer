@@ -786,15 +786,15 @@ class AIAnalysisAdapter:
         
         # Calculate NPS
         if has_nps and nps_data:
-            df_for_nps = pd.DataFrame({
-                'NPS': nps_data[:len(comments)],
-                'Nota': nota_data[:len(comments)] if has_nota else None
-            })
-            nps_analysis = self.improved_analyzer.calculate_real_nps(df_for_nps)
-            nps = nps_analysis['nps_score']
-            promoters = nps_analysis['promoters']
-            detractors = nps_analysis['detractors'] 
-            passives = nps_analysis['passives']
+            # Simple inline NPS calculation (fallback version)
+            nps_scores = [score for score in nps_data[:len(comments)] if pd.notna(score)]
+            if nps_scores:
+                promoters = sum(1 for score in nps_scores if score >= 9)
+                detractors = sum(1 for score in nps_scores if score <= 6)
+                passives = sum(1 for score in nps_scores if 7 <= score <= 8)
+                nps = ((promoters - detractors) / len(nps_scores)) * 100
+            else:
+                promoters = detractors = passives = nps = 0
         else:
             promoters = sum(1 for score in nps_scores if score >= 9)
             passives = sum(1 for score in nps_scores if 7 <= score < 9)
