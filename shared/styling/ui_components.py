@@ -9,12 +9,18 @@ class UIComponents:
     @staticmethod
     def animated_header(title: str, subtitle: str = "") -> str:
         """Generate animated header HTML with Web3 style"""
+        import html
+        
+        # Escape HTML to prevent injection
+        safe_title = html.escape(str(title))
+        safe_subtitle = html.escape(str(subtitle))
+        
         return f"""
         <div class="animate-fade-in" style="text-align: center; padding: 3rem 0;">
             <h1 class="gradient-text-animated" style="font-size: var(--size-4xl); margin-bottom: 1rem;">
-                {title}
+                {safe_title}
             </h1>
-            {f'<p style="color: var(--text-secondary); font-size: var(--size-lg);">{subtitle}</p>' if subtitle else ''}
+            {f'<p style="color: var(--text-secondary); font-size: var(--size-lg);">{safe_subtitle}</p>' if safe_subtitle else ''}
         </div>
         """
     
@@ -41,16 +47,24 @@ class UIComponents:
     @staticmethod
     def status_badge(icon: str, text: str, badge_type: str = "neutral", aria_label: str = "") -> str:
         """Generate accessible status badge HTML with theme colors"""
-        aria_description = aria_label or f"Estado: {text}"
+        import html
+        
+        # Escape HTML to prevent XSS
+        safe_text = html.escape(str(text))
+        safe_icon = html.escape(str(icon))
+        safe_badge_type = html.escape(str(badge_type))
+        aria_description = aria_label or f"Estado: {safe_text}"
+        safe_aria = html.escape(aria_description)
+        
         return f"""
-        <div class="status-badge {badge_type}" 
+        <div class="status-badge {safe_badge_type}" 
              role="status" 
              aria-live="polite" 
-             aria-label="{aria_description}"
+             aria-label="{safe_aria}"
              tabindex="0">
-            <span class="badge-icon" aria-hidden="true">{icon}</span>
-            <span class="badge-text">{text}</span>
-            <span class="sr-only">{aria_description}</span>
+            <span class="badge-icon" aria-hidden="true">{safe_icon}</span>
+            <span class="badge-text">{safe_text}</span>
+            <span class="sr-only">{safe_aria}</span>
         </div>
         """
     

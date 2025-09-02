@@ -39,10 +39,18 @@ class EnhancedResultsUI:
             st.info("📊 No analysis results available yet. Please run an analysis first.")
             return
         
-        # Get analysis data
-        results = st.session_state.get('analysis_results', [])
+        # Get analysis data with comprehensive validation
+        results = st.session_state.get('analysis_results', {})
+        if not isinstance(results, dict):
+            results = {}
+        
         insights = st.session_state.get('insights', {})
+        if not isinstance(insights, dict):
+            insights = {}
+            
         recommendations = st.session_state.get('recommendations', [])
+        if not isinstance(recommendations, list):
+            recommendations = []
         
         # Render fixed top summary
         self._render_top_summary(results, insights)
