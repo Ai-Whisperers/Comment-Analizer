@@ -15,6 +15,8 @@ from .analysis_engine import (
     create_recommendations
 )
 
+logger = logging.getLogger(__name__)
+
 # Add src directory to path for AI imports (top level)
 current_dir = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
 src_dir = os.path.join(current_dir, 'src')
@@ -29,8 +31,6 @@ except ImportError as e:
     logger.warning(f"AI components not available: {e}")
     AIAnalysisAdapter = None
     AI_AVAILABLE = False
-
-logger = logging.getLogger(__name__)
 
 
 class FileProcessor:
