@@ -81,13 +81,37 @@ st.set_page_config(
 if 'dark_mode' not in st.session_state:
     st.session_state.dark_mode = True
 
-# Load CSS using Streamlit static file serving
+# Load modular CSS system properly
 if CLEAN_ARCHITECTURE_AVAILABLE:
     try:
-        # Load main CSS file using proper Streamlit static serving
-        with open('static/styles.css', 'r') as f:
-            css_content = f.read()
-        st.markdown(f'<style>{css_content}</style>', unsafe_allow_html=True)
+        from src.presentation.streamlit.css_loader import CSSLoader
+        css_loader = CSSLoader()
+        
+        # Try main CSS first, fallback to styles.css
+        if not css_loader.load_main_css():
+            # Fallback to static/styles.css
+            try:
+                with open('static/styles.css', 'r', encoding='utf-8') as f:
+                    css_content = f.read()
+                st.markdown(f'<style>{css_content}</style>', unsafe_allow_html=True)
+            except Exception:
+                # Ultimate fallback - inline essential CSS
+                essential_css = """
+                <style>
+                :root {
+                    --primary-purple: #8B5CF6;
+                    --secondary-cyan: #06B6D4;
+                }
+                .stButton > button {
+                    background: linear-gradient(135deg, var(--primary-purple), var(--secondary-cyan));
+                    border: none;
+                    border-radius: 12px;
+                    color: white;
+                }
+                </style>
+                """
+                st.markdown(essential_css, unsafe_allow_html=True)
+        
         st.session_state.css_loaded = True
     except Exception as e:
         st.session_state.css_loaded = False

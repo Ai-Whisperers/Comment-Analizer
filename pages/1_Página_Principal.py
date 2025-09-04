@@ -31,26 +31,40 @@ Esta aplicación utiliza **Inteligencia Artificial avanzada** para analizar come
 st.markdown("---")
 st.markdown("### Estado del Sistema")
 
-if 'analizador_app' in st.session_state:
-    try:
-        info = st.session_state.analizador_app.obtener_info_sistema()
-        st.success(f"Sistema activo: {info.get('version', 'v2.0.0')}")
+# Check sistema IA puro status
+if 'caso_uso_maestro' in st.session_state and st.session_state.caso_uso_maestro:
+    st.success("✅ Sistema IA Maestro: Activo y Funcional")
+    
+    # IA system metrics
+    col1, col2, col3 = st.columns(3)
+    
+    with col1:
+        st.metric("Estado IA", "🤖 GPT-4 Listo")
+    
+    with col2:
+        # Check if we have analysis results in memory
+        total_analizados = 0
+        if 'analysis_results' in st.session_state:
+            resultado = st.session_state.analysis_results
+            if hasattr(resultado, 'total_comentarios'):
+                total_analizados = resultado.total_comentarios
+        st.metric("Comentarios Analizados", total_analizados)
+    
+    with col3:
+        st.metric("Versión", "3.0.0 IA-Pure")
         
-        stats = st.session_state.analizador_app.obtener_estadisticas_repositorio()
-        config_stats = stats.get('configuracion', {})
+    # Show IA capabilities
+    if st.session_state.get('app_info'):
+        info = st.session_state.app_info
+        if info.get('configuracion_actual', {}).get('openai_configurado'):
+            st.info("🧠 Sistema configurado para análisis IA avanzado con GPT-4")
         
-        col1, col2 = st.columns(2)
-        
-        with col1:
-            st.metric("OpenAI", "Configurado" if config_stats.get('openai_configurado') else "Sin configurar")
-        
-        with col2:
-            st.metric("Comentarios", stats.get('total', 0))
-            
-    except Exception as e:
-        st.error(f"Error obteniendo estado: {str(e)}")
+elif 'contenedor' in st.session_state:
+    st.warning("⚠️ Sistema IA en inicialización...")
+    st.info("Verificando configuración de OpenAI...")
 else:
-    st.warning("Sistema no inicializado")
+    st.error("❌ Sistema IA no inicializado")
+    st.error("Recarga la página o verifica configuración de API key")
 
 # Instructions
 st.markdown("---")
