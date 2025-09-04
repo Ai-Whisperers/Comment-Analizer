@@ -9,7 +9,9 @@ import logging
 
 # Load environment variables from .env file
 env_path = Path(__file__).parent.parent / '.env'
-load_dotenv(dotenv_path=env_path)
+load_dotenv(dotenv_path=env_path, override=True)
+# Also try loading from current directory as fallback
+load_dotenv(dotenv_path='.env', override=True)
 
 # Streamlit Cloud compatibility
 try:
@@ -41,13 +43,37 @@ class Config:
     @property 
     def OPENAI_API_KEY(self):
         return Config.get_openai_key()
+    
+    # OpenAI Model Configuration
     OPENAI_MODEL = os.getenv("OPENAI_MODEL", "gpt-4")
-    OPENAI_MAX_TOKENS = int(os.getenv("OPENAI_MAX_TOKENS", "4000"))
+    OPENAI_MAX_TOKENS = int(os.getenv("OPENAI_MAX_TOKENS", "12000"))
     OPENAI_TEMPERATURE = float(os.getenv("OPENAI_TEMPERATURE", "0.7"))
     
-    # File Processing Limits - Configurable for different environments
-    MAX_FILE_SIZE_MB = float(os.getenv("MAX_FILE_SIZE_MB", "1.5"))  # Conservative for Streamlit Cloud
-    MAX_COMMENTS = int(os.getenv("MAX_COMMENTS", "200"))            # Conservative for stability
+    # Application Environment
+    APP_ENV = os.getenv("APP_ENV", "development")
+    DEBUG_MODE = os.getenv("DEBUG_MODE", "False").lower() == "true"
+    
+    # Streamlit Cloud Optimized Limits
+    MAX_FILE_SIZE_MB = float(os.getenv("MAX_FILE_SIZE_MB", "5"))
+    MAX_COMMENTS = int(os.getenv("MAX_COMMENTS", "200"))  # Keep conservative for local
+    MAX_COMMENTS_PER_BATCH = int(os.getenv("MAX_COMMENTS_PER_BATCH", "2000"))
+    
+    # Performance Optimization
+    CACHE_TTL_SECONDS = int(os.getenv("CACHE_TTL_SECONDS", "300"))
+    API_RATE_LIMIT_PER_MINUTE = int(os.getenv("API_RATE_LIMIT_PER_MINUTE", "60"))
+    API_RATE_LIMIT_PER_DAY = int(os.getenv("API_RATE_LIMIT_PER_DAY", "1000"))
+    SESSION_TIMEOUT_MINUTES = int(os.getenv("SESSION_TIMEOUT_MINUTES", "30"))
+    
+    # Security Settings
+    SECRET_KEY = os.getenv("SECRET_KEY", "your-secret-key-here-change-in-production")
+    
+    # Language Processing
+    DEFAULT_LANGUAGE = os.getenv("DEFAULT_LANGUAGE", "es")
+    ENABLE_TRANSLATION = os.getenv("ENABLE_TRANSLATION", "True").lower() == "true"
+    
+    # Export Settings
+    EXCEL_MAX_ROWS = int(os.getenv("EXCEL_MAX_ROWS", "10000"))
+    EXPORT_COMPRESSION = os.getenv("EXPORT_COMPRESSION", "True").lower() == "true"
     MAX_UPLOAD_SIZE_CLOUD = float(os.getenv("MAX_UPLOAD_SIZE_CLOUD", "2.0"))  # Streamlit Cloud limit
     
     # API Timeout Settings (in seconds)
