@@ -45,10 +45,6 @@ with st.sidebar:
     st.markdown("---")
     st.markdown("### Herramientas")
     
-    # Theme toggle (PRESERVE MODERN FEATURE)
-    if st.button("Cambiar Tema", key="theme_toggle"):
-        st.session_state.dark_mode = not st.session_state.dark_mode
-        st.rerun()
     
     # Enhanced memory monitoring with glassmorphism styling
     st.markdown("---")
