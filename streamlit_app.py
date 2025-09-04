@@ -6,6 +6,10 @@ Migrated to use src/ clean architecture with SOLID principles
 import sys
 import streamlit as st
 from pathlib import Path
+import logging
+
+# Setup logger
+logger = logging.getLogger(__name__)
 
 # Add current directory to path for imports
 current_dir = Path(__file__).parent.absolute()
@@ -81,40 +85,85 @@ st.set_page_config(
 if 'dark_mode' not in st.session_state:
     st.session_state.dark_mode = True
 
-# Load modular CSS system properly
+# Load enhanced CSS system with glassmorphism support
 if CLEAN_ARCHITECTURE_AVAILABLE:
     try:
-        from src.presentation.streamlit.css_loader import CSSLoader
-        css_loader = CSSLoader()
+        # Try enhanced CSS loader first
+        from src.presentation.streamlit.enhanced_css_loader import ensure_css_loaded, load_glassmorphism
         
-        # Try main CSS first, fallback to styles.css
-        if not css_loader.load_main_css():
-            # Fallback to static/styles.css
+        # Ensure all CSS including glassmorphism is loaded
+        css_loaded = ensure_css_loaded()
+        
+        if not css_loaded:
+            # Fallback to original CSS loader
             try:
-                with open('static/styles.css', 'r', encoding='utf-8') as f:
-                    css_content = f.read()
-                st.markdown(f'<style>{css_content}</style>', unsafe_allow_html=True)
+                from src.presentation.streamlit.css_loader import CSSLoader
+                css_loader = CSSLoader()
+                css_loaded = css_loader.load_main_css()
+            except:
+                pass
+        
+        if not css_loaded:
+            # Final fallback - load critical CSS files directly
+            try:
+                critical_files = [
+                    'static/css/glassmorphism.css',
+                    'static/main.css',
+                    'static/styles.css'
+                ]
+                
+                for css_file in critical_files:
+                    try:
+                        with open(css_file, 'r', encoding='utf-8') as f:
+                            css_content = f.read()
+                            st.markdown(f'<style>{css_content}</style>', unsafe_allow_html=True)
+                            css_loaded = True
+                            break
+                    except:
+                        continue
+                        
             except Exception:
-                # Ultimate fallback - inline essential CSS
+                # Ultimate fallback - inline essential CSS with glassmorphism
                 essential_css = """
                 <style>
                 :root {
                     --primary-purple: #8B5CF6;
                     --secondary-cyan: #06B6D4;
                 }
+                
+                /* Essential Glassmorphism */
+                .glass, .glass-card {
+                    background: rgba(255, 255, 255, 0.08) !important;
+                    backdrop-filter: blur(16px) !important;
+                    -webkit-backdrop-filter: blur(16px) !important;
+                    border: 1px solid rgba(255, 255, 255, 0.15) !important;
+                    border-radius: 16px !important;
+                    box-shadow: 0 2px 8px rgba(139, 92, 246, 0.08) !important;
+                }
+                
                 .stButton > button {
                     background: linear-gradient(135deg, var(--primary-purple), var(--secondary-cyan));
-                    border: none;
+                    backdrop-filter: blur(10px);
+                    border: 1px solid rgba(255, 255, 255, 0.1);
                     border-radius: 12px;
                     color: white;
+                    transition: all 0.3s ease;
+                }
+                
+                .stButton > button:hover {
+                    transform: translateY(-2px);
+                    box-shadow: 0 8px 20px rgba(139, 92, 246, 0.25);
                 }
                 </style>
                 """
                 st.markdown(essential_css, unsafe_allow_html=True)
+                css_loaded = True
         
-        st.session_state.css_loaded = True
+        st.session_state.css_loaded = css_loaded
+        
     except Exception as e:
         st.session_state.css_loaded = False
+        logger.warning(f"CSS loading failed: {str(e)}")
 
 # Memory monitoring not available after cleanup
 MEMORY_MONITORING_AVAILABLE = False

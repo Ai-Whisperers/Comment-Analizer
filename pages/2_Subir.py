@@ -19,16 +19,208 @@ try:
     from src.shared.exceptions.archivo_exception import ArchivoException
     from src.shared.exceptions.ia_exception import IAException
     
-    # Try to import CSS utilities for enhanced styling
+    # Import enhanced CSS loader for glassmorphism
     try:
+        from src.presentation.streamlit.enhanced_css_loader import ensure_css_loaded, inject_page_css
         from src.presentation.streamlit.css_loader import glass_card, metric_card
+        
+        # Ensure CSS is loaded for this page
+        ensure_css_loaded()
+        inject_page_css('upload')  # Add upload-specific styles
+        
         CSS_UTILS_AVAILABLE = True
     except ImportError:
-        CSS_UTILS_AVAILABLE = False
+        # Fallback to basic CSS loader
+        try:
+            from src.presentation.streamlit.css_loader import glass_card, metric_card
+            CSS_UTILS_AVAILABLE = True
+        except ImportError:
+            CSS_UTILS_AVAILABLE = False
         
 except ImportError as e:
     st.error(f"Error importando Clean Architecture: {str(e)}")
     CSS_UTILS_AVAILABLE = False
+
+
+def _run_analysis(uploaded_file, analysis_type):
+    """Run pure IA analysis using maestro system only"""
+    with st.spinner("Procesando con Inteligencia Artificial..."):
+        try:
+            # Pure IA analysis - no fallbacks
+            if 'caso_uso_maestro' not in st.session_state or not st.session_state.caso_uso_maestro:
+                st.error("Sistema IA no está disponible. Verifica configuración de OpenAI API key.")
+                return
+                
+            from src.application.use_cases.analizar_excel_maestro_caso_uso import ComandoAnalisisExcelMaestro
+            
+            comando = ComandoAnalisisExcelMaestro(
+                archivo_cargado=uploaded_file,
+                nombre_archivo=uploaded_file.name,
+                limpiar_repositorio=True
+            )
+            
+            resultado = st.session_state.caso_uso_maestro.ejecutar(comando)
+            
+            if resultado.es_exitoso():
+                # Memory management: cleanup previous analysis before storing new one
+                _cleanup_previous_analysis()
+                
+                st.session_state.analysis_results = resultado
+                st.session_state.analysis_type = "maestro_ia"
+                st.success("Análisis IA completado!")
+                st.balloons()
+                st.rerun()
+            else:
+                st.error(f"Error en análisis IA: {resultado.mensaje}")
+                
+        except ArchivoException as e:
+            st.error(f"Error procesando archivo: {str(e)}")
+        except IAException as e:
+            st.error(f"Error de servicio IA: {str(e)}")
+            st.info("Verifica que tu OpenAI API key esté configurada correctamente.")
+        except Exception as e:
+            st.error(f"Error inesperado: {str(e)}")
+            st.error("Este es un error no manejado. Por favor contacta soporte técnico.")
+
+
+def _create_professional_excel(resultado):
+    """Create comprehensive Excel export from IA analysis using real DTO structure"""
+    import io
+    from openpyxl import Workbook
+    from openpyxl.styles import Font, PatternFill, Alignment
+    
+    wb = Workbook()
+    ws = wb.active
+    ws.title = "Análisis IA Completo"
+    
+    # Styling
+    header_font = Font(bold=True, size=14)
+    section_font = Font(bold=True, size=12)
+    
+    # Header section
+    ws['A1'] = "Personal Paraguay - Análisis con Inteligencia Artificial"
+    ws['A1'].font = header_font
+    ws['A2'] = f"Fecha: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}"
+    ws['A3'] = "Método: AnalizadorMaestroIA + GPT-4"
+    
+    if hasattr(resultado, 'analisis_completo_ia') and resultado.analisis_completo_ia:
+        analisis = resultado.analisis_completo_ia
+        
+        # Executive Summary
+        ws['A5'] = "RESUMEN EJECUTIVO IA"
+        ws['A5'].font = section_font
+        ws['A6'] = f"Total comentarios analizados: {analisis.total_comentarios}"
+        ws['A7'] = f"Tendencia general: {analisis.tendencia_general}"
+        ws['A8'] = f"Confianza del análisis: {analisis.confianza_general:.1f}%"
+        ws['A9'] = f"Modelo IA utilizado: {analisis.modelo_utilizado}"
+        ws['A10'] = f"Tiempo de procesamiento: {analisis.tiempo_analisis:.1f}s"
+        ws['A11'] = f"Tokens consumidos: {analisis.tokens_utilizados:,}"
+        
+        # IA Narrative Summary
+        ws['A13'] = "ANÁLISIS NARRATIVO IA"
+        ws['A13'].font = section_font
+        ws.merge_cells('A14:E14')
+        ws['A14'] = analisis.resumen_ejecutivo
+        ws['A14'].alignment = Alignment(wrap_text=True)
+        
+        # Sentiment distribution
+        ws['A16'] = "DISTRIBUCIÓN DE SENTIMIENTOS"
+        ws['A16'].font = section_font
+        row = 17
+        for sentimiento, cantidad in analisis.distribucion_sentimientos.items():
+            ws[f'A{row}'] = sentimiento
+            ws[f'B{row}'] = cantidad
+            ws[f'C{row}'] = f"{(cantidad/analisis.total_comentarios)*100:.1f}%"
+            row += 1
+        
+        # Top themes with relevance
+        ws[f'A{row + 1}'] = "TEMAS MÁS RELEVANTES"
+        ws[f'A{row + 1}'].font = section_font
+        row += 2
+        for tema, relevancia in list(analisis.temas_mas_relevantes.items())[:8]:
+            ws[f'A{row}'] = tema
+            ws[f'B{row}'] = f"{relevancia:.2f}"
+            ws[f'C{row}'] = "Alta" if relevancia > 0.7 else "Media" if relevancia > 0.4 else "Baja"
+            row += 1
+        
+        # Emotions with intensities
+        ws[f'A{row + 1}'] = "EMOCIONES PREDOMINANTES"
+        ws[f'A{row + 1}'].font = section_font  
+        row += 2
+        for emocion, intensidad in list(analisis.emociones_predominantes.items())[:6]:
+            ws[f'A{row}'] = emocion
+            ws[f'B{row}'] = f"{intensidad:.1f}"
+            ws[f'C{row}'] = "Intensa" if intensidad > 7 else "Moderada" if intensidad > 4 else "Leve"
+            row += 1
+        
+        # Pain points with severity
+        if analisis.dolores_mas_severos:
+            ws[f'A{row + 1}'] = "PUNTOS DE DOLOR CRÍTICOS"
+            ws[f'A{row + 1}'].font = section_font
+            row += 2
+            for dolor, severidad in list(analisis.dolores_mas_severos.items())[:5]:
+                ws[f'A{row}'] = dolor
+                ws[f'B{row}'] = f"{severidad:.1f}"
+                ws[f'C{row}'] = "Crítico" if severidad > 8 else "Alto" if severidad > 6 else "Medio"
+                row += 1
+        
+        # IA Recommendations
+        ws[f'A{row + 1}'] = "RECOMENDACIONES ACCIONABLES IA"
+        ws[f'A{row + 1}'].font = section_font
+        row += 2
+        for i, recomendacion in enumerate(analisis.recomendaciones_principales, 1):
+            ws[f'A{row}'] = f"Recomendación {i}"
+            ws.merge_cells(f'B{row}:E{row}')
+            ws[f'B{row}'] = recomendacion
+            ws[f'B{row}'].alignment = Alignment(wrap_text=True)
+            row += 1
+            
+    else:
+        # Fallback structure
+        ws['A5'] = "DATOS LIMITADOS DISPONIBLES"
+        ws['A6'] = f"Total comentarios: {getattr(resultado, 'total_comentarios', 0)}"
+    
+    # Adjust column widths
+    ws.column_dimensions['A'].width = 25
+    ws.column_dimensions['B'].width = 15
+    ws.column_dimensions['C'].width = 15
+    ws.column_dimensions['D'].width = 15
+    ws.column_dimensions['E'].width = 30
+    
+    # Save to bytes
+    buffer = io.BytesIO()
+    wb.save(buffer)
+    buffer.seek(0)
+    return buffer.getvalue()
+
+
+def _cleanup_previous_analysis():
+    """
+    Limpia análisis previos de session state para prevenir acumulación de memoria
+    """
+    cleanup_keys = [
+        'analysis_results',
+        'analysis_type'
+    ]
+    
+    for key in cleanup_keys:
+        if key in st.session_state:
+            # Clear large objects to free memory
+            del st.session_state[key]
+    
+    # Also cleanup repository cache if available
+    if 'contenedor' in st.session_state and st.session_state.contenedor:
+        try:
+            repo = st.session_state.contenedor.obtener_repositorio_comentarios()
+            if hasattr(repo, 'limpiar'):
+                repo.limpiar()
+        except Exception:
+            pass  # Ignore errors in cleanup
+    
+    # Force garbage collection
+    import gc
+    gc.collect()
+
 
 st.title("Subir y Analizar Comentarios")
 
@@ -234,183 +426,3 @@ if 'analysis_results' in st.session_state:
             )
     else:
         st.error(f"Error en análisis IA: {results.mensaje if hasattr(results, 'mensaje') else 'Error desconocido'}")
-
-
-def _run_analysis(uploaded_file, analysis_type):
-    """Run pure IA analysis using maestro system only"""
-    with st.spinner("Procesando con Inteligencia Artificial..."):
-        try:
-            # Pure IA analysis - no fallbacks
-            if 'caso_uso_maestro' not in st.session_state or not st.session_state.caso_uso_maestro:
-                st.error("Sistema IA no está disponible. Verifica configuración de OpenAI API key.")
-                return
-                
-            from src.application.use_cases.analizar_excel_maestro_caso_uso import ComandoAnalisisExcelMaestro
-            
-            comando = ComandoAnalisisExcelMaestro(
-                archivo_cargado=uploaded_file,
-                nombre_archivo=uploaded_file.name,
-                limpiar_repositorio=True
-            )
-            
-            resultado = st.session_state.caso_uso_maestro.ejecutar(comando)
-            
-            if resultado.es_exitoso():
-                # Memory management: cleanup previous analysis before storing new one
-                _cleanup_previous_analysis()
-                
-                st.session_state.analysis_results = resultado
-                st.session_state.analysis_type = "maestro_ia"
-                st.success("Análisis IA completado!")
-                st.balloons()
-                st.rerun()
-            else:
-                st.error(f"Error en análisis IA: {resultado.mensaje}")
-                
-        except ArchivoException as e:
-            st.error(f"Error procesando archivo: {str(e)}")
-        except IAException as e:
-            st.error(f"Error de servicio IA: {str(e)}")
-            st.info("Verifica que tu OpenAI API key esté configurada correctamente.")
-        except Exception as e:
-            st.error(f"Error inesperado: {str(e)}")
-            st.error("Este es un error no manejado. Por favor contacta soporte técnico.")
-
-
-def _create_professional_excel(resultado):
-    """Create comprehensive Excel export from IA analysis using real DTO structure"""
-    import io
-    from openpyxl import Workbook
-    from openpyxl.styles import Font, PatternFill, Alignment
-    
-    wb = Workbook()
-    ws = wb.active
-    ws.title = "Análisis IA Completo"
-    
-    # Styling
-    header_font = Font(bold=True, size=14)
-    section_font = Font(bold=True, size=12)
-    
-    # Header section
-    ws['A1'] = "Personal Paraguay - Análisis con Inteligencia Artificial"
-    ws['A1'].font = header_font
-    ws['A2'] = f"Fecha: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}"
-    ws['A3'] = "Método: AnalizadorMaestroIA + GPT-4"
-    
-    if hasattr(resultado, 'analisis_completo_ia') and resultado.analisis_completo_ia:
-        analisis = resultado.analisis_completo_ia
-        
-        # Executive Summary
-        ws['A5'] = "RESUMEN EJECUTIVO IA"
-        ws['A5'].font = section_font
-        ws['A6'] = f"Total comentarios analizados: {analisis.total_comentarios}"
-        ws['A7'] = f"Tendencia general: {analisis.tendencia_general}"
-        ws['A8'] = f"Confianza del análisis: {analisis.confianza_general:.1f}%"
-        ws['A9'] = f"Modelo IA utilizado: {analisis.modelo_utilizado}"
-        ws['A10'] = f"Tiempo de procesamiento: {analisis.tiempo_analisis:.1f}s"
-        ws['A11'] = f"Tokens consumidos: {analisis.tokens_utilizados:,}"
-        
-        # IA Narrative Summary
-        ws['A13'] = "ANÁLISIS NARRATIVO IA"
-        ws['A13'].font = section_font
-        ws.merge_cells('A14:E14')
-        ws['A14'] = analisis.resumen_ejecutivo
-        ws['A14'].alignment = Alignment(wrap_text=True)
-        
-        # Sentiment distribution
-        ws['A16'] = "DISTRIBUCIÓN DE SENTIMIENTOS"
-        ws['A16'].font = section_font
-        row = 17
-        for sentimiento, cantidad in analisis.distribucion_sentimientos.items():
-            ws[f'A{row}'] = sentimiento
-            ws[f'B{row}'] = cantidad
-            ws[f'C{row}'] = f"{(cantidad/analisis.total_comentarios)*100:.1f}%"
-            row += 1
-        
-        # Top themes with relevance
-        ws[f'A{row + 1}'] = "TEMAS MÁS RELEVANTES"
-        ws[f'A{row + 1}'].font = section_font
-        row += 2
-        for tema, relevancia in list(analisis.temas_mas_relevantes.items())[:8]:
-            ws[f'A{row}'] = tema
-            ws[f'B{row}'] = f"{relevancia:.2f}"
-            ws[f'C{row}'] = "Alta" if relevancia > 0.7 else "Media" if relevancia > 0.4 else "Baja"
-            row += 1
-        
-        # Emotions with intensities
-        ws[f'A{row + 1}'] = "EMOCIONES PREDOMINANTES"
-        ws[f'A{row + 1}'].font = section_font  
-        row += 2
-        for emocion, intensidad in list(analisis.emociones_predominantes.items())[:6]:
-            ws[f'A{row}'] = emocion
-            ws[f'B{row}'] = f"{intensidad:.1f}"
-            ws[f'C{row}'] = "Intensa" if intensidad > 7 else "Moderada" if intensidad > 4 else "Leve"
-            row += 1
-        
-        # Pain points with severity
-        if analisis.dolores_mas_severos:
-            ws[f'A{row + 1}'] = "PUNTOS DE DOLOR CRÍTICOS"
-            ws[f'A{row + 1}'].font = section_font
-            row += 2
-            for dolor, severidad in list(analisis.dolores_mas_severos.items())[:5]:
-                ws[f'A{row}'] = dolor
-                ws[f'B{row}'] = f"{severidad:.1f}"
-                ws[f'C{row}'] = "Crítico" if severidad > 8 else "Alto" if severidad > 6 else "Medio"
-                row += 1
-        
-        # IA Recommendations
-        ws[f'A{row + 1}'] = "RECOMENDACIONES ACCIONABLES IA"
-        ws[f'A{row + 1}'].font = section_font
-        row += 2
-        for i, recomendacion in enumerate(analisis.recomendaciones_principales, 1):
-            ws[f'A{row}'] = f"Recomendación {i}"
-            ws.merge_cells(f'B{row}:E{row}')
-            ws[f'B{row}'] = recomendacion
-            ws[f'B{row}'].alignment = Alignment(wrap_text=True)
-            row += 1
-            
-    else:
-        # Fallback structure
-        ws['A5'] = "DATOS LIMITADOS DISPONIBLES"
-        ws['A6'] = f"Total comentarios: {getattr(resultado, 'total_comentarios', 0)}"
-    
-    # Adjust column widths
-    ws.column_dimensions['A'].width = 25
-    ws.column_dimensions['B'].width = 15
-    ws.column_dimensions['C'].width = 15
-    ws.column_dimensions['D'].width = 15
-    ws.column_dimensions['E'].width = 30
-    
-    # Save to bytes
-    buffer = io.BytesIO()
-    wb.save(buffer)
-    buffer.seek(0)
-    return buffer.getvalue()
-
-
-def _cleanup_previous_analysis():
-    """
-    Limpia análisis previos de session state para prevenir acumulación de memoria
-    """
-    cleanup_keys = [
-        'analysis_results',
-        'analysis_type'
-    ]
-    
-    for key in cleanup_keys:
-        if key in st.session_state:
-            # Clear large objects to free memory
-            del st.session_state[key]
-    
-    # Also cleanup repository cache if available
-    if 'contenedor' in st.session_state and st.session_state.contenedor:
-        try:
-            repo = st.session_state.contenedor.obtener_repositorio_comentarios()
-            if hasattr(repo, 'limpiar'):
-                repo.limpiar()
-        except Exception:
-            pass  # Ignore errors in cleanup
-    
-    # Force garbage collection
-    import gc
-    gc.collect()

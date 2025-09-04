@@ -94,6 +94,15 @@ class ContenedorDependencias:
             logger.error(f"Error importando caso de uso maestro: {str(e)}")
             return None
     
+    def obtener_caso_uso_analisis(self):
+        """
+        Obtiene el caso de uso de análisis - Alias para mantener compatibilidad
+        con aplicacion_principal.py que espera este método
+        """
+        # Sistema refactorizado para usar solo IA maestro
+        # Este método es un alias para mantener compatibilidad hacia atrás
+        return self.obtener_caso_uso_maestro()
+    
     def _crear_servicio_sentimientos(self) -> ServicioAnalisisSentimientos:
         """
         Crea el servicio de sentimientos con los analizadores apropiados

@@ -12,7 +12,15 @@ current_dir = Path(__file__).parent.parent
 if str(current_dir) not in sys.path:
     sys.path.insert(0, str(current_dir))
 
-# CSS is loaded inline in main app - no external loading needed
+# Load enhanced CSS for glassmorphism effects
+try:
+    from src.presentation.streamlit.enhanced_css_loader import ensure_css_loaded, inject_page_css
+    ensure_css_loaded()
+    inject_page_css('main')  # Add main page specific styles
+    CSS_LOADED = True
+except ImportError:
+    # CSS will be loaded from main app
+    CSS_LOADED = False
 
 # Page content with styling support
 st.title("Personal Paraguay - Análisis de Comentarios")
