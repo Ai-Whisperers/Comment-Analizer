@@ -1,33 +1,44 @@
-# Problemas Resueltos - Transformación IA Pura
+# Problemas Resueltos - Sistema IA Personal Paraguay
 
-## 📋 Registro de Problemas y Soluciones
+## 📋 Registro de Issues y Soluciones del Sistema IA
 
-Este documento mantiene un registro detallado de todos los problemas identificados durante la transformación a sistema IA puro y sus soluciones implementadas.
+Este documento mantiene un registro detallado de todos los problemas identificados y resueltos durante la implementación del sistema IA puro, incluyendo migración a Clean Architecture y eliminación de fallbacks.
+
+**Versión**: 3.0.0-ia-pure  
+**Fecha última actualización**: 4 de Septiembre, 2025
 
 ---
 
-## 🚨 PROBLEMA CRÍTICO 1: Error E2E en Production
+## 🚨 PROBLEMA CRÍTICO 1: Sistema IA No Inicializado
 
-### **Error Original**
+### **🔍 Error en Producción**
 ```
-File "/mount/src/comment-analizer/streamlit_app.py", line 144, in <module>
-    pg.run()
-File ".../streamlit/navigation/page.py", line 300, in run
-    exec(code, module.__dict__)
-File "/mount/src/comment-analizer/pages/2_Subir.py", line 78, in <module>
-    _run_analysis(uploaded_file, "ai")
+Error: "Sistema IA no inicializado. Recarga la página."
+File: pages/2_Subir.py, línea 94
+Impacto: Aplicación no funcional sin OpenAI
 ```
 
-### **Causa Raíz Identificada**
-- **DI Container incompleto**: `obtener_caso_uso_maestro()` no existía
-- **Sistema híbrido confuso**: Múltiples sistemas compitiendo
-- **Value Objects inconsistentes**: `SentimientoCategoria` no definida
+### **🔧 Causa Raíz Identificada**
+- **DI Container incompleto**: `obtener_caso_uso_maestro()` no implementado
+- **Inicialización IA fallida**: OpenAI client no configurado en dependency injection
+- **System state inconsistente**: `caso_uso_maestro` no disponible en session_state
+- **API key validation**: Fail-fast no implementado correctamente
 
-### **✅ SOLUCIÓN IMPLEMENTADA**
+### **✅ SOLUCIÓN COMPLETADA**
 
-#### **A. DI Container Completado**
+#### **A. Contenedor IA Completado**
 ```python
-# AGREGADO a ContenedorDependencias:
+# IMPLEMENTADO en ContenedorDependencias:
+def obtener_caso_uso_maestro(self) -> AnalizarExcelMaestroCasoUso:
+    return AnalizarExcelMaestroCasoUso(
+        analizador_maestro=self.obtener_analizador_maestro(),
+        repositorio=self.obtener_repositorio_comentarios()
+    )
+
+def obtener_analizador_maestro(self) -> AnalizadorMaestroIA:
+    return AnalizadorMaestroIA(
+        cliente_openai=self._configurar_cliente_openai()
+    )
 def obtener_caso_uso_maestro(self) -> AnalizarExcelMaestroCasoUso:
     return self._obtener_singleton('caso_uso_maestro',
         lambda: AnalizarExcelMaestroCasoUso(

@@ -1,37 +1,47 @@
-# Guía de Usuario - Analizador de Comentarios IA
+# Guía de Usuario - Sistema IA Personal Paraguay
 
-## 📱 Introducción
+## 📱 Introducción al Sistema IA
 
-Bienvenido al **Personal Paraguay Analizador de Comentarios**, una aplicación de **Inteligencia Artificial avanzada** que analiza automáticamente comentarios de clientes usando GPT-4 de OpenAI.
+Bienvenido al **Personal Paraguay Analizador de Comentarios IA**, un sistema de **Inteligencia Artificial pura** que utiliza **GPT-4 de OpenAI** para analizar comentarios de clientes con precisión enterprise.
 
-### 🎯 **¿Qué hace esta aplicación?**
-- **Analiza sentimientos** (positivo, negativo, neutral) con precisión superior
-- **Identifica emociones específicas** (frustración, satisfacción, enojo, etc.) con intensidades
-- **Detecta temas principales** automáticamente (servicio, precio, calidad, etc.)
-- **Encuentra puntos de dolor** críticos que requieren atención inmediata
-- **Genera recomendaciones** accionables para mejorar tu negocio
-- **Crea reportes Excel** profesionales automáticamente
+### 🤖 **¿Qué hace el Sistema IA?**
+- **🧠 Análisis IA Completo**: GPT-4 procesa todos los comentarios en una sola llamada integral
+- **😊 Emociones Granulares**: Detecta 20+ emociones con intensidades precisas (0-10)
+- **🏷️ Temas Automáticos**: Identifica temas relevantes con scoring de importancia
+- **⚠️ Puntos de Dolor**: Encuentra problemas críticos con severidad automática
+- **💡 Recomendaciones IA**: Estrategias específicas generadas por GPT-4
+- **📊 Resumen Ejecutivo**: Análisis narrativo comprehensivo
+- **📈 Export IA**: Reportes Excel profesionales con todos los insights
 
-### 🏢 **Ideal para:**
-- **Telecomunicaciones**: Análisis de satisfacción con internet y servicios
-- **Retail**: Comentarios sobre productos y experiencia de compra  
-- **Servicios**: Feedback sobre atención al cliente
-- **Cualquier negocio** que reciba comentarios de clientes
+### 🏢 **Optimizado para Empresas Paraguayas**:
+- **Telecomunicaciones**: Personal, Tigo, Copaco - análisis de servicios
+- **Retail & E-commerce**: Experiencia cliente y productos  
+- **Servicios Financieros**: Satisfacción y pain points
+- **Gobierno**: Feedback ciudadano y servicios públicos
+- **Cualquier industria** con comentarios de clientes
 
 ---
 
-## 🚀 Cómo Usar la Aplicación
+## 🚀 Cómo Usar el Sistema IA
 
-### **Paso 1: Acceder a la Aplicación**
-1. Abre tu navegador web
-2. Ve a la URL de la aplicación
-3. La página principal se cargará automáticamente
+### **Paso 1: Acceso y Verificación IA**
+1. **Navegar**: Abre la aplicación web en tu navegador
+2. **Estado IA**: Verifica que aparezca "✅ Sistema IA Maestro: Activo y Funcional"  
+3. **Configuración**: Debe mostrar "🤖 GPT-4 Listo" en métricas
+4. **Versión**: Confirma "3.0.0 IA-Pure" en el dashboard
 
-### **Paso 2: Verificar Estado del Sistema**
-En la **página principal** verás:
-- **Estado del sistema**: Debe mostrar "Sistema activo"
-- **OpenAI**: Debe mostrar "Configurado" 
-- **Comentarios**: Número de análisis en memoria
+### **Paso 2: Verificación Completa del Sistema IA**
+En la **página principal** verás el estado completo:
+
+**✅ Indicadores de Sistema Saludable**:
+- "✅ Sistema IA Maestro: Activo y Funcional" 
+- "🤖 GPT-4 Listo" en métricas
+- "🧠 Sistema configurado para análisis IA avanzado con GPT-4"
+- Versión "3.0.0 IA-Pure"
+
+**❌ Indicadores de Problemas**:
+- "❌ Sistema IA no inicializado" → Problema con OpenAI
+- "⚠️ Sistema IA en inicialización..." → Configuración pendiente
 
 Si hay problemas, contacta al administrador.
 

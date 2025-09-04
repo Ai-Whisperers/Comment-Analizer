@@ -1,32 +1,35 @@
-# Deployment en Streamlit Cloud - Sistema IA Puro
+# Deploy en Streamlit Cloud - Sistema IA Personal Paraguay
 
-## 📋 Resumen de Deployment
+## 📋 Resumen de Deployment IA
 
-Esta guía cubre el deployment completo del **Analizador de Comentarios IA** en Streamlit Cloud. El sistema está optimizado para **análisis IA puro** y requiere configuración específica de OpenAI.
+Esta guía cubre el deployment completo del **Personal Paraguay Analizador de Comentarios IA** en Streamlit Cloud. El sistema es **IA-first puro** y requiere configuración específica de OpenAI GPT-4.
 
----
-
-## 🔧 Prerequisitos
-
-### **Cuentas Requeridas**
-- ✅ **Cuenta GitHub** con acceso al repositorio
-- ✅ **Cuenta Streamlit Cloud** (streamlit.io/cloud)  
-- ✅ **Cuenta OpenAI** con API key activa
-- ✅ **Créditos OpenAI** suficientes para GPT-4
-
-### **Configuración Local de Desarrollo**
-- **Python 3.12** (recomendado, soporta 3.9-3.13)
-- **Git** configurado y autenticado
-- **OpenAI API key** para testing local
+**⚠️ IMPORTANTE**: Este sistema **NO funciona sin OpenAI API key**. Es obligatorio configurar antes del deploy.
 
 ---
 
-## 🚀 Proceso de Deployment
+## 🔧 Prerequisitos Sistema IA
 
-### **Paso 1: Preparación del Repositorio**
+### **Cuentas Empresariales Requeridas**
+- ✅ **GitHub Account** con repositorio Comment-Analizer
+- ✅ **Streamlit Cloud Account** (streamlit.io/cloud)  
+- ✅ **OpenAI Developer Account** con billing activo
+- ✅ **Créditos OpenAI** para GPT-4 ($20+ recomendado)
 
-#### **Verificar Archivos Críticos**
-Asegúrate de que estos archivos estén en el repositorio:
+### **Verificación Pre-Deploy**
+- ✅ **Python 3.12** compatible (range 3.9-3.13)
+- ✅ **OpenAI API Key** válida y probada
+- ✅ **Git repository** con código IA actual
+- ✅ **requirements.txt** con openai>=1.50.0
+
+---
+
+## 🚀 Proceso de Deployment IA
+
+### **Paso 1: Preparación Repositorio IA**
+
+#### **🔍 Verificar Archivos Críticos para IA**
+Confirmar que estos archivos están presentes y actualizados:
 ```
 Comment-Analizer/
 ├── streamlit_app.py          # ✅ Entry point

@@ -1,43 +1,47 @@
-# Guía de Troubleshooting - Sistema IA Puro
+# Solución de Problemas - Sistema IA Personal Paraguay
 
-## 🚨 Problemas Críticos y Soluciones
+## 🚨 Problemas Críticos Sistema IA y Soluciones
 
-### **Error: "OpenAI API key es requerida para esta aplicación IA"**
+### **🔴 CRÍTICO: "OpenAI API key es requerida para esta aplicación IA"**
 
-#### **Síntoma**
-- La aplicación se detiene inmediatamente al cargar
-- Mensaje en rojo sobre API key
-- No se puede acceder a ninguna funcionalidad
+#### **🔍 Síntoma**
+- La aplicación se detiene completamente al cargar
+- Error rojo prominente sobre API key faltante
+- Mensaje: "Esta aplicación requiere sistema IA funcional"
+- No hay acceso a ninguna funcionalidad
 
-#### **Causa Raíz**  
-- OpenAI API key no está configurada correctamente
-- Variable de entorno no está disponible  
-- Streamlit secrets mal configurado
+#### **🔧 Causa Raíz**  
+- Sistema IA puro requiere OpenAI obligatorio
+- API key no configurada en .env o Streamlit secrets
+- Variable de entorno OPENAI_API_KEY no disponible
+- Key inválida o expirada
 
-#### **Solución - Desarrollo Local**
+#### **✅ Solución - Desarrollo Local**
 ```bash
-# Editar archivo .env:
-OPENAI_API_KEY=tu-api-key-real-aqui
+# 1. Crear/editar archivo .env en directorio raíz:
+echo "OPENAI_API_KEY=sk-proj-tu-api-key-real" > .env
 
-# Verificar que .env está en directorio raíz
-ls -la .env
+# 2. Verificar archivo creado correctamente
+cat .env
 
-# Reiniciar aplicación:
+# 3. Reiniciar aplicación completamente:
 streamlit run streamlit_app.py
 ```
 
-#### **Solución - Streamlit Cloud**
-1. Ve a **Streamlit Cloud dashboard**
-2. Selecciona tu app → **Settings** → **Secrets**
-3. Agrega:
+#### **✅ Solución - Streamlit Cloud**
+1. **Dashboard**: Ir a Streamlit Cloud → tu aplicación
+2. **Secrets**: Settings → Secrets → Advanced settings  
+3. **Configurar**:
 ```toml
-OPENAI_API_KEY = "tu-api-key-real-aqui"
+# Agregar en secrets:
+OPENAI_API_KEY = "sk-proj-tu-api-key-openai"
 ```
-4. **Redeploy** la aplicación
+4. **Redeploy**: Save → Reboot app
 
-#### **Verificación**
-- Página principal debe mostrar: **"OpenAI: Configurado"**
-- No debe haber mensajes de error al cargar
+#### **🔍 Verificación Exitosa**
+- ✅ Página principal: "✅ Sistema IA Maestro: Activo y Funcional"
+- ✅ Métricas: "🤖 GPT-4 Listo" visible  
+- ✅ Info: "🧠 Sistema configurado para análisis IA avanzado"
 
 ---
 

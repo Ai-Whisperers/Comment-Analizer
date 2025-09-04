@@ -8,26 +8,31 @@ El **Personal Paraguay Analizador de Comentarios** implementa **Clean Architectu
 
 ## 📊 Estructura por Capas
 
-### **🎨 PRESENTATION LAYER - UI Mecánica**
+### **🎨 PRESENTATION LAYER - UI Mecánica IA**
 ```
-streamlit_app.py                    # Entry point + IA initialization
-pages/1_Página_Principal.py         # Landing page IA-focused
-pages/2_Subir.py                    # Upload + mechanical IA display
+streamlit_app.py                    # Entry point + sistema IA initialization
+pages/1_Página_Principal.py         # Dashboard IA status + información
+pages/2_Subir.py                    # Upload + análisis IA + resultados
+static/styles.css                   # CSS glassmorphism preservado
 ```
 
 #### **Responsabilidades ÚNICAS:**
-- ✅ **Inicialización**: Sistema IA + validación API key
-- ✅ **Presentación mecánica**: AnalisisCompletoIA → Streamlit components  
-- ✅ **User interaction**: Upload files + trigger IA analysis
-- ❌ **NO business logic**: Zero análisis o procesamiento de datos
+- ✅ **Inicialización IA**: ContenedorDependencias + AnalizadorMaestroIA
+- ✅ **Validación OpenAI**: API key obligatoria + fail-fast
+- ✅ **Presentación mecánica**: AnalisisCompletoIA → UI components  
+- ✅ **User interaction**: Upload + trigger IA + download Excel
+- ❌ **NO business logic**: Cero análisis, cero procesamiento de datos
 
-#### **Principio SRP Cumplido:**
+#### **Principio SRP Cumplido (IA-Pure):**
 ```python
 # streamlit_app.py - Single Responsibility:
-"Initialize IA-pure system and validate OpenAI requirements"
+"Initialize sistema IA puro y validar requerimientos OpenAI obligatorios"
 
 # pages/2_Subir.py - Single Responsibility: 
-"Present file upload UI and display IA analysis results mechanically"
+"Presentar UI upload y mostrar resultados AnalisisCompletoIA mecánicamente"
+
+# pages/1_Página_Principal.py - Single Responsibility:
+"Mostrar dashboard estado IA y métricas sistema sin lógica de negocio"
 ```
 
 ### **⚙️ APPLICATION LAYER - Orquestación IA**
