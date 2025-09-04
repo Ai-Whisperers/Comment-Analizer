@@ -297,10 +297,18 @@ if uploaded_file:
     # Analysis section
     st.markdown("### Análisis")
     
-    # Check if IA system is ready (using correct session state key)
-    if 'caso_uso_maestro' not in st.session_state or not st.session_state.caso_uso_maestro:
-        st.error("Sistema IA no inicializado. Recarga la página o verifica configuración OpenAI.")
-        st.stop()
+    # Check if IA system is ready using validator for consistency
+    try:
+        from src.presentation.streamlit.session_validator import is_ia_system_ready
+        if not is_ia_system_ready():
+            st.error("Sistema IA no inicializado. Recarga la página o verifica configuración OpenAI.")
+            st.info("💡 Asegúrate de que la API key de OpenAI esté configurada correctamente.")
+            st.stop()
+    except ImportError:
+        # Fallback to direct check if validator not available
+        if 'caso_uso_maestro' not in st.session_state or not st.session_state.caso_uso_maestro:
+            st.error("Sistema IA no inicializado. Recarga la página o verifica configuración OpenAI.")
+            st.stop()
     
     # IA Analysis (single button - pure IA app)
     if st.button("Analizar con Inteligencia Artificial", type="primary", width="stretch"):
