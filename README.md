@@ -32,23 +32,30 @@ Sistema profesional de análisis de sentimientos y detección de patrones para c
 
 ## 🏗️ **ARQUITECTURA DEL SISTEMA**
 
-### **Nueva Estructura Multi-Página**:
+### **Estructura Multi-Página Actualizada**:
 ```
 Comment-Analizer/
-├── streamlit_app.py           # Entrada principal y navegación
-├── pages/                     # Interfaz de usuario modular
-│   ├── upload.py             # Página de carga de archivos
-│   ├── analyze.py            # Motor de procesamiento
-│   └── results.py            # Dashboard de resultados
-├── shared/                    # Lógica de negocio compartida
-│   ├── business/             # Inteligencia del sistema
-│   │   ├── analysis_engine.py    # 12 funciones de análisis IA
-│   │   └── file_processor.py     # Procesamiento de archivos
-│   └── styling/              # Sistema Web3 preservado
-│       ├── theme_manager_full.py # 4 temas profesionales
-│       └── ui_components.py      # 22 componentes sofisticados
-└── src/                       # Sistema legacy (preservado)
-    └── main_old_disabled.py  # Sistema anterior desactivado
+├── streamlit_app.py               # Entrada principal con navegación
+├── pages/                         # Interfaz de usuario
+│   ├── 1_Página_Principal.py     # Landing page con guía
+│   └── 2_Subir.py               # Upload, análisis y resultados
+├── shared/                        # Lógica de negocio compartida
+│   ├── business/                 # Core business logic
+│   │   ├── analysis_engine.py   # Motor de análisis de sentimientos
+│   │   ├── excel_generator.py   # Generador de reportes Excel
+│   │   └── file_processor.py    # Procesador de archivos
+│   ├── styling/                  # Sistema glassmorphism Web3
+│   │   ├── theme_manager_full.py # Temas profesionales
+│   │   ├── ui_components.py     # Componentes UI sofisticados
+│   │   └── modular_css.py       # CSS modular
+│   └── utils/                    # Utilidades compartidas
+│       └── memory_monitor.py    # Monitor de memoria
+└── src/                          # AI Pipeline y configuración
+    ├── ai_analysis_adapter.py   # Adaptador principal IA
+    ├── config.py                # Configuración del sistema
+    ├── api/                     # Clientes API robustos
+    ├── sentiment_analysis/      # Análisis de sentimientos IA
+    └── utils/                   # Utilidades del sistema
 ```
 
 ### **Tecnologías Core**:

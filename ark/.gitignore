@@ -1,0 +1,119 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Testing
+.pytest_cache/
+.coverage
+htmlcov/
+.tox/
+.nox/
+.hypothesis/
+
+# Virtual environments
+venv/
+env/
+ENV/
+.venv
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Environment Variables - CRITICAL: Never commit these!
+.env
+.env.local
+.env.development
+.env.development.local
+.env.test
+.env.test.local
+.env.production
+.env.production.local
+.env.staging
+.env.build
+*.env
+
+# API Keys and Secrets
+secrets.toml
+.streamlit/secrets.toml
+config/secrets.json
+*.key
+*.pem
+*.cert
+
+# Project specific
+data/cache/*.db
+data/monitoring/*.db
+data/raw/*
+!data/raw/.gitkeep
+data/processed/*
+!data/processed/.gitkeep
+client_input/*
+!client_input/.gitkeep
+!client_input/README.md
+outputs/exports/*
+!outputs/exports/.gitkeep
+outputs/reports/*
+!outputs/reports/.gitkeep
+outputs/visualizations/*
+!outputs/visualizations/.gitkeep
+*.log
+
+# Streamlit
+.streamlit/
+!.streamlit/config.toml
+
+# Archives and backups
+archived_modules/
+*.zip
+*.tar
+*.gz
+*.bak
+*.backup
+
+# Coverage reports
+coverage.xml
+*.cover
+
+# Local reports and analysis - Generated documentation
+local-reports/
+!local-reports/.gitkeep
+!local-reports/README.md
+
+# Cloud provider configs
+.aws/
+.gcp/
+.azure/
+terraform.tfstate
+terraform.tfstate.backup
+.terraform/
+
+# Docker
+docker-compose.override.yml
+.dockerignore.mypy_cache/
+.mypy_cache/

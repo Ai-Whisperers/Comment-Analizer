@@ -1,3 +1,0 @@
-"""
-Common interface definitions package
-""" 
