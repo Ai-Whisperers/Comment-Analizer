@@ -38,12 +38,4 @@ developmentMode = false
 showWarningOnDirectExecution = false
 suppressDeprecationWarnings = true
 
-[logger]
-# Modern logging configuration
-level = "warning"
-enableLogging = false
-
-[runner]
-# Enhanced runner configuration
-fastReruns = true
-enforcedSerializability = false
+# Configuration cleaned - only valid Streamlit options

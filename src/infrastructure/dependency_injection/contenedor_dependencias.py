@@ -86,9 +86,9 @@ class ContenedorDependencias:
             from ...application.use_cases.analizar_excel_maestro_caso_uso import AnalizarExcelMaestroCasoUso
             return self._obtener_singleton('caso_uso_maestro',
                                          lambda: AnalizarExcelMaestroCasoUso(
-                                             analizador_ia=self.obtener_analizador_maestro_ia(),
-                                             repositorio=self.obtener_repositorio_comentarios(),
-                                             lector_archivos=self.obtener_lector_archivos()
+                                             repositorio_comentarios=self.obtener_repositorio_comentarios(),
+                                             lector_archivos=self.obtener_lector_archivos(),
+                                             analizador_maestro=self.obtener_analizador_maestro_ia()
                                          ))
         except ImportError as e:
             logger.error(f"Error importando caso de uso maestro: {str(e)}")
