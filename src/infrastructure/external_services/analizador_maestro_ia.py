@@ -120,7 +120,7 @@ class AnalizadorMaestroIA:
             prompt_completo = self._generar_prompt_maestro(comentarios_raw)
             
             # Hacer llamada única a OpenAI
-            respuesta_raw = self._hacer_llamada_api_maestra(prompt_completo)
+            respuesta_raw = self._hacer_llamada_api_maestra(prompt_completo, len(comentarios_raw))
             
             # Procesar respuesta y crear DTO
             tiempo_transcurrido = time.time() - inicio_tiempo
@@ -218,9 +218,13 @@ INSTRUCCIONES CRÍTICAS:
 6. TELECOMUNICACIONES: Enfocarse en temas específicos del sector (velocidad, cobertura, planes, servicio técnico, etc.)
 """
     
-    def _hacer_llamada_api_maestra(self, prompt: str) -> Dict[str, Any]:
+    def _hacer_llamada_api_maestra(self, prompt: str, num_comentarios: int) -> Dict[str, Any]:
         """
         Hace la llamada única y comprensiva a OpenAI con configuración determinista
+        
+        Args:
+            prompt: El prompt maestro generado
+            num_comentarios: Número de comentarios para calcular tokens dinámicamente
         """
         try:
             logger.debug(f"🚀 Enviando prompt maestro (temp={self.temperatura}, seed={self.seed})")
@@ -239,7 +243,7 @@ INSTRUCCIONES CRÍTICAS:
                 ],
                 temperature=self.temperatura,  # ← DETERMINISTA
                 seed=self.seed,                # ← REPRODUCIBLE
-                max_tokens=self._calcular_tokens_dinamicos(len(comentarios_raw)),
+                max_tokens=self._calcular_tokens_dinamicos(num_comentarios),
                 response_format={"type": "json_object"}  # ← Forzar JSON válido
             )
             

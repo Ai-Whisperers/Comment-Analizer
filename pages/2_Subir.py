@@ -46,9 +46,17 @@ def _run_analysis(uploaded_file, analysis_type):
     """Run pure IA analysis using maestro system only"""
     with st.spinner("Procesando con Inteligencia Artificial..."):
         try:
-            # Pure IA analysis - no fallbacks
-            if 'caso_uso_maestro' not in st.session_state or not st.session_state.caso_uso_maestro:
+            # Import session validator for robust checking
+            from src.presentation.streamlit.session_validator import get_caso_uso_maestro, is_ia_system_ready
+            
+            # Pure IA analysis - validate system is ready
+            if not is_ia_system_ready():
                 st.error("Sistema IA no está disponible. Verifica configuración de OpenAI API key.")
+                return
+            
+            caso_uso_maestro = get_caso_uso_maestro()
+            if not caso_uso_maestro:
+                st.error("No se pudo obtener el sistema de análisis IA")
                 return
                 
             from src.application.use_cases.analizar_excel_maestro_caso_uso import ComandoAnalisisExcelMaestro
@@ -59,7 +67,7 @@ def _run_analysis(uploaded_file, analysis_type):
                 limpiar_repositorio=True
             )
             
-            resultado = st.session_state.caso_uso_maestro.ejecutar(comando)
+            resultado = caso_uso_maestro.ejecutar(comando)
             
             if resultado.es_exitoso():
                 # Memory management: cleanup previous analysis before storing new one
@@ -406,7 +414,7 @@ if 'analysis_results' in st.session_state:
                             
                             # Show IA-detected urgency and recommendations
                             if hasattr(comentario, 'puntos_dolor') and comentario.puntos_dolor:
-                                dolores_texto = ", ".join([p.descripcion for p in comentario.puntos_dolor[:2]])
+                                dolores_texto = ", ".join([p.contexto_especifico for p in comentario.puntos_dolor[:2] if p.contexto_especifico])
                                 st.caption(f"🎯 Puntos de dolor IA: {dolores_texto}")
                             
                             if hasattr(comentario, 'recomendaciones') and comentario.recomendaciones:
