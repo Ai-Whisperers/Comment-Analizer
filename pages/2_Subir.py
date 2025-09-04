@@ -83,7 +83,7 @@ if uploaded_file:
             
             # Data preview
             st.markdown("**Primeras 5 filas:**")
-            st.dataframe(df, use_container_width=True)
+            st.dataframe(df, width="stretch")
             
             # Column analysis
             if comment_col:
@@ -97,13 +97,13 @@ if uploaded_file:
     # Analysis section
     st.markdown("### Análisis")
     
-    # Check if system is ready
-    if 'analizador_app' not in st.session_state:
-        st.error("Sistema no inicializado. Recarga la página.")
+    # Check if IA system is ready (using correct session state key)
+    if 'caso_uso_maestro' not in st.session_state or not st.session_state.caso_uso_maestro:
+        st.error("Sistema IA no inicializado. Recarga la página o verifica configuración OpenAI.")
         st.stop()
     
     # IA Analysis (single button - pure IA app)
-    if st.button("Analizar con Inteligencia Artificial", type="primary", use_container_width=True):
+    if st.button("Analizar con Inteligencia Artificial", type="primary", width="stretch"):
         _run_analysis(uploaded_file, "ai")
 
 # Results section
