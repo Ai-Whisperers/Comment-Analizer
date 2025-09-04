@@ -69,12 +69,23 @@ config/secrets.json
 # Configuration files that may contain secrets
 config_template.txt
 *.toml
-pyproject.toml
 !requirements.toml  # Allow requirements if needed
+!pyproject.toml     # Allow Python project config if needed  
+!static/css/*.toml  # Allow CSS config files
 setup.toml
 deployment.toml
 production.toml
 staging.toml
+config.toml
+app.toml
+secrets.toml
+
+# Additional environment formats
+*.env.*
+.env.example
+.env.template
+config/*.env
+config/*.toml
 
 # Project specific
 data/cache/*.db
