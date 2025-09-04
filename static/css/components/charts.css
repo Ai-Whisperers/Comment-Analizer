@@ -1,0 +1,396 @@
+/*
+ * Charts & Data Visualization Styling
+ * Plotly, matplotlib, and other chart components
+ */
+
+/* ================================
+   Plotly Chart Container
+   ================================ */
+
+.js-plotly-plot {
+  background: var(--glass-bg) !important;
+  backdrop-filter: blur(var(--glass-blur)) !important;
+  border: 1px solid var(--glass-border) !important;
+  border-radius: var(--radius-xl) !important;
+  padding: var(--space-4) !important;
+  box-shadow: var(--shadow-sm);
+  transition: all var(--duration-300) var(--ease-out);
+  margin: var(--space-4) 0;
+  position: relative;
+  overflow: hidden;
+}
+
+.js-plotly-plot::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, var(--primary-purple), var(--secondary-cyan));
+  opacity: 0;
+  transition: opacity var(--duration-300) var(--ease-out);
+}
+
+.js-plotly-plot:hover {
+  border-color: var(--glass-border-hover) !important;
+  box-shadow: var(--shadow-lg);
+  transform: translateY(-2px);
+}
+
+.js-plotly-plot:hover::before {
+  opacity: 1;
+}
+
+/* Plotly toolbar styling */
+.modebar {
+  background: var(--glass-bg) !important;
+  backdrop-filter: blur(10px) !important;
+  border-radius: var(--radius-md) !important;
+  border: 1px solid var(--glass-border) !important;
+  padding: var(--space-1) !important;
+}
+
+.modebar-btn {
+  background: transparent !important;
+  border: none !important;
+  color: var(--text-tertiary) !important;
+  border-radius: var(--radius-sm) !important;
+  padding: var(--space-1) !important;
+  margin: var(--space-0-5) !important;
+  transition: all var(--duration-200) var(--ease-out);
+}
+
+.modebar-btn:hover {
+  background: var(--glass-bg-hover) !important;
+  color: var(--text-primary) !important;
+}
+
+.modebar-btn--active,
+.modebar-btn.active {
+  background: var(--primary-purple) !important;
+  color: white !important;
+}
+
+/* ================================
+   Chart Title and Labels
+   ================================ */
+
+.gtitle {
+  fill: var(--text-primary) !important;
+  font-family: var(--font-primary) !important;
+  font-weight: var(--font-weight-semibold) !important;
+  font-size: var(--size-lg) !important;
+}
+
+.xtitle,
+.ytitle {
+  fill: var(--text-secondary) !important;
+  font-family: var(--font-primary) !important;
+  font-weight: var(--font-weight-medium) !important;
+  font-size: var(--size-base) !important;
+}
+
+/* Axis text */
+.xtick text,
+.ytick text {
+  fill: var(--text-tertiary) !important;
+  font-family: var(--font-primary) !important;
+  font-size: var(--size-sm) !important;
+}
+
+/* Grid lines */
+.xgrid path,
+.ygrid path {
+  stroke: var(--glass-border) !important;
+  stroke-opacity: 0.5 !important;
+}
+
+/* ================================
+   Chart Types Specific Styling
+   ================================ */
+
+/* Bar charts */
+.bars .bar {
+  transition: all var(--duration-200) var(--ease-out);
+}
+
+.bars .bar:hover {
+  opacity: 0.8;
+  stroke: var(--primary-purple-light);
+  stroke-width: 2px;
+}
+
+/* Line charts */
+.scatterlayer .trace {
+  transition: all var(--duration-200) var(--ease-out);
+}
+
+.scatterlayer .point {
+  transition: all var(--duration-200) var(--ease-out);
+}
+
+.scatterlayer .point:hover {
+  r: 6 !important;
+  stroke-width: 2px !important;
+}
+
+/* Pie charts */
+.pielayer .trace {
+  transition: all var(--duration-200) var(--ease-out);
+}
+
+.pielayer .slice {
+  transition: all var(--duration-200) var(--ease-out);
+}
+
+.pielayer .slice:hover {
+  transform: scale(1.05);
+  filter: brightness(1.1);
+}
+
+/* ================================
+   Legend Styling
+   ================================ */
+
+.legend {
+  font-family: var(--font-primary) !important;
+}
+
+.legend .traces .legendtoggle {
+  cursor: pointer !important;
+}
+
+.legend .traces text {
+  fill: var(--text-secondary) !important;
+  font-size: var(--size-sm) !important;
+  transition: fill var(--duration-200) var(--ease-out);
+}
+
+.legend .traces:hover text {
+  fill: var(--text-primary) !important;
+}
+
+/* ================================
+   Tooltip Styling
+   ================================ */
+
+.hovertext {
+  background: var(--glass-bg) !important;
+  backdrop-filter: blur(var(--glass-blur)) !important;
+  border: 1px solid var(--glass-border) !important;
+  border-radius: var(--radius-md) !important;
+  color: var(--text-primary) !important;
+  font-family: var(--font-primary) !important;
+  font-size: var(--size-sm) !important;
+  padding: var(--space-2) var(--space-3) !important;
+  box-shadow: var(--shadow-lg);
+}
+
+.hovertext path {
+  fill: var(--glass-bg) !important;
+  stroke: var(--glass-border) !important;
+}
+
+/* ================================
+   DataFrame & Table Styling
+   ================================ */
+
+.stDataFrame {
+  background: var(--glass-bg);
+  backdrop-filter: blur(var(--glass-blur));
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  margin: var(--space-4) 0;
+  box-shadow: var(--shadow-sm);
+  transition: all var(--duration-300) var(--ease-out);
+}
+
+.stDataFrame:hover {
+  border-color: var(--glass-border-hover);
+  box-shadow: var(--shadow-md);
+}
+
+.stDataFrame table {
+  width: 100% !important;
+  border-collapse: collapse;
+  font-family: var(--font-primary);
+}
+
+.stDataFrame th {
+  background: var(--glass-bg-hover) !important;
+  color: var(--text-primary) !important;
+  font-weight: var(--font-weight-semibold) !important;
+  font-size: var(--size-sm) !important;
+  padding: var(--space-3) var(--space-4) !important;
+  border-bottom: 2px solid var(--glass-border) !important;
+  text-align: left;
+  position: sticky;
+  top: 0;
+  z-index: var(--z-10);
+}
+
+.stDataFrame td {
+  background: rgba(255, 255, 255, 0.02) !important;
+  color: var(--text-secondary) !important;
+  font-size: var(--size-sm) !important;
+  padding: var(--space-3) var(--space-4) !important;
+  border-bottom: 1px solid var(--glass-border) !important;
+  transition: all var(--duration-200) var(--ease-out);
+}
+
+.stDataFrame tr:hover td {
+  background: rgba(139, 92, 246, 0.05) !important;
+  color: var(--text-primary) !important;
+}
+
+.stDataFrame tr:nth-child(even) td {
+  background: rgba(255, 255, 255, 0.01) !important;
+}
+
+/* ================================
+   Progress Bars & Metrics
+   ================================ */
+
+.stProgress {
+  background: var(--glass-bg);
+  border-radius: var(--radius-full);
+  overflow: hidden;
+  border: 1px solid var(--glass-border);
+  box-shadow: var(--shadow-inner);
+}
+
+.stProgress > div > div {
+  background: var(--glass-bg) !important;
+  border-radius: var(--radius-full) !important;
+  backdrop-filter: blur(10px);
+}
+
+.stProgress > div > div > div {
+  background: linear-gradient(90deg, var(--primary-purple), var(--secondary-cyan)) !important;
+  border-radius: var(--radius-full) !important;
+  box-shadow: var(--shadow-glow);
+  position: relative;
+  overflow: hidden;
+}
+
+.stProgress > div > div > div::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(45deg, 
+    transparent 25%, 
+    rgba(255, 255, 255, 0.1) 25%, 
+    rgba(255, 255, 255, 0.1) 50%, 
+    transparent 50%, 
+    transparent 75%, 
+    rgba(255, 255, 255, 0.1) 75%);
+  background-size: 20px 20px;
+  animation: progress-stripe 1s linear infinite;
+}
+
+@keyframes progress-stripe {
+  0% { background-position: 0 0; }
+  100% { background-position: 20px 0; }
+}
+
+/* ================================
+   Custom Chart Containers
+   ================================ */
+
+.chart-container {
+  background: var(--glass-bg);
+  backdrop-filter: blur(var(--glass-blur));
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-xl);
+  padding: var(--space-6);
+  margin: var(--space-4) 0;
+  transition: all var(--duration-300) var(--ease-out);
+  position: relative;
+}
+
+.chart-container:hover {
+  border-color: var(--glass-border-hover);
+  box-shadow: var(--shadow-lg);
+  transform: translateY(-2px);
+}
+
+.chart-container .chart-title {
+  color: var(--text-primary);
+  font-size: var(--size-lg);
+  font-weight: var(--font-weight-semibold);
+  margin-bottom: var(--space-4);
+  padding-bottom: var(--space-2);
+  border-bottom: 1px solid var(--glass-border);
+}
+
+.chart-container .chart-subtitle {
+  color: var(--text-tertiary);
+  font-size: var(--size-sm);
+  margin-bottom: var(--space-4);
+}
+
+/* ================================
+   Responsive Chart Behavior
+   ================================ */
+
+@media (max-width: 768px) {
+  .js-plotly-plot {
+    padding: var(--space-2) !important;
+    margin: var(--space-2) 0;
+  }
+  
+  .stDataFrame th,
+  .stDataFrame td {
+    padding: var(--space-2) var(--space-3) !important;
+    font-size: var(--size-xs) !important;
+  }
+  
+  .chart-container {
+    padding: var(--space-4);
+  }
+  
+  .chart-container .chart-title {
+    font-size: var(--size-base);
+  }
+  
+  .modebar {
+    scale: 0.8;
+  }
+}
+
+/* ================================
+   Loading States for Charts
+   ================================ */
+
+.chart-loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 300px;
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-xl);
+  color: var(--text-tertiary);
+  font-weight: var(--font-weight-medium);
+}
+
+.chart-loading::before {
+  content: '';
+  width: 20px;
+  height: 20px;
+  border: 2px solid var(--glass-border);
+  border-top: 2px solid var(--primary-purple);
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin-right: var(--space-2);
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}

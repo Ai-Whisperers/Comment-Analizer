@@ -12,7 +12,15 @@ current_dir = Path(__file__).parent.parent
 if str(current_dir) not in sys.path:
     sys.path.insert(0, str(current_dir))
 
-# Page content
+# Load CSS if available
+try:
+    from src.presentation.streamlit.css_loader import load_component_css, section_header
+    if st.session_state.get('css_loaded', False):
+        load_component_css('complete')
+except:
+    pass
+
+# Page content with styling support
 st.title("Personal Paraguay - Análisis de Comentarios")
 
 st.markdown("""

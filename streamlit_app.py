@@ -17,6 +17,7 @@ try:
     from src.aplicacion_principal import crear_aplicacion
     from src.shared.exceptions.archivo_exception import ArchivoException
     from src.shared.exceptions.ia_exception import IAException
+    from src.presentation.streamlit.css_loader import load_css, load_component_css
     
     # Initialize app in session state
     if 'analizador_app' not in st.session_state:
@@ -27,11 +28,31 @@ try:
         
         openai_key = os.getenv('OPENAI_API_KEY') or st.secrets.get('OPENAI_API_KEY', None)
         
-        st.session_state.analizador_app = crear_aplicacion(
-            openai_api_key=openai_key,
-            max_comments=2000,
-            debug_mode=False
-        )
+        # Try new maestro system first, fallback to standard
+        try:
+            from src.infrastructure.dependency_injection.contenedor_dependencias import ContenedorDependencias
+            from src.application.use_cases.analizar_excel_maestro_caso_uso import AnalizarExcelMaestroCasoUso
+            
+            # Create improved system
+            config = {'openai_api_key': openai_key, 'max_comments': 2000}
+            contenedor = ContenedorDependencias(config)
+            st.session_state.contenedor = contenedor
+            st.session_state.caso_uso_maestro = contenedor.obtener_caso_uso_maestro() if hasattr(contenedor, 'obtener_caso_uso_maestro') else None
+            
+            # Fallback to standard system
+            st.session_state.analizador_app = crear_aplicacion(
+                openai_api_key=openai_key,
+                max_comments=2000,
+                debug_mode=False
+            )
+            
+        except Exception as maestro_error:
+            # Fallback to standard system
+            st.session_state.analizador_app = crear_aplicacion(
+                openai_api_key=openai_key,
+                max_comments=2000,
+                debug_mode=False
+            )
         
         # Log initialization
         if hasattr(st.session_state.analizador_app, 'obtener_info_sistema'):
@@ -54,9 +75,18 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# Initialize session state for theme (PRESERVE THEME SYSTEM)
+# Initialize session state for theme and load CSS
 if 'dark_mode' not in st.session_state:
     st.session_state.dark_mode = True
+
+# Load CSS system
+if CLEAN_ARCHITECTURE_AVAILABLE:
+    try:
+        load_css()  # Load main CSS
+        st.session_state.css_loaded = True
+    except Exception as e:
+        st.session_state.css_loaded = False
+        st.error(f"Error cargando CSS: {str(e)}")
 
 # Memory monitoring not available after cleanup
 MEMORY_MONITORING_AVAILABLE = False

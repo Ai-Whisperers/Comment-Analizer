@@ -1,0 +1,275 @@
+/*
+ * CSS Reset & Base Styles
+ * Provides consistent baseline across browsers
+ */
+
+/* ================================
+   Modern CSS Reset
+   ================================ */
+
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html {
+  line-height: 1.15;
+  -webkit-text-size-adjust: 100%;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+body {
+  margin: 0;
+  font-family: var(--font-primary);
+  font-size: var(--size-base);
+  line-height: var(--leading-normal);
+  color: var(--text-primary);
+  background: var(--bg-primary);
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+/* ================================
+   Typography Reset
+   ================================ */
+
+h1, h2, h3, h4, h5, h6 {
+  font-size: inherit;
+  font-weight: inherit;
+  margin: 0;
+  line-height: var(--leading-tight);
+}
+
+p {
+  margin: 0;
+  line-height: var(--leading-relaxed);
+}
+
+a {
+  color: inherit;
+  text-decoration: inherit;
+  transition: all var(--duration-200) var(--ease-out);
+}
+
+a:hover {
+  color: var(--primary-purple-light);
+}
+
+strong, b {
+  font-weight: var(--font-weight-semibold);
+}
+
+em, i {
+  font-style: italic;
+}
+
+small {
+  font-size: var(--size-sm);
+  color: var(--text-tertiary);
+}
+
+code, pre {
+  font-family: var(--font-mono);
+  font-size: var(--size-sm);
+}
+
+/* ================================
+   Form Elements Reset
+   ================================ */
+
+button, input, optgroup, select, textarea {
+  font-family: inherit;
+  font-size: 100%;
+  line-height: 1.15;
+  margin: 0;
+  border: none;
+  background: transparent;
+  color: inherit;
+}
+
+button {
+  cursor: pointer;
+  outline: none;
+  transition: all var(--duration-200) var(--ease-out);
+}
+
+button:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+input, select, textarea {
+  outline: none;
+}
+
+/* ================================
+   List Reset
+   ================================ */
+
+ul, ol {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+li {
+  margin: 0;
+}
+
+/* ================================
+   Media Reset
+   ================================ */
+
+img, picture, video, canvas, svg {
+  display: block;
+  max-width: 100%;
+  height: auto;
+}
+
+img {
+  border-style: none;
+}
+
+/* ================================
+   Table Reset
+   ================================ */
+
+table {
+  border-collapse: collapse;
+  border-spacing: 0;
+  width: 100%;
+}
+
+th, td {
+  text-align: left;
+  vertical-align: top;
+  padding: 0;
+}
+
+/* ================================
+   Utility Reset
+   ================================ */
+
+hr {
+  box-sizing: content-box;
+  height: 0;
+  overflow: visible;
+  border: none;
+  border-top: 1px solid var(--glass-border);
+  margin: var(--space-4) 0;
+}
+
+blockquote {
+  margin: 0;
+  padding: 0;
+}
+
+/* ================================
+   Focus & Accessibility
+   ================================ */
+
+:focus {
+  outline: 2px solid var(--primary-purple);
+  outline-offset: 2px;
+}
+
+:focus:not(:focus-visible) {
+  outline: none;
+}
+
+:focus-visible {
+  outline: 2px solid var(--primary-purple);
+  outline-offset: 2px;
+}
+
+/* ================================
+   Selection Styles
+   ================================ */
+
+::selection {
+  background: rgba(139, 92, 246, 0.3);
+  color: var(--text-primary);
+}
+
+::-moz-selection {
+  background: rgba(139, 92, 246, 0.3);
+  color: var(--text-primary);
+}
+
+/* ================================
+   Scrollbar Styling
+   ================================ */
+
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--bg-secondary);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--glass-border);
+  border-radius: var(--radius-full);
+  transition: background var(--duration-200) var(--ease-out);
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--glass-border-hover);
+}
+
+::-webkit-scrollbar-corner {
+  background: var(--bg-secondary);
+}
+
+/* Firefox scrollbar */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--glass-border) var(--bg-secondary);
+}
+
+/* ================================
+   Root Container Enhancement
+   ================================ */
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  /* Prevent horizontal scroll on mobile */
+  overflow-x: hidden;
+  
+  /* Better text rendering */
+  text-rendering: optimizeLegibility;
+  
+  /* Improve font smoothing */
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  
+  /* Better touch experience */
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* ================================
+   Performance Optimizations
+   ================================ */
+
+* {
+  /* Prevent layout shifts */
+  transform-style: preserve-3d;
+  
+  /* GPU acceleration for animations */
+  will-change: auto;
+}
+
+/* Hardware acceleration for common elements */
+button,
+input,
+select,
+textarea {
+  backface-visibility: hidden;
+}

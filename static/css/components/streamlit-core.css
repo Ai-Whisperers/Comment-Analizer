@@ -1,0 +1,329 @@
+/*
+ * Streamlit Core Components Styling
+ * Base styling for fundamental Streamlit elements
+ */
+
+/* ================================
+   Main Application Container
+   ================================ */
+
+.main {
+  background: linear-gradient(135deg, var(--bg-primary) 0%, var(--bg-secondary) 100%);
+  min-height: 100vh;
+  padding: var(--space-4) var(--space-6);
+}
+
+.block-container {
+  padding: var(--space-6) var(--space-4);
+  max-width: var(--container-xl);
+  margin: 0 auto;
+}
+
+/* ================================
+   Headers & Typography
+   ================================ */
+
+.main h1 {
+  color: var(--text-primary);
+  font-size: var(--size-4xl);
+  font-weight: var(--font-weight-bold);
+  margin-bottom: var(--space-6);
+  background: linear-gradient(135deg, var(--primary-purple), var(--secondary-cyan));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  line-height: var(--leading-tight);
+}
+
+.main h2 {
+  color: var(--text-secondary);
+  font-size: var(--size-2xl);
+  font-weight: var(--font-weight-semibold);
+  margin: var(--space-8) 0 var(--space-4) 0;
+  position: relative;
+}
+
+.main h2::after {
+  content: '';
+  position: absolute;
+  bottom: -var(--space-2);
+  left: 0;
+  width: 3rem;
+  height: 2px;
+  background: linear-gradient(90deg, var(--primary-purple), var(--secondary-cyan));
+  border-radius: var(--radius-full);
+}
+
+.main h3 {
+  color: var(--text-secondary);
+  font-size: var(--size-xl);
+  font-weight: var(--font-weight-medium);
+  margin: var(--space-6) 0 var(--space-3) 0;
+}
+
+.main p {
+  color: var(--text-tertiary);
+  font-size: var(--size-base);
+  line-height: var(--leading-relaxed);
+  margin-bottom: var(--space-4);
+}
+
+/* ================================
+   Sidebar Styling
+   ================================ */
+
+.css-1d391kg, 
+.css-1lcbmhc, 
+section[data-testid="stSidebar"] {
+  background: var(--glass-bg) !important;
+  backdrop-filter: blur(var(--glass-blur)) !important;
+  border-right: 1px solid var(--glass-border) !important;
+}
+
+.css-1d391kg .css-1vq4p4l {
+  padding: var(--space-6) var(--space-4) !important;
+}
+
+.sidebar-content {
+  background: var(--glass-bg);
+  backdrop-filter: blur(var(--glass-blur));
+  border-radius: var(--radius-lg);
+  padding: var(--space-4);
+  margin-bottom: var(--space-4);
+  border: 1px solid var(--glass-border);
+}
+
+/* ================================
+   Metric Components
+   ================================ */
+
+[data-testid="metric-container"] {
+  background: var(--glass-bg);
+  backdrop-filter: blur(var(--glass-blur));
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-xl);
+  padding: var(--space-5);
+  transition: all var(--duration-300) var(--ease-out);
+  position: relative;
+  overflow: hidden;
+}
+
+[data-testid="metric-container"]::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: linear-gradient(90deg, var(--primary-purple), var(--secondary-cyan));
+  opacity: 0;
+  transition: opacity var(--duration-300) var(--ease-out);
+}
+
+[data-testid="metric-container"]:hover {
+  border-color: var(--glass-border-hover);
+  box-shadow: var(--shadow-lg);
+  transform: translateY(-2px);
+}
+
+[data-testid="metric-container"]:hover::before {
+  opacity: 1;
+}
+
+[data-testid="metric-container"] [data-testid="metric-label"] {
+  color: var(--text-tertiary) !important;
+  font-size: var(--size-sm) !important;
+  font-weight: var(--font-weight-medium) !important;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: var(--space-2);
+}
+
+[data-testid="metric-container"] [data-testid="metric-value"] {
+  color: var(--text-primary) !important;
+  font-size: var(--size-3xl) !important;
+  font-weight: var(--font-weight-bold) !important;
+  line-height: var(--leading-none);
+  margin-bottom: var(--space-1);
+}
+
+/* ================================
+   Columns & Layout
+   ================================ */
+
+.row-widget {
+  background: transparent;
+  margin: var(--space-4) 0;
+}
+
+.css-1kyxreq {
+  gap: var(--space-4) !important;
+}
+
+/* Individual column styling */
+[data-testid="column"] {
+  background: var(--glass-bg);
+  backdrop-filter: blur(var(--glass-blur));
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-lg);
+  padding: var(--space-4);
+  transition: all var(--duration-300) var(--ease-out);
+}
+
+[data-testid="column"]:hover {
+  border-color: var(--glass-border-hover);
+  background: var(--glass-bg-hover);
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-md);
+}
+
+/* ================================
+   Status Messages
+   ================================ */
+
+.stAlert {
+  background: var(--glass-bg) !important;
+  backdrop-filter: blur(var(--glass-blur)) !important;
+  border: 1px solid var(--glass-border) !important;
+  border-radius: var(--radius-lg) !important;
+  padding: var(--space-4) !important;
+  margin: var(--space-4) 0 !important;
+  box-shadow: var(--shadow-sm);
+}
+
+.stAlert[kind="success"] {
+  background: rgba(16, 185, 129, 0.1) !important;
+  border-color: var(--success) !important;
+  color: var(--success-light) !important;
+}
+
+.stAlert[kind="warning"] {
+  background: rgba(245, 158, 11, 0.1) !important;
+  border-color: var(--warning) !important;
+  color: var(--warning-light) !important;
+}
+
+.stAlert[kind="error"] {
+  background: rgba(239, 68, 68, 0.1) !important;
+  border-color: var(--error) !important;
+  color: var(--error-light) !important;
+}
+
+.stAlert[kind="info"] {
+  background: rgba(59, 130, 246, 0.1) !important;
+  border-color: var(--info) !important;
+  color: var(--info-light) !important;
+}
+
+/* ================================
+   Loading States
+   ================================ */
+
+.stSpinner > div {
+  border-color: var(--primary-purple-light) transparent transparent transparent !important;
+}
+
+/* Custom loading shimmer */
+.loading-shimmer {
+  background: linear-gradient(90deg, 
+    var(--glass-bg), 
+    rgba(255, 255, 255, 0.1), 
+    var(--glass-bg));
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+  border-radius: var(--radius-lg);
+  height: 200px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-tertiary);
+  font-weight: var(--font-weight-medium);
+}
+
+/* ================================
+   Dividers & Separators
+   ================================ */
+
+hr {
+  border: none;
+  height: 1px;
+  background: linear-gradient(90deg, 
+    transparent, 
+    var(--glass-border), 
+    transparent);
+  margin: var(--space-8) 0;
+}
+
+/* ================================
+   Container Enhancements
+   ================================ */
+
+.stContainer {
+  background: var(--glass-bg);
+  backdrop-filter: blur(var(--glass-blur));
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-xl);
+  padding: var(--space-6);
+  margin: var(--space-4) 0;
+  transition: all var(--duration-300) var(--ease-out);
+}
+
+.stContainer:hover {
+  border-color: var(--glass-border-hover);
+  box-shadow: var(--shadow-md);
+}
+
+/* ================================
+   Footer Styling
+   ================================ */
+
+.main-footer {
+  background: var(--glass-bg);
+  backdrop-filter: blur(var(--glass-blur));
+  border-top: 1px solid var(--glass-border);
+  padding: var(--space-8) var(--space-4);
+  margin-top: var(--space-12);
+  text-align: center;
+  color: var(--text-tertiary);
+  font-size: var(--size-sm);
+}
+
+.main-footer a {
+  color: var(--primary-purple-light);
+  font-weight: var(--font-weight-medium);
+}
+
+.main-footer a:hover {
+  color: var(--primary-purple);
+  text-decoration: underline;
+}
+
+/* ================================
+   Responsive Design
+   ================================ */
+
+@media (max-width: 768px) {
+  .main {
+    padding: var(--space-2) var(--space-3);
+  }
+  
+  .block-container {
+    padding: var(--space-4) var(--space-2);
+  }
+  
+  .main h1 {
+    font-size: var(--size-3xl);
+  }
+  
+  .main h2 {
+    font-size: var(--size-xl);
+  }
+  
+  [data-testid="metric-container"] {
+    padding: var(--space-4);
+  }
+  
+  [data-testid="metric-container"] [data-testid="metric-value"] {
+    font-size: var(--size-2xl) !important;
+  }
+}

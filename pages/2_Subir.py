@@ -14,10 +14,16 @@ current_dir = Path(__file__).parent.parent
 if str(current_dir) not in sys.path:
     sys.path.insert(0, str(current_dir))
 
-# Import Clean Architecture exceptions
+# Load CSS and import Clean Architecture components
 try:
     from src.shared.exceptions.archivo_exception import ArchivoException
     from src.shared.exceptions.ia_exception import IAException
+    from src.presentation.streamlit.css_loader import load_component_css, glass_card, metric_card
+    
+    # Load CSS if available
+    if st.session_state.get('css_loaded', False):
+        load_component_css('complete')
+        
 except ImportError as e:
     st.error(f"Error importando Clean Architecture: {str(e)}")
 
@@ -88,41 +94,70 @@ if 'analysis_results' in st.session_state:
     analysis_type = st.session_state.get('analysis_type', 'unknown')
     
     # Status badge
-    if 'ai' in analysis_type:
+    if analysis_type == "maestro_ia":
+        st.success("Análisis maestro IA completado")
+    elif 'ai' in analysis_type:
         st.success("Análisis con IA completado")
     else:
         st.info("Análisis con reglas completado")
     
-    # Show results if it's our clean architecture format
+    # Show results - handle both standard and maestro formats
     if hasattr(results, 'es_exitoso'):
         if results.es_exitoso():
-            # Executive summary
+            # Executive summary - handle different result types
             col1, col2, col3, col4 = st.columns(4)
             
-            with col1:
-                st.metric("Total", results.total_comentarios)
+            # Maestro system has different structure
+            if analysis_type == "maestro_ia" and hasattr(results, 'analisis_completo_ia'):
+                analisis = results.analisis_completo_ia
+                with col1:
+                    st.metric("Total", results.total_comentarios)
+                with col2:
+                    st.metric("Tiempo", f"{results.tiempo_total_segundos:.1f}s")
+                with col3:
+                    st.metric("Método", "Maestro IA")
+                with col4:
+                    st.metric("Estado", "Avanzado")
+            else:
+                # Standard system
+                with col1:
+                    st.metric("Total", results.total_comentarios)
+                
+                with col2:
+                    stats = results.estadisticas_sentimientos
+                    positivos = stats.get('positivos', 0) if stats else 0
+                    st.metric("Positivos", positivos)
+                
+                with col3:
+                    negativos = stats.get('negativos', 0) if stats else 0
+                    st.metric("Negativos", negativos)
+                
+                with col4:
+                    criticos = getattr(results, 'comentarios_criticos', 0)
+                    st.metric("Críticos", criticos)
             
-            with col2:
-                stats = results.estadisticas_sentimientos
-                positivos = stats.get('positivos', 0)
-                st.metric("Positivos", positivos)
+            # Main insights - handle different formats
+            st.markdown("#### Temas Principales")
             
-            with col3:
-                negativos = stats.get('negativos', 0)
-                st.metric("Negativos", negativos)
-            
-            with col4:
-                st.metric("Críticos", results.comentarios_criticos)
-            
-            # Main insights
-            if results.temas_principales:
-                st.markdown("#### Temas Principales")
+            if analysis_type == "maestro_ia" and hasattr(results, 'analisis_completo_ia'):
+                # Maestro system format
+                analisis = results.analisis_completo_ia
+                if hasattr(analisis, 'temas_frecuencias') and analisis.temas_frecuencias:
+                    for tema, freq in list(analisis.temas_frecuencias.items())[:5]:
+                        st.markdown(f"• **{tema}**: {freq} menciones")
+                else:
+                    st.info("No hay datos de temas disponibles en análisis maestro")
+            elif hasattr(results, 'temas_principales') and results.temas_principales:
+                # Standard system format
                 for tema, freq in list(results.temas_principales.items())[:5]:
                     st.markdown(f"• **{tema}**: {freq} menciones")
+            else:
+                st.info("No hay temas detectados")
             
-            # Critical comments
-            if results.comentarios_criticos > 0:
-                with st.expander(f"{results.comentarios_criticos} comentarios críticos"):
+            # Critical comments - handle different formats
+            criticos_count = getattr(results, 'comentarios_criticos', 0)
+            if criticos_count > 0:
+                with st.expander(f"{criticos_count} comentarios críticos"):
                     try:
                         criticos = st.session_state.analizador_app.obtener_comentarios_criticos()
                         for i, comentario in enumerate(criticos[:5], 1):
@@ -149,9 +184,34 @@ if 'analysis_results' in st.session_state:
 
 
 def _run_analysis(uploaded_file, analysis_type):
-    """Run analysis using clean architecture"""
+    """Run analysis using clean architecture (maestro system if available)"""
     with st.spinner(f"Procesando con {'IA' if analysis_type == 'ai' else 'reglas'}..."):
         try:
+            # Try maestro system first if available
+            if 'caso_uso_maestro' in st.session_state and st.session_state.caso_uso_maestro and analysis_type == 'ai':
+                try:
+                    from src.application.use_cases.analizar_excel_maestro_caso_uso import ComandoAnalisisExcelMaestro
+                    
+                    comando = ComandoAnalisisExcelMaestro(
+                        archivo_cargado=uploaded_file,
+                        nombre_archivo=uploaded_file.name,
+                        limpiar_repositorio=True
+                    )
+                    
+                    resultado = st.session_state.caso_uso_maestro.ejecutar(comando)
+                    
+                    if resultado.es_exitoso():
+                        st.session_state.analysis_results = resultado
+                        st.session_state.analysis_type = "maestro_ia"
+                        st.success("Análisis maestro IA completado!")
+                        st.balloons()
+                        st.rerun()
+                        return
+                        
+                except Exception as maestro_error:
+                    st.warning(f"Maestro IA falló, usando sistema estándar: {maestro_error}")
+            
+            # Standard system fallback
             app = st.session_state.analizador_app
             
             resultado = app.analizar_archivo(

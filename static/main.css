@@ -1,0 +1,148 @@
+/*
+ * Main CSS Entry Point
+ * Comment Analyzer - Modular CSS Architecture
+ * 
+ * This file imports all modular CSS components in the correct order
+ * for optimal cascade and maintainability
+ */
+
+/* ================================
+   1. Base Layer - Foundation
+   ================================ */
+
+/* CSS Variables and Design Tokens */
+@import url('./css/base/variables.css');
+
+/* CSS Reset and Normalization */
+@import url('./css/base/reset.css');
+
+/* ================================
+   2. Component Layer - UI Building Blocks  
+   ================================ */
+
+/* Layout and Structure Components */
+@import url('./css/components/layout.css');
+
+/* Core Streamlit Component Styling */
+@import url('./css/components/streamlit-core.css');
+
+/* Form Controls and Inputs */
+@import url('./css/components/forms.css');
+
+/* Charts and Data Visualization */
+@import url('./css/components/charts.css');
+
+/* ================================
+   3. Animation Layer - Motion Design
+   ================================ */
+
+/* Keyframes and Animation Effects */
+@import url('./css/animations/keyframes.css');
+
+/* ================================
+   4. Utility Layer - Atomic Classes
+   ================================ */
+
+/* Utility Classes for Quick Styling */
+@import url('./css/utils/utilities.css');
+
+/* ================================
+   Global Application Styles
+   ================================ */
+
+/* 
+ * Additional global styles that don't fit into 
+ * the modular structure above can be added here
+ */
+
+/* Global animation defaults */
+.animate-on-load {
+  animation: fadeInUp 0.6s var(--ease-out) forwards;
+}
+
+.animate-on-load-delay-1 {
+  animation: fadeInUp 0.6s var(--ease-out) 0.1s forwards;
+  opacity: 0;
+}
+
+.animate-on-load-delay-2 {
+  animation: fadeInUp 0.6s var(--ease-out) 0.2s forwards;
+  opacity: 0;
+}
+
+.animate-on-load-delay-3 {
+  animation: fadeInUp 0.6s var(--ease-out) 0.3s forwards;
+  opacity: 0;
+}
+
+/* Performance optimizations */
+* {
+  /* Improve rendering performance */
+  -webkit-backface-visibility: hidden;
+  backface-visibility: hidden;
+  
+  /* Better text rendering */
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Smooth scrolling for the entire page */
+html {
+  scroll-behavior: smooth;
+}
+
+/* Focus management for accessibility */
+.focus-visible {
+  outline: 2px solid var(--primary-purple);
+  outline-offset: 2px;
+}
+
+/* Print styles */
+@media print {
+  .no-print {
+    display: none !important;
+  }
+  
+  .print-only {
+    display: block !important;
+  }
+  
+  * {
+    background: white !important;
+    color: black !important;
+    box-shadow: none !important;
+    text-shadow: none !important;
+  }
+}
+
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+  :root {
+    --glass-bg: rgba(255, 255, 255, 0.9);
+    --glass-border: rgba(0, 0, 0, 0.8);
+    --text-primary: #ffffff;
+    --text-secondary: #f0f0f0;
+  }
+}
+
+/* Reduced motion support */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+  
+  .animate-fade-in,
+  .animate-fade-in-up,
+  .animate-scale-in,
+  .animate-glow,
+  .animate-float,
+  .animate-pulse,
+  .animate-spin,
+  .animate-bounce,
+  .animate-shimmer {
+    animation: none !important;
+  }
+}

@@ -1,0 +1,371 @@
+/*
+ * Form Components Styling
+ * Input fields, buttons, selections, and form interactions
+ */
+
+/* ================================
+   Text Input Styling
+   ================================ */
+
+.stTextInput > div > div > input,
+.stTextArea > div > div > textarea {
+  background: var(--glass-bg) !important;
+  backdrop-filter: blur(10px);
+  border: 1px solid var(--glass-border) !important;
+  border-radius: var(--radius-md) !important;
+  color: var(--text-primary) !important;
+  padding: var(--space-3) var(--space-4) !important;
+  font-size: var(--size-base) !important;
+  line-height: var(--leading-normal) !important;
+  transition: all var(--duration-300) var(--ease-out);
+  min-height: var(--input-height);
+}
+
+.stTextInput > div > div > input::placeholder,
+.stTextArea > div > div > textarea::placeholder {
+  color: var(--text-quaternary) !important;
+  opacity: 1;
+}
+
+.stTextInput > div > div > input:focus,
+.stTextArea > div > div > textarea:focus {
+  border-color: var(--primary-purple) !important;
+  box-shadow: var(--input-focus-ring) !important;
+  background: var(--glass-bg-hover) !important;
+  outline: none !important;
+}
+
+.stTextInput > div > div > input:hover:not(:focus),
+.stTextArea > div > div > textarea:hover:not(:focus) {
+  border-color: var(--glass-border-hover) !important;
+  background: var(--glass-bg-hover) !important;
+}
+
+/* Text Area specific */
+.stTextArea > div > div > textarea {
+  resize: vertical;
+  min-height: 120px;
+}
+
+/* ================================
+   Number Input Styling
+   ================================ */
+
+.stNumberInput > div > div > input {
+  background: var(--glass-bg) !important;
+  backdrop-filter: blur(10px);
+  border: 1px solid var(--glass-border) !important;
+  border-radius: var(--radius-md) !important;
+  color: var(--text-primary) !important;
+  padding: var(--space-3) var(--space-4) !important;
+  font-size: var(--size-base) !important;
+  transition: all var(--duration-300) var(--ease-out);
+}
+
+.stNumberInput > div > div > input:focus {
+  border-color: var(--primary-purple) !important;
+  box-shadow: var(--input-focus-ring) !important;
+  outline: none !important;
+}
+
+/* ================================
+   Selectbox Styling
+   ================================ */
+
+.stSelectbox > div > div,
+.stMultiSelect > div > div {
+  background: var(--glass-bg) !important;
+  backdrop-filter: blur(10px);
+  border: 1px solid var(--glass-border) !important;
+  border-radius: var(--radius-md) !important;
+  transition: all var(--duration-300) var(--ease-out);
+  min-height: var(--input-height);
+}
+
+.stSelectbox > div > div:hover,
+.stMultiSelect > div > div:hover {
+  background: var(--glass-bg-hover) !important;
+  border-color: var(--glass-border-hover) !important;
+}
+
+.stSelectbox > div > div:focus-within,
+.stMultiSelect > div > div:focus-within {
+  border-color: var(--primary-purple) !important;
+  box-shadow: var(--input-focus-ring) !important;
+}
+
+/* Selectbox dropdown */
+.stSelectbox > div > div > div {
+  color: var(--text-primary) !important;
+  background: transparent !important;
+}
+
+/* Multi-select tags */
+.stMultiSelect .css-1n76uvr {
+  background: var(--primary-purple) !important;
+  color: white !important;
+  border-radius: var(--radius-sm) !important;
+  padding: var(--space-1) var(--space-2) !important;
+  font-size: var(--size-sm) !important;
+}
+
+/* ================================
+   Button Styling
+   ================================ */
+
+.stButton > button,
+button[kind="primary"],
+button[kind="secondary"] {
+  background: var(--glass-bg) !important;
+  backdrop-filter: blur(10px);
+  border: 1px solid var(--glass-border) !important;
+  border-radius: var(--radius-md) !important;
+  color: var(--text-primary) !important;
+  padding: var(--space-3) var(--space-6) !important;
+  font-size: var(--size-base) !important;
+  font-weight: var(--font-weight-medium) !important;
+  min-height: var(--btn-height-md);
+  cursor: pointer;
+  transition: all var(--duration-300) var(--ease-out);
+  position: relative;
+  overflow: hidden;
+}
+
+.stButton > button:hover,
+button[kind="primary"]:hover,
+button[kind="secondary"]:hover {
+  background: var(--glass-bg-hover) !important;
+  border-color: var(--glass-border-hover) !important;
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-md);
+}
+
+.stButton > button:active,
+button[kind="primary"]:active,
+button[kind="secondary"]:active {
+  transform: translateY(0);
+  box-shadow: var(--shadow-sm);
+}
+
+/* Primary button variant */
+button[kind="primary"] {
+  background: linear-gradient(135deg, var(--primary-purple), var(--primary-purple-dark)) !important;
+  border-color: var(--primary-purple) !important;
+  color: white !important;
+  box-shadow: var(--shadow-sm);
+}
+
+button[kind="primary"]:hover {
+  background: linear-gradient(135deg, var(--primary-purple-light), var(--primary-purple)) !important;
+  box-shadow: var(--shadow-lg);
+}
+
+/* Secondary button - default styling already applied above */
+
+/* Button loading state */
+.stButton > button:disabled {
+  opacity: 0.5 !important;
+  cursor: not-allowed !important;
+  transform: none !important;
+}
+
+/* ================================
+   Checkbox & Radio Styling
+   ================================ */
+
+.stCheckbox > label {
+  color: var(--text-secondary) !important;
+  font-weight: var(--font-weight-medium);
+  cursor: pointer;
+  transition: color var(--duration-200) var(--ease-out);
+}
+
+.stCheckbox > label:hover {
+  color: var(--text-primary) !important;
+}
+
+.stCheckbox > label > div:first-child {
+  background: var(--glass-bg) !important;
+  border: 1px solid var(--glass-border) !important;
+  border-radius: var(--radius-sm) !important;
+  transition: all var(--duration-200) var(--ease-out);
+}
+
+.stCheckbox > label > div:first-child:hover {
+  background: var(--glass-bg-hover) !important;
+  border-color: var(--glass-border-hover) !important;
+}
+
+/* Checked state */
+.stCheckbox input:checked + div {
+  background: var(--primary-purple) !important;
+  border-color: var(--primary-purple) !important;
+}
+
+/* Radio button styling */
+.stRadio > label {
+  color: var(--text-secondary) !important;
+  font-weight: var(--font-weight-medium);
+  margin-bottom: var(--space-2) !important;
+}
+
+.stRadio > div > label {
+  color: var(--text-secondary) !important;
+  cursor: pointer;
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-md);
+  transition: all var(--duration-200) var(--ease-out);
+}
+
+.stRadio > div > label:hover {
+  background: var(--glass-bg-hover);
+  color: var(--text-primary) !important;
+}
+
+/* ================================
+   Slider Styling
+   ================================ */
+
+.stSlider > div > div > div {
+  background: var(--glass-bg) !important;
+  border-radius: var(--radius-full) !important;
+}
+
+.stSlider > div > div > div > div {
+  background: var(--primary-purple) !important;
+  border-radius: var(--radius-full) !important;
+}
+
+.stSlider > div > div > div > div > div {
+  background: white !important;
+  border: 2px solid var(--primary-purple) !important;
+  box-shadow: var(--shadow-sm);
+  transition: all var(--duration-200) var(--ease-out);
+}
+
+.stSlider > div > div > div > div > div:hover {
+  box-shadow: var(--shadow-md);
+  transform: scale(1.1);
+}
+
+/* ================================
+   File Uploader Styling
+   ================================ */
+
+.stFileUploader {
+  background: var(--glass-bg);
+  backdrop-filter: blur(var(--glass-blur));
+  border: 2px dashed var(--glass-border);
+  border-radius: var(--radius-lg);
+  padding: var(--space-8);
+  text-align: center;
+  transition: all var(--duration-300) var(--ease-out);
+  position: relative;
+}
+
+.stFileUploader:hover {
+  border-color: var(--primary-purple);
+  background: var(--glass-bg-hover);
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-lg);
+}
+
+.stFileUploader > div {
+  color: var(--text-secondary);
+}
+
+.stFileUploader small {
+  color: var(--text-tertiary);
+}
+
+/* File upload button */
+.stFileUploader button {
+  background: linear-gradient(135deg, var(--primary-purple), var(--secondary-cyan)) !important;
+  color: white !important;
+  border: none !important;
+  border-radius: var(--radius-md) !important;
+  padding: var(--space-3) var(--space-6) !important;
+  font-weight: var(--font-weight-medium) !important;
+  transition: all var(--duration-300) var(--ease-out);
+  margin: var(--space-4) 0;
+}
+
+.stFileUploader button:hover {
+  box-shadow: var(--shadow-lg);
+  transform: translateY(-1px);
+}
+
+/* ================================
+   Form Groups & Labels
+   ================================ */
+
+.stForm {
+  background: var(--glass-bg);
+  backdrop-filter: blur(var(--glass-blur));
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-lg);
+  padding: var(--space-6);
+  margin: var(--space-4) 0;
+}
+
+label[data-testid="stWidgetLabel"] {
+  color: var(--text-secondary) !important;
+  font-weight: var(--font-weight-medium) !important;
+  font-size: var(--size-sm) !important;
+  margin-bottom: var(--space-2) !important;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+/* Form validation styles */
+.form-error {
+  color: var(--error-light);
+  font-size: var(--size-sm);
+  margin-top: var(--space-1);
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+}
+
+.form-success {
+  color: var(--success-light);
+  font-size: var(--size-sm);
+  margin-top: var(--space-1);
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+}
+
+/* ================================
+   Date Input Styling
+   ================================ */
+
+.stDateInput > div > div > input {
+  background: var(--glass-bg) !important;
+  backdrop-filter: blur(10px);
+  border: 1px solid var(--glass-border) !important;
+  border-radius: var(--radius-md) !important;
+  color: var(--text-primary) !important;
+  padding: var(--space-3) var(--space-4) !important;
+  transition: all var(--duration-300) var(--ease-out);
+}
+
+.stDateInput > div > div > input:focus {
+  border-color: var(--primary-purple) !important;
+  box-shadow: var(--input-focus-ring) !important;
+}
+
+/* ================================
+   Color Picker Styling
+   ================================ */
+
+.stColorPicker > div > div {
+  background: var(--glass-bg) !important;
+  border: 1px solid var(--glass-border) !important;
+  border-radius: var(--radius-md) !important;
+  transition: all var(--duration-300) var(--ease-out);
+}
+
+.stColorPicker > div > div:hover {
+  border-color: var(--glass-border-hover) !important;
+}
