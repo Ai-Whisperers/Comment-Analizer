@@ -79,14 +79,16 @@ st.set_page_config(
 if 'dark_mode' not in st.session_state:
     st.session_state.dark_mode = True
 
-# Load CSS system
+# Load CSS using Streamlit static file serving
 if CLEAN_ARCHITECTURE_AVAILABLE:
     try:
-        load_css()  # Load main CSS
+        # Load main CSS file using proper Streamlit static serving
+        with open('static/styles.css', 'r') as f:
+            css_content = f.read()
+        st.markdown(f'<style>{css_content}</style>', unsafe_allow_html=True)
         st.session_state.css_loaded = True
     except Exception as e:
         st.session_state.css_loaded = False
-        st.error(f"Error cargando CSS: {str(e)}")
 
 # Memory monitoring not available after cleanup
 MEMORY_MONITORING_AVAILABLE = False

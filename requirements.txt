@@ -1,28 +1,31 @@
-# Streamlit Cloud Production Requirements - v2.1.0
-# Optimized for cloud deployment - removed dev dependencies
+# Streamlit Cloud Production Requirements - v3.0.0
+# Updated for Python 3.12 and latest Streamlit (2025)
+# Requires Python >=3.9, !=3.9.7, <=3.13
 
 # Core Dependencies
-pandas>=2.0.0
-numpy>=1.24.0
-streamlit>=1.28.0,<2.0.0
-plotly>=5.17.0
-matplotlib>=3.7.0
+pandas>=2.1.0
+numpy>=1.25.0
+streamlit>=1.39.0
+plotly>=5.18.0
+matplotlib>=3.8.0
 
 # API Clients
-openai>=1.3.0,<2.0.0
-httpx>=0.24.0
+openai>=1.50.0
+httpx>=0.26.0
 
 # Data Processing
-openpyxl>=3.1.0
-xlsxwriter>=3.1.0
-python-dotenv>=1.0.0
+openpyxl>=3.1.5
+xlsxwriter>=3.2.0
+python-dotenv>=1.0.1
 
 # Language Processing  
 langdetect>=1.0.9
-nltk>=3.8.0
 
 # Utilities
-requests>=2.31.0
-tqdm>=4.66.0
-python-dateutil>=2.8.0
-psutil>=5.9.0
+requests>=2.32.0
+tqdm>=4.67.0
+python-dateutil>=2.9.0
+psutil>=6.0.0
+
+# Additional requirements for Clean Architecture
+typing-extensions>=4.8.0

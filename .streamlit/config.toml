@@ -1,4 +1,7 @@
 [server]
+# Enable static file serving for CSS
+enableStaticServing = true
+
 # Disable file watching to prevent inotify limits
 fileWatcherType = "none"
 runOnSave = false
@@ -8,9 +11,10 @@ port = 8501
 address = "0.0.0.0" 
 headless = true
 
-# Memory and performance optimization
-maxUploadSize = 2
-maxMessageSize = 50
+# Memory and performance optimization (updated for 2025)
+maxUploadSize = 5
+maxMessageSize = 200
+enableCORS = false
 
 [browser]
 gatherUsageStats = false
@@ -23,11 +27,23 @@ backgroundColor = "#0D0B14"
 secondaryBackgroundColor = "#1A1825"
 textColor = "#F8FAFC"
 
+[client]
+# Modern client configuration for 2025
+showErrorDetails = false
+toolbarMode = "minimal"
+
 [global]
 # Production optimizations
 developmentMode = false
 showWarningOnDirectExecution = false
+suppressDeprecationWarnings = true
 
 [logger]
 # Modern logging configuration
 level = "warning"
+enableLogging = false
+
+[runner]
+# Enhanced runner configuration
+fastReruns = true
+enforcedSerializability = false

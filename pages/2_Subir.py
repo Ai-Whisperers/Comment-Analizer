@@ -14,15 +14,11 @@ current_dir = Path(__file__).parent.parent
 if str(current_dir) not in sys.path:
     sys.path.insert(0, str(current_dir))
 
-# Load CSS and import Clean Architecture components
+# Import Clean Architecture components only
 try:
     from src.shared.exceptions.archivo_exception import ArchivoException
     from src.shared.exceptions.ia_exception import IAException
-    from src.presentation.streamlit.css_loader import load_component_css, glass_card, metric_card
-    
-    # Load CSS if available
-    if st.session_state.get('css_loaded', False):
-        load_component_css('complete')
+    # CSS is handled in main app
         
 except ImportError as e:
     st.error(f"Error importando Clean Architecture: {str(e)}")
