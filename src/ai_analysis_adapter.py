@@ -146,8 +146,8 @@ class AIAnalysisAdapter:
                 ai_logger.error("No comment column found")
                 return None
                 
-            # Extract and clean comments
-            raw_comments = df[comment_col].dropna().tolist()
+            # Extract and clean comments (FIX: ensure all are strings)
+            raw_comments = df[comment_col].dropna().astype(str).tolist()
             if not raw_comments:
                 ai_logger.error("No valid comments found")
                 return None

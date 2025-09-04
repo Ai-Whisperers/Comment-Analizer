@@ -93,8 +93,8 @@ class AIDataProcessor:
             if not comment_col:
                 raise ValueError("No comment column found in file")
             
-            # Extract comments
-            raw_comments = df[comment_col].dropna().tolist()
+            # Extract comments with string conversion (FIX: ensure all are strings)
+            raw_comments = df[comment_col].dropna().astype(str).tolist()
             if not raw_comments:
                 raise ValueError("No valid comments found in file")
             
