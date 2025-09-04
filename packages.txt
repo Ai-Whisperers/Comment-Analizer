@@ -1,6 +1,0 @@
-build-essential
-libfreetype6-dev
-libpng-dev
-libssl-dev
-libffi-dev
-pkg-config
