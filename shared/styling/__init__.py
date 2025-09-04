@@ -1,1 +1,0 @@
-# Modern styling components - preserved from original architecture
