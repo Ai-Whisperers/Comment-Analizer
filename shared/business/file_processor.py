@@ -136,8 +136,8 @@ class FileProcessor:
     def extract_comments(self, df: pd.DataFrame, comment_col: str) -> List[str]:
         """Extract and clean comments from dataframe"""
         try:
-            # Get raw comments
-            raw_comments = df[comment_col].dropna().tolist()
+            # Get raw comments with string conversion (FIX: ensure all are strings)
+            raw_comments = df[comment_col].dropna().astype(str).tolist()
             
             if not raw_comments:
                 raise Exception("No se encontraron comentarios válidos")

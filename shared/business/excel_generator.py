@@ -191,9 +191,9 @@ class ProfessionalExcelGenerator:
                 ['', ''],
                 ['INSIGHTS DE INTELIGENCIA ARTIFICIAL', ''],
                 ['Índice de Satisfacción del Cliente', f"{insights.get('customer_satisfaction_index', 0)}/100"],
-                ['Intensidad Emocional', insights.get('emotional_intensity', 'medio').title()],
-                ['Estabilidad de Sentimientos', insights.get('sentiment_stability', 'balanceado').replace('_', ' ').title()],
-                ['Calidad de Engagement', insights.get('engagement_quality', 'básico').title()],
+                ['Intensidad Emocional', str(insights.get('emotional_intensity', 'medio')).title()],
+                ['Estabilidad de Sentimientos', str(insights.get('sentiment_stability', 'balanceado')).replace('_', ' ').title()],
+                ['Calidad de Engagement', str(insights.get('engagement_quality', 'básico')).title()],
                 ['', ''],
                 ['RECOMENDACIÓN PRINCIPAL', ''],
                 ['Acción Prioritaria', results.get('recommendations', ['Mantener calidad actual'])[0] if results.get('recommendations') else 'Mantener calidad actual']
@@ -231,7 +231,7 @@ class ProfessionalExcelGenerator:
             detailed_data.append({
                 'ID': i,
                 'Comentario': comment,
-                'Sentimiento': sentiment.title(),
+                'Sentimiento': str(sentiment).title(),
                 'Longitud': len(comment) if comment else 0,
                 'Palabras': len(comment.split()) if comment else 0
             })
@@ -297,7 +297,7 @@ class ProfessionalExcelGenerator:
             sorted_themes = sorted(theme_counts.items(), key=lambda x: x[1], reverse=True)
             for theme, count in sorted_themes[:10]:  # Top 10 themes
                 relevance = "Alta" if count > 5 else ("Media" if count > 2 else "Baja")
-                sentiment_summary.append([theme.title(), count, relevance])
+                sentiment_summary.append([str(theme).title(), count, relevance])
         
         sentiment_df = pd.DataFrame(sentiment_summary)
         sentiment_df.to_excel(writer, sheet_name='Análisis de Sentimientos', index=False, header=False)
@@ -327,9 +327,9 @@ class ProfessionalExcelGenerator:
             ['', ''],
             ['MÉTRICAS AVANZADAS', ''],
             ['Índice de Satisfacción del Cliente', f"{insights.get('customer_satisfaction_index', 0)}/100"],
-            ['Intensidad Emocional', insights.get('emotional_intensity', 'medio').title()],
-            ['Estabilidad de Sentimientos', insights.get('sentiment_stability', 'balanceado').replace('_', ' ').title()],
-            ['Calidad de Engagement', insights.get('engagement_quality', 'básico').title()],
+            ['Intensidad Emocional', str(insights.get('emotional_intensity', 'medio')).title()],
+            ['Estabilidad de Sentimientos', str(insights.get('sentiment_stability', 'balanceado')).replace('_', ' ').title()],
+            ['Calidad de Engagement', str(insights.get('engagement_quality', 'básico')).title()],
             ['', ''],
             ['ÁREAS PRIORITARIAS DE ACCIÓN', ''],
             ['', '']
@@ -347,7 +347,7 @@ class ProfessionalExcelGenerator:
                 ['', ''],
                 ['MÉTRICAS DE CONFIANZA', ''],
                 ['Score de Confianza IA', f"{insights.get('confidence_score', 0):.1f}%"],
-                ['Calidad de Datos', insights.get('data_quality', 'buena').title()]
+                ['Calidad de Datos', str(insights.get('data_quality', 'buena')).title()]
             ])
         
         ai_df = pd.DataFrame(ai_data, columns=['Métrica IA', 'Valor'])
@@ -463,7 +463,7 @@ class ProfessionalExcelGenerator:
                 else:
                     interpretation = "Emoción neutral"
                 
-                emotion_data.append([emotion.title(), count, f"{percentage:.1f}%", interpretation])
+                emotion_data.append([str(emotion).title(), count, f"{percentage:.1f}%", interpretation])
         
         emotion_df = pd.DataFrame(emotion_data)
         emotion_df.to_excel(writer, sheet_name='Análisis Emocional', index=False, header=False)
