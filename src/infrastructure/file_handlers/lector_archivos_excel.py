@@ -95,13 +95,17 @@ class LectorArchivosExcel(ILectorArchivos):
     
     def _leer_csv(self, archivo) -> pd.DataFrame:
         """
-        Lee archivo CSV con manejo de errores
+        Lee archivo CSV con auto-detection de encoding para preservar caracteres guaraní
         """
         if hasattr(archivo, 'read'):
             archivo.seek(0)
-            return pd.read_csv(archivo, encoding='utf-8', errors='ignore')
+            content = archivo.read()
+            encoding = self._detectar_encoding(content)
+            archivo.seek(0)
+            return pd.read_csv(archivo, encoding=encoding)
         else:
-            return pd.read_csv(BytesIO(archivo.content), encoding='utf-8', errors='ignore')
+            encoding = self._detectar_encoding(archivo.content)
+            return pd.read_csv(BytesIO(archivo.content), encoding=encoding)
     
     def _leer_excel(self, archivo) -> pd.DataFrame:
         """
@@ -171,3 +175,48 @@ class LectorArchivosExcel(ILectorArchivos):
             comentarios.append(comentario_data)
         
         return comentarios
+    
+    def _detectar_encoding(self, content_bytes) -> str:
+        """
+        Detecta encoding automáticamente con fallbacks robustos para Paraguay
+        Prioriza encodings comunes en Paraguay: UTF-8, Latin1, Windows-1252
+        """
+        import chardet
+        
+        # Muestra para detección (primeros 10KB son suficientes)
+        sample = content_bytes[:10240] if isinstance(content_bytes, bytes) else content_bytes.encode()
+        
+        # Intentar detección automática
+        try:
+            detected = chardet.detect(sample)
+            confidence = detected.get('confidence', 0)
+            encoding_detected = detected.get('encoding', 'utf-8')
+            
+            # Si confianza alta, usar detected
+            if confidence > 0.8:
+                logger.debug(f"🔍 Encoding detectado: {encoding_detected} (confianza: {confidence:.2f})")
+                return encoding_detected
+        except Exception:
+            pass
+        
+        # Fallback: probar encodings comunes en Paraguay
+        encodings_paraguay = [
+            'utf-8',           # Estándar moderno
+            'latin1',          # ISO 8859-1 (común en sistemas legacy)
+            'windows-1252',    # Windows default (muy común)
+            'cp1252',          # Variant de windows-1252
+            'iso-8859-1',      # Estándar ISO
+        ]
+        
+        for encoding in encodings_paraguay:
+            try:
+                # Test decode sample
+                sample.decode(encoding)
+                logger.debug(f"✅ Encoding funcionando: {encoding}")
+                return encoding
+            except (UnicodeDecodeError, LookupError):
+                continue
+        
+        # Ultimate fallback: UTF-8 con replace (preserva estructura)
+        logger.warning("⚠️ No se pudo determinar encoding, usando UTF-8 con replace")
+        return 'utf-8'

@@ -310,16 +310,45 @@ class AnalizarExcelMaestroCasoUso:
                 nivel_impacto = self._mapear_nivel_impacto(nivel_impacto_str)
                 
                 if tipo_dolor and nivel_impacto:
-                    dolor = PuntoDolor(
-                        tipo=tipo_dolor,
-                        severidad=severidad,
-                        confianza=confianza,
-                        nivel_impacto=nivel_impacto,
-                        contexto_especifico=contexto,
-                        palabras_clave=[],
-                        frecuencia_mencion=1
-                    )
-                    dolores.append(dolor)
+                    # Use factory methods para aplicar business rules correctly
+                    try:
+                        if severidad >= 0.7:
+                            dolor = PuntoDolor.crear_critico(
+                                tipo=tipo_dolor,
+                                severidad=severidad,
+                                confianza=confianza,
+                                contexto=contexto,
+                                palabras_clave=[],
+                                frecuencia=1
+                            )
+                        elif severidad >= 0.5:
+                            dolor = PuntoDolor.crear_alto_impacto(
+                                tipo=tipo_dolor,
+                                severidad=severidad,
+                                confianza=confianza,
+                                contexto=contexto,
+                                palabras_clave=[],
+                                frecuencia=1
+                            )
+                        elif severidad >= 0.3:
+                            dolor = PuntoDolor.crear_moderado(
+                                tipo=tipo_dolor,
+                                severidad=severidad,
+                                confianza=confianza,
+                                contexto=contexto,
+                                palabras_clave=[],
+                                frecuencia=1
+                            )
+                        else:
+                            # Severidad muy baja, skip o usar constructor directo con validación
+                            continue
+                            
+                        dolores.append(dolor)
+                        
+                    except ValueError as validation_error:
+                        logger.warning(f"⚠️ Business rule violation en PuntoDolor: {validation_error}")
+                        # Fallback: skip invalid pain point
+                        continue
                     
             except Exception as e:
                 logger.warning(f"⚠️ Error mapeando punto de dolor: {str(e)}")

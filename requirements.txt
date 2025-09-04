@@ -20,6 +20,7 @@ python-dotenv>=1.0.1
 
 # Language Processing  
 langdetect>=1.0.9
+chardet>=5.2.0
 
 # Utilities
 requests>=2.32.0

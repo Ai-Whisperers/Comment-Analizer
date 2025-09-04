@@ -50,6 +50,42 @@ class AnalizadorMaestroIA:
         
         logger.info(f"🤖 AnalizadorMaestroIA inicializado - Modelo: {modelo}, Cache: {self._cache_max_size if usar_cache else 'disabled'}, TTL: {self._cache_ttl_seconds}s")
     
+    def _calcular_tokens_dinamicos(self, num_comentarios: int) -> int:
+        """
+        Calcula max_tokens dinámicamente basado en número de comentarios
+        
+        Fórmula optimizada:
+        - Base: 2000 tokens para estructura JSON
+        - Por comentario: 120 tokens promedio  
+        - Buffer: 20% extra para variabilidad
+        - Límite máximo: 128000 tokens (GPT-4 limit)
+        """
+        # Tokens base para estructura JSON
+        tokens_base = 2000
+        
+        # Tokens por comentario (análisis comprehensivo)
+        tokens_por_comentario = 120
+        
+        # Cálculo básico
+        tokens_calculados = tokens_base + (num_comentarios * tokens_por_comentario)
+        
+        # Buffer del 20% para variabilidad de respuesta IA
+        tokens_con_buffer = int(tokens_calculados * 1.20)
+        
+        # Aplicar límites
+        tokens_minimos = 1000  # Mínimo absoluto
+        tokens_maximos = 128000  # Límite GPT-4 Turbo
+        
+        tokens_finales = max(tokens_minimos, min(tokens_con_buffer, tokens_maximos))
+        
+        logger.debug(f"📊 Tokens calculados: {num_comentarios} comentarios → {tokens_finales:,} max_tokens")
+        
+        # Warning si llegamos al límite
+        if tokens_finales >= tokens_maximos:
+            logger.warning(f"⚠️ Archivo muy grande: {num_comentarios} comentarios requieren tokens máximos ({tokens_maximos:,})")
+        
+        return tokens_finales
+    
     def analizar_excel_completo(self, comentarios_raw: List[str]) -> AnalisisCompletoIA:
         """
         Análisis maestro: UNA sola llamada que reemplaza todo el pipeline fragmentado
@@ -203,7 +239,7 @@ INSTRUCCIONES CRÍTICAS:
                 ],
                 temperature=self.temperatura,  # ← DETERMINISTA
                 seed=self.seed,                # ← REPRODUCIBLE
-                max_tokens=4000,
+                max_tokens=self._calcular_tokens_dinamicos(len(comentarios_raw)),
                 response_format={"type": "json_object"}  # ← Forzar JSON válido
             )
             

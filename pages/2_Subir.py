@@ -256,6 +256,9 @@ def _run_analysis(uploaded_file, analysis_type):
             resultado = st.session_state.caso_uso_maestro.ejecutar(comando)
             
             if resultado.es_exitoso():
+                # Memory management: cleanup previous analysis before storing new one
+                _cleanup_previous_analysis()
+                
                 st.session_state.analysis_results = resultado
                 st.session_state.analysis_type = "maestro_ia"
                 st.success("Análisis IA completado!")
@@ -383,3 +386,31 @@ def _create_professional_excel(resultado):
     wb.save(buffer)
     buffer.seek(0)
     return buffer.getvalue()
+
+
+def _cleanup_previous_analysis():
+    """
+    Limpia análisis previos de session state para prevenir acumulación de memoria
+    """
+    cleanup_keys = [
+        'analysis_results',
+        'analysis_type'
+    ]
+    
+    for key in cleanup_keys:
+        if key in st.session_state:
+            # Clear large objects to free memory
+            del st.session_state[key]
+    
+    # Also cleanup repository cache if available
+    if 'contenedor' in st.session_state and st.session_state.contenedor:
+        try:
+            repo = st.session_state.contenedor.obtener_repositorio_comentarios()
+            if hasattr(repo, 'limpiar'):
+                repo.limpiar()
+        except Exception:
+            pass  # Ignore errors in cleanup
+    
+    # Force garbage collection
+    import gc
+    gc.collect()

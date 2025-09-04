@@ -165,7 +165,7 @@ class RepositorioComentariosMemoria(IRepositorioComentarios):
         comentario.calidad = CalidadComentario.evaluar_desde_texto(texto, num_temas)
         
         # Map urgencia from puntos_dolor severity
-        puntos_dolor_texto = [p.descripcion for p in analisis_comentario.puntos_dolor if hasattr(p, 'descripcion')]
+        puntos_dolor_texto = [p.contexto_especifico for p in analisis_comentario.puntos_dolor if hasattr(p, 'contexto_especifico')]
         es_negativo = analisis_comentario.sentimiento.es_negativo() if analisis_comentario.sentimiento else False
         confianza_sentimiento = analisis_comentario.sentimiento.confianza if analisis_comentario.sentimiento else 0.5
         
