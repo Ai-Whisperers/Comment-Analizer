@@ -1,0 +1,18 @@
+/*
+ * Core CSS - Essential Streamlit styling
+ * Fallback for core.css references
+ */
+
+/* Import the actual core components */
+@import url('./components/streamlit-core.css');
+
+/* Additional core styles if needed */
+.core-container {
+    margin: 0;
+    padding: 0;
+}
+
+.core-text {
+    font-family: var(--font-primary, 'Inter', sans-serif);
+    color: var(--text-primary, #F8FAFC);
+}

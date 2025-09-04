@@ -1,0 +1,88 @@
+/*
+ * Glassmorphism CSS - Modern glass effects
+ * Extracted from main styles for modular loading
+ */
+
+/* Import base variables for glassmorphism */
+@import url('./base/variables.css');
+
+/* Glass Morphism Base Components */
+.glass {
+  background: var(--glass-bg, rgba(255, 255, 255, 0.08));
+  backdrop-filter: blur(var(--glass-blur, 16px));
+  -webkit-backdrop-filter: blur(var(--glass-blur, 16px));
+  border: 1px solid var(--glass-border, rgba(255, 255, 255, 0.15));
+  border-radius: var(--radius-lg, 16px);
+  box-shadow: var(--shadow-sm, 0 2px 8px rgba(139, 92, 246, 0.08));
+  transition: all var(--duration-normal, 0.3s) var(--ease-out, cubic-bezier(0.25, 0.8, 0.25, 1));
+}
+
+.glass:hover {
+  background: var(--glass-bg-hover, rgba(255, 255, 255, 0.12));
+  border-color: var(--glass-border-hover, rgba(255, 255, 255, 0.25));
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md, 0 8px 24px rgba(139, 92, 246, 0.12));
+}
+
+.glass-card {
+  background: var(--glass-bg, rgba(255, 255, 255, 0.08));
+  backdrop-filter: blur(var(--glass-blur, 16px));
+  -webkit-backdrop-filter: blur(var(--glass-blur, 16px));
+  border: 1px solid var(--glass-border, rgba(255, 255, 255, 0.15));
+  border-radius: var(--radius-xl, 20px);
+  padding: var(--space-6, 1.5rem);
+  box-shadow: var(--shadow-sm, 0 2px 8px rgba(139, 92, 246, 0.08));
+  transition: all var(--duration-normal, 0.3s) var(--ease-out, cubic-bezier(0.25, 0.8, 0.25, 1));
+  position: relative;
+  overflow: hidden;
+}
+
+.glass-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: linear-gradient(90deg, 
+    transparent, 
+    var(--primary-purple-light, #A78BFA), 
+    var(--secondary-cyan-light, #22D3EE), 
+    transparent);
+  opacity: 0.6;
+}
+
+.glass-card:hover {
+  background: var(--glass-bg-hover, rgba(255, 255, 255, 0.12));
+  border-color: var(--glass-border-hover, rgba(255, 255, 255, 0.25));
+  transform: translateY(-4px);
+  box-shadow: var(--shadow-lg, 0 16px 40px rgba(139, 92, 246, 0.16));
+}
+
+/* Advanced Glass Effects */
+.glass-elevated {
+  background: linear-gradient(135deg, 
+    rgba(255, 255, 255, 0.1), 
+    rgba(255, 255, 255, 0.05));
+  backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: var(--radius-2xl, 24px);
+  box-shadow: 
+    0 8px 32px rgba(139, 92, 246, 0.2),
+    inset 0 1px 0 rgba(255, 255, 255, 0.1);
+  position: relative;
+  overflow: hidden;
+}
+
+.glass-elevated::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: linear-gradient(90deg, 
+    transparent,
+    rgba(255, 255, 255, 0.4),
+    transparent);
+}
