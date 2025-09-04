@@ -58,13 +58,23 @@ Thumbs.db
 .env.build
 *.env
 
-# API Keys and Secrets
+# API Keys and Secrets - CRITICAL SECURITY
 secrets.toml
 .streamlit/secrets.toml
 config/secrets.json
 *.key
 *.pem
 *.cert
+
+# Configuration files that may contain secrets
+config_template.txt
+*.toml
+pyproject.toml
+!requirements.toml  # Allow requirements if needed
+setup.toml
+deployment.toml
+production.toml
+staging.toml
 
 # Project specific
 data/cache/*.db
