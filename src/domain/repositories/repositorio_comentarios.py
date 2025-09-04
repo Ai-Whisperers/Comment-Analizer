@@ -2,13 +2,17 @@
 Repository interface para gestión de comentarios
 """
 from abc import ABC, abstractmethod
-from typing import List, Optional
+from typing import List, Optional, Union, TYPE_CHECKING
 from ..entities.comentario import Comentario
+
+if TYPE_CHECKING:
+    from ..entities.analisis_comentario import AnalisisComentario
 
 
 class IRepositorioComentarios(ABC):
     """
     Interface que define las operaciones de persistencia para comentarios
+    Soporta tanto Comentario legacy como AnalisisComentario del sistema IA
     """
     
     @abstractmethod
@@ -17,8 +21,8 @@ class IRepositorioComentarios(ABC):
         pass
     
     @abstractmethod
-    def guardar_lote(self, comentarios: List[Comentario]) -> None:
-        """Guarda múltiples comentarios"""
+    def guardar_lote(self, comentarios: Union[List[Comentario], List['AnalisisComentario']]) -> None:
+        """Guarda múltiples comentarios (legacy o IA)"""
         pass
     
     @abstractmethod

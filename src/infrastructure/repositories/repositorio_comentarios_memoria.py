@@ -31,20 +31,28 @@ class RepositorioComentariosMemoria(IRepositorioComentarios):
         self._comentarios[comentario.id] = comentario
         logger.debug(f"💾 Comentario guardado: {comentario.id}")
     
-    def guardar_lote(self, comentarios: List[Comentario]) -> None:
+    def guardar_lote(self, comentarios) -> None:
         """
-        Guarda múltiples comentarios
+        Guarda múltiples comentarios (soporta Comentario y AnalisisComentario)
         """
         comentarios_validos = 0
         comentarios_invalidos = 0
         
         for comentario in comentarios:
             try:
-                self.guardar(comentario)
+                # Handle both Comentario and AnalisisComentario types
+                if hasattr(comentario, 'texto_original'):
+                    # AnalisisComentario from IA system
+                    comentario_simple = self._convertir_analisis_a_comentario(comentario)
+                    self.guardar(comentario_simple)
+                else:
+                    # Comentario legacy
+                    self.guardar(comentario)
+                    
                 comentarios_validos += 1
-            except ValueError:
+            except Exception as e:
                 comentarios_invalidos += 1
-                logger.warning(f"⚠️ Comentario inválido omitido: {comentario.id}")
+                logger.warning(f"⚠️ Comentario inválido omitido: {getattr(comentario, 'id', 'unknown')}: {str(e)}")
         
         logger.info(f"📦 Lote guardado: {comentarios_validos} válidos, {comentarios_invalidos} omitidos")
     
@@ -68,7 +76,7 @@ class RepositorioComentariosMemoria(IRepositorioComentarios):
         
         for comentario in self._comentarios.values():
             if (comentario.sentimiento and 
-                comentario.sentimiento.tipo.value == tipo_sentimiento):
+                comentario.sentimiento.categoria.value == tipo_sentimiento):
                 comentarios_encontrados.append(comentario)
         
         return comentarios_encontrados
@@ -126,3 +134,54 @@ class RepositorioComentariosMemoria(IRepositorioComentarios):
             'criticos': criticos,
             'alta_calidad': alta_calidad
         }
+    
+    def _convertir_analisis_a_comentario(self, analisis_comentario) -> Comentario:
+        """
+        Convierte AnalisisComentario a Comentario para compatibility con Repository
+        """
+        from ...domain.entities.comentario import Comentario
+        from ...domain.value_objects.calidad_comentario import CalidadComentario
+        from ...domain.value_objects.nivel_urgencia import NivelUrgencia
+        
+        # Extract basic data
+        id_comentario = analisis_comentario.id
+        texto = analisis_comentario.texto_original
+        texto_limpio = texto.lower().strip()  # Basic cleaning
+        
+        # Convert IA analysis to legacy format
+        comentario = Comentario(
+            id=id_comentario,
+            texto=texto,
+            texto_limpio=texto_limpio,
+            frecuencia=1,
+            fecha_analisis=analisis_comentario.fecha_analisis
+        )
+        
+        # Map sentimiento (same structure)
+        comentario.sentimiento = analisis_comentario.sentimiento
+        
+        # Map calidad from IA analysis richness
+        num_temas = len(analisis_comentario.temas)
+        comentario.calidad = CalidadComentario.evaluar_desde_texto(texto, num_temas)
+        
+        # Map urgencia from puntos_dolor severity
+        puntos_dolor_texto = [p.descripcion for p in analisis_comentario.puntos_dolor if hasattr(p, 'descripcion')]
+        es_negativo = analisis_comentario.sentimiento.es_negativo() if analisis_comentario.sentimiento else False
+        confianza_sentimiento = analisis_comentario.sentimiento.confianza if analisis_comentario.sentimiento else 0.5
+        
+        comentario.urgencia = NivelUrgencia.evaluar_urgencia(
+            puntos_dolor_texto, 
+            es_negativo, 
+            confianza_sentimiento
+        )
+        
+        # Add temas as simple list
+        comentario.temas = [t.categoria.value for t in analisis_comentario.temas]
+        comentario.puntos_dolor = puntos_dolor_texto
+        comentario.emociones = [e.tipo.value for e in analisis_comentario.emociones]
+        
+        # Add original ratings if available
+        comentario.calificacion_nps = getattr(analisis_comentario, 'calificacion_nps', None)
+        comentario.calificacion_nota = getattr(analisis_comentario, 'calificacion_nota', None)
+        
+        return comentario

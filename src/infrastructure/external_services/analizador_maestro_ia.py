@@ -31,14 +31,24 @@ class AnalizadorMaestroIA:
         self.client = openai.OpenAI(api_key=api_key)
         self.modelo = modelo
         self.usar_cache = usar_cache
-        self._cache = {} if usar_cache else None
+        
+        # Cache con límites para prevenir memory leaks
+        if usar_cache:
+            from collections import OrderedDict
+            self._cache = OrderedDict()
+            self._cache_max_size = 50  # Límite máximo de entradas
+            self._cache_ttl_seconds = 3600  # 1 hora TTL
+            self._cache_timestamps = {}  # Track cuando se creó cada entry
+        else:
+            self._cache = None
+            
         self.disponible = self._verificar_disponibilidad()
         
         # Configuración determinista 
         self.temperatura = 0.0    # ← DETERMINISTA para consistencia
         self.seed = 12345         # ← Seed fijo para máxima reproducibilidad
         
-        logger.info(f"🤖 AnalizadorMaestroIA inicializado - Modelo: {modelo}, Determinista: temp={self.temperatura}, seed={self.seed}")
+        logger.info(f"🤖 AnalizadorMaestroIA inicializado - Modelo: {modelo}, Cache: {self._cache_max_size if usar_cache else 'disabled'}, TTL: {self._cache_ttl_seconds}s")
     
     def analizar_excel_completo(self, comentarios_raw: List[str]) -> AnalisisCompletoIA:
         """
@@ -63,9 +73,11 @@ class AnalizadorMaestroIA:
             # Generar hash para cache (determinista por contenido)
             cache_key = self._generar_cache_key(comentarios_raw)
             
-            # Verificar cache
-            if self.usar_cache and cache_key in self._cache:
+            # Verificar cache (con TTL y LRU)
+            if self.usar_cache and self._verificar_cache_valido(cache_key):
                 logger.info("💾 Resultado obtenido desde cache")
+                # Move to end (LRU)
+                self._cache.move_to_end(cache_key)
                 return self._cache[cache_key]
             
             # Generar prompt maestro
@@ -80,9 +92,9 @@ class AnalizadorMaestroIA:
                 respuesta_raw, comentarios_raw, tiempo_transcurrido
             )
             
-            # Guardar en cache
+            # Guardar en cache con límites
             if self.usar_cache:
-                self._cache[cache_key] = analisis_completo
+                self._guardar_en_cache(cache_key, analisis_completo)
             
             logger.info(f"✅ Análisis maestro completado en {tiempo_transcurrido:.2f}s")
             return analisis_completo
@@ -302,6 +314,43 @@ INSTRUCCIONES CRÍTICAS:
         if self._cache:
             self._cache.clear()
             logger.info("🧹 Cache de analizador maestro limpiado")
+    
+    def _verificar_cache_valido(self, cache_key: str) -> bool:
+        """Verifica si una entrada de cache es válida (existe y no expiró)"""
+        if not self._cache or cache_key not in self._cache:
+            return False
+            
+        # Verificar TTL
+        if cache_key in self._cache_timestamps:
+            import time
+            timestamp = self._cache_timestamps[cache_key]
+            if time.time() - timestamp > self._cache_ttl_seconds:
+                # Expiró - remover del cache
+                del self._cache[cache_key]
+                del self._cache_timestamps[cache_key]
+                return False
+                
+        return True
+    
+    def _guardar_en_cache(self, cache_key: str, analisis: AnalisisCompletoIA) -> None:
+        """Guarda en cache con implementación LRU y size limits"""
+        if not self._cache:
+            return
+            
+        import time
+        
+        # Verificar límite de tamaño
+        if len(self._cache) >= self._cache_max_size:
+            # Remover el más antiguo (LRU)
+            oldest_key, _ = self._cache.popitem(last=False)
+            if oldest_key in self._cache_timestamps:
+                del self._cache_timestamps[oldest_key]
+            logger.debug(f"🗑️ Cache LRU: removida entrada antigua")
+        
+        # Guardar nueva entrada
+        self._cache[cache_key] = analisis
+        self._cache_timestamps[cache_key] = time.time()
+        logger.debug(f"💾 Cache: guardada nueva entrada ({len(self._cache)}/{self._cache_max_size})")
     
     def obtener_estadisticas_cache(self) -> Dict[str, Any]:
         """Obtiene estadísticas del cache"""
