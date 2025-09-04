@@ -28,36 +28,38 @@ try:
         
         openai_key = os.getenv('OPENAI_API_KEY') or st.secrets.get('OPENAI_API_KEY', None)
         
-        # Try new maestro system first, fallback to standard
+        # Pure IA maestro system initialization
+        if not openai_key:
+            st.error("OpenAI API key es requerida para esta aplicación IA.")
+            st.info("Configura OPENAI_API_KEY en las variables de entorno o Streamlit secrets.")
+            st.stop()
+            
         try:
             from src.infrastructure.dependency_injection.contenedor_dependencias import ContenedorDependencias
-            from src.application.use_cases.analizar_excel_maestro_caso_uso import AnalizarExcelMaestroCasoUso
             
-            # Create improved system
+            # Create IA-pure system
             config = {'openai_api_key': openai_key, 'max_comments': 2000}
             contenedor = ContenedorDependencias(config)
             st.session_state.contenedor = contenedor
-            st.session_state.caso_uso_maestro = contenedor.obtener_caso_uso_maestro() if hasattr(contenedor, 'obtener_caso_uso_maestro') else None
+            st.session_state.caso_uso_maestro = contenedor.obtener_caso_uso_maestro()
             
-            # Fallback to standard system
-            st.session_state.analizador_app = crear_aplicacion(
-                openai_api_key=openai_key,
-                max_comments=2000,
-                debug_mode=False
-            )
+            if not st.session_state.caso_uso_maestro:
+                raise ValueError("No se pudo inicializar sistema IA maestro")
             
-        except Exception as maestro_error:
-            # Fallback to standard system
-            st.session_state.analizador_app = crear_aplicacion(
-                openai_api_key=openai_key,
-                max_comments=2000,
-                debug_mode=False
-            )
+        except Exception as e:
+            st.error(f"Error inicializando sistema IA: {str(e)}")
+            st.error("Esta aplicación requiere sistema IA funcional.")
+            st.stop()
         
-        # Log initialization
-        if hasattr(st.session_state.analizador_app, 'obtener_info_sistema'):
-            info = st.session_state.analizador_app.obtener_info_sistema()
-            st.session_state.app_info = info
+        # Log IA system initialization 
+        st.session_state.app_info = {
+            'version': '3.0.0-ia-pure',
+            'arquitectura': 'Clean Architecture + Pure IA',
+            'configuracion_actual': {
+                'openai_configurado': True,
+                'sistema': 'maestro_ia'
+            }
+        }
     
     CLEAN_ARCHITECTURE_AVAILABLE = True
 except ImportError as e:

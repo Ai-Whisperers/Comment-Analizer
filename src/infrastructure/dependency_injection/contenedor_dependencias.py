@@ -12,11 +12,11 @@ from ...application.interfaces.procesador_texto import IProcesadorTexto
 from ...application.interfaces.detector_temas import IDetectorTemas
 
 from ..external_services.analizador_openai import AnalizadorOpenAI
-from ..external_services.analizador_reglas import AnalizadorReglas
+from ..external_services.analizador_maestro_ia import AnalizadorMaestroIA
 from ..file_handlers.lector_archivos_excel import LectorArchivosExcel
 from ..repositories.repositorio_comentarios_memoria import RepositorioComentariosMemoria
 from ..text_processing.procesador_texto_basico import ProcesadorTextoBasico
-from ..text_processing.detector_temas_hibrido import DetectorTemasHibrido
+# DetectorTemasHibrido eliminated - Pure IA system
 
 
 logger = logging.getLogger(__name__)
@@ -39,17 +39,7 @@ class ContenedorDependencias:
         # Registrar servicios por defecto
         self._registrar_servicios_por_defecto()
     
-    def obtener_caso_uso_analisis(self) -> AnalizarComentariosCasoUso:
-        """
-        Obtiene el caso de uso principal configurado con todas sus dependencias
-        """
-        return AnalizarComentariosCasoUso(
-            repositorio_comentarios=self.obtener_repositorio_comentarios(),
-            lector_archivos=self.obtener_lector_archivos(),
-            procesador_texto=self.obtener_procesador_texto(),
-            detector_temas=self.obtener_detector_temas(),
-            servicio_sentimientos=self.obtener_servicio_sentimientos()
-        )
+    # Caso de uso estándar eliminado - Solo sistema IA maestro
     
     def obtener_repositorio_comentarios(self) -> IRepositorioComentarios:
         """
@@ -72,13 +62,7 @@ class ContenedorDependencias:
         return self._obtener_singleton('procesador_texto',
                                      lambda: ProcesadorTextoBasico())
     
-    def obtener_detector_temas(self) -> IDetectorTemas:
-        """
-        Obtiene la implementación del detector de temas
-        """
-        openai_key = self.configuracion.get('openai_api_key')
-        return self._obtener_singleton('detector_temas',
-                                     lambda: DetectorTemasHibrido(openai_key))
+    # Detector temas eliminado - Sistema IA maestro lo maneja internamente
     
     def obtener_servicio_sentimientos(self) -> ServicioAnalisisSentimientos:
         """
@@ -86,6 +70,29 @@ class ContenedorDependencias:
         """
         return self._obtener_singleton('servicio_sentimientos',
                                      lambda: self._crear_servicio_sentimientos())
+    
+    def obtener_analizador_maestro_ia(self) -> AnalizadorMaestroIA:
+        """
+        Obtiene el analizador maestro IA para análisis completo
+        """
+        return self._obtener_singleton('analizador_maestro_ia',
+                                     lambda: self._crear_analizador_maestro_ia())
+    
+    def obtener_caso_uso_maestro(self):
+        """
+        Obtiene el caso de uso maestro IA
+        """
+        try:
+            from ...application.use_cases.analizar_excel_maestro_caso_uso import AnalizarExcelMaestroCasoUso
+            return self._obtener_singleton('caso_uso_maestro',
+                                         lambda: AnalizarExcelMaestroCasoUso(
+                                             analizador_ia=self.obtener_analizador_maestro_ia(),
+                                             repositorio=self.obtener_repositorio_comentarios(),
+                                             lector_archivos=self.obtener_lector_archivos()
+                                         ))
+        except ImportError as e:
+            logger.error(f"Error importando caso de uso maestro: {str(e)}")
+            return None
     
     def _crear_servicio_sentimientos(self) -> ServicioAnalisisSentimientos:
         """
@@ -112,12 +119,37 @@ class ContenedorDependencias:
             except Exception as e:
                 logger.error(f"❌ Error configurando OpenAI: {str(e)}")
         
-        # Siempre agregar analizador de reglas como fallback
-        analizador_reglas = AnalizadorReglas()
-        analizadores.append(analizador_reglas)
-        logger.info("✅ Analizador de reglas configurado como fallback")
+        # Pure IA system - no fallback rules
+        if not analizadores:
+            logger.error("No hay analizadores IA disponibles. OpenAI API key requerida.")
+            raise ValueError("Sistema IA requiere OpenAI API key configurada")
         
         return ServicioAnalisisSentimientos(analizadores)
+    
+    def _crear_analizador_maestro_ia(self) -> AnalizadorMaestroIA:
+        """
+        Crea el analizador maestro IA con configuración optimizada
+        """
+        openai_key = self.configuracion.get('openai_api_key')
+        if not openai_key:
+            raise ValueError("OpenAI API key es requerida para análisis IA")
+        
+        try:
+            analizador = AnalizadorMaestroIA(
+                api_key=openai_key,
+                modelo=self.configuracion.get('openai_modelo', 'gpt-4'),
+                usar_cache=True
+            )
+            
+            if analizador.disponible:
+                logger.info("AnalizadorMaestroIA configurado exitosamente")
+                return analizador
+            else:
+                raise ValueError("AnalizadorMaestroIA no está disponible")
+                
+        except Exception as e:
+            logger.error(f"Error configurando AnalizadorMaestroIA: {str(e)}")
+            raise ValueError(f"Error en configuración IA: {str(e)}")
     
     def _obtener_singleton(self, clave: str, factory_func) -> Any:
         """

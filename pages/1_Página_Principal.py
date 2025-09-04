@@ -18,12 +18,13 @@ if str(current_dir) not in sys.path:
 st.title("Personal Paraguay - Análisis de Comentarios")
 
 st.markdown("""
-## Bienvenido a la Plataforma de Análisis
+## Plataforma de Análisis con Inteligencia Artificial
 
-Esta aplicación utiliza **Clean Architecture** para analizar comentarios de clientes con:
-- **Análisis con IA** usando OpenAI GPT-4
-- **Análisis por Reglas** como respaldo robusto
-- **Arquitectura Limpia** con principios SOLID
+Esta aplicación utiliza **Inteligencia Artificial avanzada** para analizar comentarios de clientes:
+- **GPT-4 de OpenAI** para análisis comprehensivo
+- **Análisis emocional granular** con intensidades
+- **Detección automática de temas** y puntos de dolor
+- **Clean Architecture** con principios SOLID
 """)
 
 # System status
@@ -57,11 +58,11 @@ st.markdown("### ¿Cómo usar?")
 
 st.markdown("""
 1. **Ve a la página 'Subir'** usando la barra lateral
-2. **Carga tu archivo** Excel (.xlsx, .xls) o CSV
-3. **Elige el tipo de análisis:**
-   - **Con IA**: Análisis avanzado con GPT-4
-   - **Con Reglas**: Análisis robusto sin conexión
-4. **Revisa los resultados** y exporta si necesitas
+2. **Carga tu archivo** Excel (.xlsx, .xls) o CSV con comentarios
+3. **Presiona 'Analizar con Inteligencia Artificial'** 
+4. **La IA procesará** todos los comentarios en una sola llamada
+5. **Revisa los insights** generados automáticamente
+6. **Exporta el reporte** completo a Excel
 """)
 
 # Technical details
