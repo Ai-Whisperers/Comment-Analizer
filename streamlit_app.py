@@ -41,8 +41,15 @@ try:
         try:
             from src.infrastructure.dependency_injection.contenedor_dependencias import ContenedorDependencias
             
-            # Create IA-pure system
-            config = {'openai_api_key': openai_key, 'max_comments': 2000}
+            # Create IA-pure system with environment variables
+            config = {
+                'openai_api_key': openai_key,
+                'openai_modelo': os.getenv('OPENAI_MODEL') or st.secrets.get('OPENAI_MODEL', 'gpt-4'),
+                'openai_temperatura': float(os.getenv('OPENAI_TEMPERATURE', '0.0') or st.secrets.get('OPENAI_TEMPERATURE', '0.0')),
+                'openai_max_tokens': int(os.getenv('OPENAI_MAX_TOKENS', '8000') or st.secrets.get('OPENAI_MAX_TOKENS', '8000')),
+                'max_comments': int(os.getenv('MAX_COMMENTS_PER_BATCH', '600') or st.secrets.get('MAX_COMMENTS_PER_BATCH', '600')),
+                'cache_ttl': int(os.getenv('CACHE_TTL_SECONDS', '3600') or st.secrets.get('CACHE_TTL_SECONDS', '3600'))
+            }
             contenedor = ContenedorDependencias(config)
             st.session_state.contenedor = contenedor
             st.session_state.caso_uso_maestro = contenedor.obtener_caso_uso_maestro()

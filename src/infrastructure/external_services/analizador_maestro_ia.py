@@ -27,26 +27,28 @@ class AnalizadorMaestroIA:
     - Análisis narrativo completo (variable - como ChatGPT real)
     """
     
-    def __init__(self, api_key: str, modelo: str = "gpt-4", usar_cache: bool = True):
+    def __init__(self, api_key: str, modelo: str = "gpt-4", usar_cache: bool = True, 
+                 temperatura: float = 0.0, cache_ttl: int = 3600, max_tokens: int = 8000):
         self.client = openai.OpenAI(api_key=api_key)
         self.modelo = modelo
         self.usar_cache = usar_cache
+        self.max_tokens_limit = max_tokens
         
         # Cache con límites para prevenir memory leaks
         if usar_cache:
             from collections import OrderedDict
             self._cache = OrderedDict()
             self._cache_max_size = 50  # Límite máximo de entradas
-            self._cache_ttl_seconds = 3600  # 1 hora TTL
+            self._cache_ttl_seconds = cache_ttl  # TTL configurable
             self._cache_timestamps = {}  # Track cuando se creó cada entry
         else:
             self._cache = None
             
         self.disponible = self._verificar_disponibilidad()
         
-        # Configuración determinista 
-        self.temperatura = 0.0    # ← DETERMINISTA para consistencia
-        self.seed = 12345         # ← Seed fijo para máxima reproducibilidad
+        # Configuración determinista configurable
+        self.temperatura = temperatura    # ← Configurable para consistencia
+        self.seed = 12345                 # ← Seed fijo para máxima reproducibilidad
         
         logger.info(f"🤖 AnalizadorMaestroIA inicializado - Modelo: {modelo}, Cache: {self._cache_max_size if usar_cache else 'disabled'}, TTL: {self._cache_ttl_seconds}s")
     
@@ -72,9 +74,9 @@ class AnalizadorMaestroIA:
         # Buffer del 20% para variabilidad de respuesta IA
         tokens_con_buffer = int(tokens_calculados * 1.20)
         
-        # Aplicar límites
+        # Aplicar límites configurables
         tokens_minimos = 1000  # Mínimo absoluto
-        tokens_maximos = 128000  # Límite GPT-4 Turbo
+        tokens_maximos = self.max_tokens_limit  # Límite configurable
         
         tokens_finales = max(tokens_minimos, min(tokens_con_buffer, tokens_maximos))
         

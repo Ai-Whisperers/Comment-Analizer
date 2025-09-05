@@ -147,7 +147,10 @@ class ContenedorDependencias:
             analizador = AnalizadorMaestroIA(
                 api_key=openai_key,
                 modelo=self.configuracion.get('openai_modelo', 'gpt-4'),
-                usar_cache=True
+                usar_cache=True,
+                temperatura=self.configuracion.get('openai_temperatura', 0.0),
+                cache_ttl=self.configuracion.get('cache_ttl', 3600),
+                max_tokens=self.configuracion.get('openai_max_tokens', 8000)
             )
             
             if analizador.disponible:
