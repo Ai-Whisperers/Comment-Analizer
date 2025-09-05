@@ -60,7 +60,7 @@ class AnalizadorMaestroIA:
         - Base: 2000 tokens para estructura JSON
         - Por comentario: 120 tokens promedio  
         - Buffer: 20% extra para variabilidad
-        - Límite máximo: 128000 tokens (GPT-4 limit)
+        - Límite por modelo: gpt-4o-mini=16384, gpt-4=128000
         """
         # Tokens base para estructura JSON
         tokens_base = 2000
@@ -74,17 +74,28 @@ class AnalizadorMaestroIA:
         # Buffer del 20% para variabilidad de respuesta IA
         tokens_con_buffer = int(tokens_calculados * 1.20)
         
-        # Aplicar límites configurables
-        tokens_minimos = 1000  # Mínimo absoluto
-        tokens_maximos = self.max_tokens_limit  # Límite configurable
+        # Límites específicos por modelo
+        limites_por_modelo = {
+            'gpt-4o-mini': 16384,      # Límite real de gpt-4o-mini
+            'gpt-4o': 16384,           # gpt-4o también tiene límite 16K
+            'gpt-4': 128000,           # gpt-4 Turbo
+            'gpt-4-turbo': 128000      # gpt-4 Turbo
+        }
+        
+        # Obtener límite del modelo actual
+        limite_modelo = limites_por_modelo.get(self.modelo, 16384)  # Default a gpt-4o-mini limit
+        
+        # Aplicar límites: usar el menor entre configurado y límite del modelo
+        tokens_minimos = 1000
+        tokens_maximos = min(self.max_tokens_limit, limite_modelo)
         
         tokens_finales = max(tokens_minimos, min(tokens_con_buffer, tokens_maximos))
         
-        logger.debug(f"📊 Tokens calculados: {num_comentarios} comentarios → {tokens_finales:,} max_tokens")
+        logger.debug(f"📊 Tokens calculados: {num_comentarios} comentarios → {tokens_finales:,} max_tokens (modelo: {self.modelo}, límite: {limite_modelo:,})")
         
         # Warning si llegamos al límite
         if tokens_finales >= tokens_maximos:
-            logger.warning(f"⚠️ Archivo muy grande: {num_comentarios} comentarios requieren tokens máximos ({tokens_maximos:,})")
+            logger.warning(f"⚠️ Archivo muy grande: {num_comentarios} comentarios requieren tokens máximos ({tokens_maximos:,}) para modelo {self.modelo}")
         
         return tokens_finales
     
