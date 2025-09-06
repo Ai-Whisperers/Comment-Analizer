@@ -1,7 +1,9 @@
 """
 Implementación en memoria del repositorio de comentarios
 """
-from typing import List, Optional, Dict
+from typing import List, Optional, Dict, Any
+from collections import OrderedDict
+import sys
 import logging
 
 from ...domain.entities.comentario import Comentario
@@ -14,22 +16,98 @@ logger = logging.getLogger(__name__)
 class RepositorioComentariosMemoria(IRepositorioComentarios):
     """
     Implementación en memoria del repositorio de comentarios
-    Ideal para sesiones de análisis temporal
+    CRITICAL FIX: Added memory limits and LRU eviction to prevent memory exhaustion
     """
     
-    def __init__(self):
-        self._comentarios: Dict[str, Comentario] = {}
-        logger.info("📝 Repositorio de comentarios en memoria inicializado")
+    def __init__(self, max_comentarios: int = 10000, max_memory_mb: int = 100):
+        """
+        CRITICAL-003 FIX: Initialize repository with memory and count limits
+        
+        Args:
+            max_comentarios: Maximum number of comments to store (default: 10,000)
+            max_memory_mb: Maximum memory usage in MB (default: 100MB)
+        """
+        # Use OrderedDict for LRU eviction capability
+        self._comentarios: OrderedDict[str, Comentario] = OrderedDict()
+        
+        # Memory management settings
+        self._max_comentarios = max_comentarios
+        self._max_memory_bytes = max_memory_mb * 1024 * 1024
+        self._current_memory_estimate = 0
+        
+        logger.info(f"📝 Memory-limited repository initialized - Max: {max_comentarios} comments, {max_memory_mb}MB")
+    
+    def _estimate_memory_usage(self, comentario: Comentario) -> int:
+        """
+        CRITICAL-003 FIX: Estimate memory usage of a comment
+        
+        Returns:
+            int: Estimated memory usage in bytes
+        """
+        try:
+            # Estimate based on text content + object overhead
+            text_size = len(comentario.texto.encode('utf-8'))
+            
+            # Add estimated overhead for Python object, attributes, etc.
+            object_overhead = 200  # Conservative estimate for Python object overhead
+            
+            # Add any additional attribute sizes if they exist
+            extra_size = 0
+            if hasattr(comentario, 'id') and comentario.id:
+                extra_size += len(str(comentario.id).encode('utf-8'))
+            
+            return text_size + object_overhead + extra_size
+        except Exception:
+            # Conservative fallback if estimation fails
+            return 1000
+    
+    def _enforce_limits(self) -> None:
+        """
+        CRITICAL-003 FIX: Enforce memory and count limits using LRU eviction
+        """
+        removed_count = 0
+        
+        # Enforce count limit (remove oldest entries)
+        while len(self._comentarios) > self._max_comentarios:
+            oldest_key, oldest_comment = self._comentarios.popitem(last=False)
+            self._current_memory_estimate -= self._estimate_memory_usage(oldest_comment)
+            removed_count += 1
+        
+        # Enforce memory limit (remove oldest entries)
+        while (self._current_memory_estimate > self._max_memory_bytes and 
+               len(self._comentarios) > 0):
+            oldest_key, oldest_comment = self._comentarios.popitem(last=False)
+            self._current_memory_estimate -= self._estimate_memory_usage(oldest_comment)
+            removed_count += 1
+        
+        if removed_count > 0:
+            logger.warning(f"🗑️ LRU evicted {removed_count} old comments to enforce memory limits")
     
     def guardar(self, comentario: Comentario) -> None:
         """
         Guarda un comentario en memoria
+        CRITICAL-003 FIX: Now enforces memory limits and uses LRU eviction
         """
         if not comentario.es_valido():
             raise ValueError(f"Comentario inválido: {comentario.id}")
         
+        # Remove existing comment if updating (for LRU order and memory tracking)
+        if comentario.id in self._comentarios:
+            old_comment = self._comentarios[comentario.id]
+            self._current_memory_estimate -= self._estimate_memory_usage(old_comment)
+            del self._comentarios[comentario.id]
+        
+        # Calculate memory usage for new comment
+        memory_usage = self._estimate_memory_usage(comentario)
+        self._current_memory_estimate += memory_usage
+        
+        # Store comment (OrderedDict maintains insertion order for LRU)
         self._comentarios[comentario.id] = comentario
-        logger.debug(f"💾 Comentario guardado: {comentario.id}")
+        
+        # Enforce limits after insertion
+        self._enforce_limits()
+        
+        logger.debug(f"💾 Comment saved: {comentario.id} ({memory_usage} bytes, total: {self._current_memory_estimate} bytes)")
     
     def guardar_lote(self, comentarios) -> None:
         """
@@ -104,10 +182,31 @@ class RepositorioComentariosMemoria(IRepositorioComentarios):
     def limpiar(self) -> None:
         """
         Limpia todos los comentarios del repositorio
+        CRITICAL-003 FIX: Now also resets memory tracking
         """
         cantidad_anterior = len(self._comentarios)
         self._comentarios.clear()
-        logger.info(f"🧹 Repositorio limpiado: {cantidad_anterior} comentarios removidos")
+        self._current_memory_estimate = 0  # Reset memory tracking
+        logger.info(f"🧹 Repositorio limpiado: {cantidad_anterior} comentarios removidos, memoria liberada")
+    
+    def get_memory_stats(self) -> Dict[str, Any]:
+        """
+        CRITICAL-003 FIX: Get memory usage statistics for monitoring
+        
+        Returns:
+            Dict with memory statistics
+        """
+        return {
+            "total_comments": len(self._comentarios),
+            "estimated_memory_mb": round(self._current_memory_estimate / (1024 * 1024), 2),
+            "max_comments_limit": self._max_comentarios,
+            "max_memory_limit_mb": round(self._max_memory_bytes / (1024 * 1024), 2),
+            "memory_utilization_pct": round((self._current_memory_estimate / self._max_memory_bytes) * 100, 1) if self._max_memory_bytes > 0 else 0,
+            "count_utilization_pct": round((len(self._comentarios) / self._max_comentarios) * 100, 1) if self._max_comentarios > 0 else 0,
+            "avg_comment_size_bytes": round(self._current_memory_estimate / len(self._comentarios)) if len(self._comentarios) > 0 else 0,
+            "memory_bounded": True,
+            "eviction_strategy": "LRU"
+        }
     
     def obtener_estadisticas(self) -> Dict[str, int]:
         """
