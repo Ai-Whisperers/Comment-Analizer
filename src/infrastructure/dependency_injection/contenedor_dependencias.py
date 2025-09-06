@@ -89,7 +89,7 @@ class ContenedorDependencias:
                                              repositorio_comentarios=self.obtener_repositorio_comentarios(),
                                              lector_archivos=self.obtener_lector_archivos(),
                                              analizador_maestro=self.obtener_analizador_maestro_ia(),
-                                             max_comments_per_batch=self.configuracion.get('max_comments', 42)
+                                             max_comments_per_batch=self.configuracion.get('max_comments', 20)
                                          ))
         except ImportError as e:
             logger.error(f"Error importando caso de uso maestro: {str(e)}")

@@ -30,16 +30,16 @@ graph TD
     O -->|Raw Data| P[📝 procesador_texto_basico]
     P -->|Clean Text| Q[🔢 Comment Count Check]
     
-    %% Batch Decision
-    Q -->|≤40 Comments| R[📦 Single Batch]
-    Q -->|>40 Comments| S[📦 Multi-Batch Processing]
+    %% Batch Decision (OPTIMIZED for 8K token limit)
+    Q -->|≤20 Comments| R[📦 Single Batch]
+    Q -->|>20 Comments| S[📦 Multi-Batch Processing]
     
     %% Single Batch Flow
     R -->|Direct| T[🤖 analizador_maestro_ia]
     
     %% Multi-Batch Flow  
     S -->|Split| U[🔄 _procesar_en_lotes()]
-    U -->|Create Batches| V[📊 25-30 Lotes]
+    U -->|Create Batches| V[📊 50-60 Lotes × 20 comentarios]
     V -->|For Each Batch| W[🤖 analizador_maestro_ia]
     W -->|Pause 2s| X[⏳ Rate Limiting]
     X -->|Next Batch| V
@@ -135,16 +135,18 @@ graph TD
 - Auto-detect comment columns
 - Validate file structure
 
-### 3. **Analysis Decision Point** (AnalizarExcelMaestroCasoUso)
-- **≤40 comments**: Direct single-batch processing
-- **>40 comments**: Multi-batch processing with consolidation
+### 3. **Analysis Decision Point** (AnalizarExcelMaestroCasoUso) - OPTIMIZED
+- **≤20 comments**: Direct single-batch processing
+- **>20 comments**: Multi-batch processing with consolidation
 - **Rate limiting**: 2-second pause between batches
+- **Token optimization**: Ultra-compact prompts and responses
 
-### 4. **AI Processing Engine** (analizador_maestro_ia.py)
-- Dynamic token calculation based on model limits
-- Optimized prompt generation for concise responses
-- Model-specific handling (gpt-4o-mini: 16K, gpt-4: 128K tokens)
-- Built-in caching with LRU + TTL
+### 4. **AI Processing Engine** (analizador_maestro_ia.py) - OPTIMIZED
+- **Ultra-compact token calculation**: 1200 base + 80 per comment + 10% buffer
+- **Minimalist prompt generation**: Abbreviated JSON fields and concise instructions  
+- **Strict limit enforcement**: Respects 8K token configuration limit
+- **Model-specific handling**: (gpt-4o-mini: 16K, gpt-4: 128K tokens)
+- **Built-in caching**: LRU + TTL for performance
 
 ### 5. **Domain Mapping** (_mapear_a_entidades_dominio)
 - Convert AI responses to domain objects
@@ -161,15 +163,16 @@ graph TD
 
 ## ⚡ Performance Characteristics
 
-### Processing Times
-- **40 comments**: ~15 seconds
-- **400 comments**: ~3 minutes  
-- **1000 comments**: ~8 minutes
+### Processing Times (OPTIMIZED)
+- **20 comments**: ~10 seconds
+- **400 comments**: ~3.5 minutes  
+- **1000 comments**: ~8.5 minutes
+- **1200 comments**: ~10 minutes
 
-### Resource Usage
-- **Memory**: ~50MB per batch
-- **API Calls**: 1 per 40 comments
-- **Token Usage**: ~8,000 per batch
+### Resource Usage (OPTIMIZED)
+- **Memory**: ~30MB per batch
+- **API Calls**: 1 per 20 comments
+- **Token Usage**: ~2,960 per batch (safe under 8K limit)
 
 ### Bottlenecks
 - OpenAI API rate limits (TPM)

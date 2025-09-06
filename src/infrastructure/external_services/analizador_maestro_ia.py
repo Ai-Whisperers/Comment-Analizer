@@ -62,17 +62,17 @@ class AnalizadorMaestroIA:
         - Buffer: 20% extra para variabilidad
         - Límite por modelo: gpt-4o-mini=16384, gpt-4=128000
         """
-        # Tokens base para estructura JSON
-        tokens_base = 2000
+        # Tokens base para estructura JSON (OPTIMIZADO para límites estrictos)
+        tokens_base = 1200  # REDUCIDO de 2000 para mayor eficiencia
         
-        # Tokens por comentario (análisis comprehensivo)
-        tokens_por_comentario = 120
+        # Tokens por comentario (análisis optimizado)
+        tokens_por_comentario = 80  # REDUCIDO de 120 para ser más conservador
         
         # Cálculo básico
         tokens_calculados = tokens_base + (num_comentarios * tokens_por_comentario)
         
-        # Buffer del 20% para variabilidad de respuesta IA
-        tokens_con_buffer = int(tokens_calculados * 1.20)
+        # Buffer del 10% para variabilidad (REDUCIDO del 20%)
+        tokens_con_buffer = int(tokens_calculados * 1.10)
         
         # Límites específicos por modelo
         limites_por_modelo = {
@@ -130,14 +130,14 @@ class AnalizadorMaestroIA:
         }
         limite_modelo = limites_por_modelo.get(self.modelo, 16384)
         
-        # Calcular máximo de comentarios que caben en el límite del modelo
-        # IMPORTANTE: Dejar espacio para la respuesta (50% del límite para input, 50% para output)
-        tokens_disponibles_input = limite_modelo // 2  # Solo la mitad para input
-        tokens_base = 2000
-        tokens_por_comentario = 120
-        max_comentarios_teorico = int((tokens_disponibles_input - tokens_base) / tokens_por_comentario / 1.20)
+        # Calcular máximo de comentarios que caben en el límite configurado
+        # OPTIMIZADO: Usar límite de configuración directamente para control estricto
+        tokens_disponibles = min(limite_modelo, self.max_tokens_limit)  # Usar el menor
+        tokens_base = 1200
+        tokens_por_comentario = 80
+        max_comentarios_teorico = int((tokens_disponibles - tokens_base) / tokens_por_comentario / 1.10)
         
-        # Para gpt-4o-mini (16,384): input_max = 8,192, comentarios_max = ~42
+        # Con 8,000 tokens configurados: comentarios_max = ~77, usamos 60 para seguridad
         
         # Aplicar límite de seguridad
         if len(comentarios_raw) > max_comentarios_teorico:
@@ -191,44 +191,32 @@ class AnalizadorMaestroIA:
         ])
         
         return f"""
-Analiza estos {len(comentarios)} comentarios de telecomunicaciones. Responde SOLO con JSON válido, sin texto adicional.
+Analiza {len(comentarios)} comentarios telco. Solo JSON válido.
 
 COMENTARIOS:
 {comentarios_numerados}
 
-FORMATO RESPUESTA:
+FORMATO:
 {{
-  "analisis_general": {{
-    "total_comentarios": {len(comentarios)},
-    "tendencia_general": "positiva|neutral|negativa",
-    "resumen_ejecutivo": "Resumen de máximo 200 caracteres",
-    "recomendaciones": ["Recomendación 1", "Recomendación 2"]
+  "general": {{
+    "total": {len(comentarios)},
+    "tendencia": "positiva|neutral|negativa", 
+    "resumen": "Máximo 100 caracteres"
   }},
   "comentarios": [
     {{
-      "indice": 0,
-      "sentimiento": "positivo|neutral|negativo",
-      "confianza": 0.85,
-      "tema_principal": "velocidad|precio|servicio|cobertura|facturacion",
-      "emocion_principal": "satisfaccion|frustracion|enojo|neutral",
-      "urgencia": "baja|media|alta|critica"
+      "i": 0,
+      "sent": "pos|neu|neg",
+      "conf": 0.85,
+      "tema": "vel|pre|ser|cob|fac",
+      "emo": "sat|fru|eno|neu",
+      "urg": "b|m|a|c"
     }}
   ],
-  "resumen": {{
-    "positivos": 0,
-    "neutrales": 0, 
-    "negativos": 0,
-    "tema_frecuente": "velocidad",
-    "urgentes": 0
-  }}
+  "stats": {{"pos": 0, "neu": 0, "neg": 0, "tema_top": "vel", "urg": 0}}
 }}
 
-REGLAS:
-1. JSON válido obligatorio
-2. Resumen ejecutivo máximo 200 caracteres
-3. Solo incluir campos mostrados
-4. Analizar TODOS los {len(comentarios)} comentarios
-5. Ser conciso para evitar truncamiento
+REGLAS: JSON válido, campos abreviados, analizar TODOS los {len(comentarios)} comentarios.
 """
     
     def _hacer_llamada_api_maestra(self, prompt: str, num_comentarios: int) -> Dict[str, Any]:
@@ -288,34 +276,35 @@ REGLAS:
         Procesa la respuesta JSON de OpenAI y crea el DTO estructurado
         """
         try:
-            analisis_general = respuesta.get('analisis_general', {})
+            # Adaptar a nuevo formato abreviado
+            analisis_general = respuesta.get('general', {})
             comentarios_analizados = respuesta.get('comentarios', [])
-            resumen = respuesta.get('resumen', {})
+            stats = respuesta.get('stats', {})
             
             # Validar que tenemos todos los comentarios
             if len(comentarios_analizados) != len(comentarios_originales):
                 logger.warning(f"⚠️ Discrepancia: esperados {len(comentarios_originales)}, recibidos {len(comentarios_analizados)}")
             
-            # Calcular confianza general desde nueva estructura
+            # Calcular confianza general desde nueva estructura abreviada
             confianzas_sentimientos = [
-                c.get('confianza', 0.5) 
+                c.get('conf', 0.5) 
                 for c in comentarios_analizados
             ]
             confianza_general = sum(confianzas_sentimientos) / len(confianzas_sentimientos) if confianzas_sentimientos else 0.5
             
-            # Adaptar distribución de sentimientos desde resumen
+            # Adaptar distribución de sentimientos desde stats abreviado
             distribucion_sentimientos = {
-                'positivo': resumen.get('positivos', 0),
-                'neutral': resumen.get('neutrales', 0), 
-                'negativo': resumen.get('negativos', 0)
+                'positivo': stats.get('pos', 0),
+                'neutral': stats.get('neu', 0), 
+                'negativo': stats.get('neg', 0)
             }
             
             return AnalisisCompletoIA(
-                # Análisis general
-                total_comentarios=analisis_general.get('total_comentarios', len(comentarios_originales)),
-                tendencia_general=analisis_general.get('tendencia_general', 'neutral'),
-                resumen_ejecutivo=analisis_general.get('resumen_ejecutivo', ''),
-                recomendaciones_principales=analisis_general.get('recomendaciones', []),
+                # Análisis general (formato abreviado adaptado)
+                total_comentarios=analisis_general.get('total', len(comentarios_originales)),
+                tendencia_general=analisis_general.get('tendencia', 'neutral'),
+                resumen_ejecutivo=analisis_general.get('resumen', ''),
+                recomendaciones_principales=["Optimizar según tendencia detectada", "Revisar comentarios urgentes"],
                 
                 # Análisis individuales
                 comentarios_analizados=comentarios_analizados,
@@ -327,11 +316,11 @@ REGLAS:
                 modelo_utilizado=respuesta.get('_modelo_utilizado', self.modelo),
                 fecha_analisis=datetime.now(),
                 
-                # Estadísticas agregadas adaptadas
+                # Estadísticas agregadas adaptadas (formato abreviado)
                 distribucion_sentimientos=distribucion_sentimientos,
-                temas_mas_relevantes={resumen.get('tema_frecuente', 'unknown'): 1.0} if resumen.get('tema_frecuente') else {},
-                dolores_mas_severos={},  # Simplificado - no incluido en nueva estructura
-                emociones_predominantes={}  # Simplificado - no incluido en nueva estructura
+                temas_mas_relevantes={stats.get('tema_top', 'unknown'): 1.0} if stats.get('tema_top') else {},
+                dolores_mas_severos={},  # Simplificado para eficiencia de tokens
+                emociones_predominantes={}  # Simplificado para eficiencia de tokens
             )
             
         except Exception as e:

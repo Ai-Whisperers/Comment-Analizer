@@ -75,7 +75,7 @@ class AnalizarExcelMaestroCasoUso:
         repositorio_comentarios: IRepositorioComentarios,
         lector_archivos: ILectorArchivos,
         analizador_maestro: AnalizadorMaestroIA,
-        max_comments_per_batch: int = 42
+        max_comments_per_batch: int = 20
     ):
         self.repositorio_comentarios = repositorio_comentarios
         self.lector_archivos = lector_archivos
