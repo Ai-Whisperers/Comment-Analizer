@@ -137,6 +137,93 @@ def _run_analysis(uploaded_file, analysis_type):
             st.error("Este es un error no manejado. Por favor contacta soporte técnico.")
 
 
+def _create_comprehensive_emotions_chart(emociones_predominantes):
+    """
+    Create comprehensive emotion distribution chart - FIRST DISPLAY
+    Shows detailed breakdown of all 16 granular emotions with intensities
+    This is the primary emotion visualization showing rich emotional insights
+    """
+    if not emociones_predominantes or not isinstance(emociones_predominantes, dict):
+        return None
+        
+    # Get all emotions sorted by intensity (highest first)
+    sorted_emotions = sorted(emociones_predominantes.items(), key=lambda x: x[1], reverse=True)
+    
+    # Take all available emotions (up to 16)
+    emotions = [emo for emo, intensity in sorted_emotions if intensity > 0][:16]
+    intensities = [intensity for emo, intensity in sorted_emotions if intensity > 0][:16]
+    
+    if not emotions:
+        return None
+    
+    # Enhanced color mapping for all 16 emotion types
+    emotion_colors = {
+        # Positive emotions - Green/Blue spectrum
+        'satisfaccion': '#10B981',    # Emerald
+        'alegria': '#06D6A0',         # Bright green  
+        'entusiasmo': '#FFD23F',      # Bright yellow
+        'gratitud': '#118AB2',        # Blue
+        'confianza': '#073B4C',       # Dark blue
+        
+        # Negative emotions - Red/Orange spectrum  
+        'frustracion': '#EF4444',     # Red
+        'enojo': '#DC2626',           # Dark red
+        'decepcion': '#991B1B',       # Very dark red
+        'preocupacion': '#F97316',    # Orange
+        'irritacion': '#EA580C',      # Dark orange
+        'ansiedad': '#C2410C',        # Very dark orange
+        'tristeza': '#7C2D12',        # Brown-red
+        
+        # Neutral/Mixed emotions - Purple/Gray spectrum
+        'confusion': '#6B7280',       # Gray  
+        'esperanza': '#8B5CF6',       # Purple
+        'curiosidad': '#A855F7',      # Light purple
+        'impaciencia': '#9333EA',     # Medium purple
+        'neutral': '#9CA3AF'          # Light gray
+    }
+    
+    colors = [emotion_colors.get(emotion, '#8B5CF6') for emotion in emotions]
+    
+    # Create horizontal bar chart for better readability with many emotions
+    fig = go.Figure(data=[go.Bar(
+        x=intensities,
+        y=emotions,
+        orientation='h',
+        marker=dict(
+            color=colors,
+            opacity=0.8,
+            line=dict(color='rgba(255,255,255,0.2)', width=1)
+        ),
+        text=[f'{intensity:.2f}' for intensity in intensities],
+        textposition='auto',
+        textfont=dict(color='white', size=11)
+    )])
+    
+    fig.update_layout(
+        title=dict(
+            text="📊 Distribución Completa de Emociones Granulares",
+            font=dict(size=16, color='white')
+        ),
+        xaxis_title="Intensidad",
+        yaxis_title="Emociones",
+        font=dict(color='white'),
+        paper_bgcolor='rgba(0,0,0,0)',
+        plot_bgcolor='rgba(0,0,0,0)',
+        height=max(400, len(emotions) * 25 + 100),  # Dynamic height based on emotion count
+        margin=dict(l=120, r=50, t=80, b=50),  # More left margin for emotion names
+        xaxis=dict(
+            gridcolor='rgba(255,255,255,0.1)',
+            showgrid=True
+        ),
+        yaxis=dict(
+            gridcolor='rgba(255,255,255,0.1)',
+            showgrid=False
+        )
+    )
+    
+    return fig
+
+
 def _create_sentiment_distribution_chart(distribucion_sentimientos):
     """Create pie chart for sentiment distribution"""
     if not distribucion_sentimientos:
@@ -497,15 +584,86 @@ def _create_professional_excel(resultado):
             ws[f'C{row}'] = "Alta" if relevancia > 0.7 else "Media" if relevancia > 0.4 else "Baja"
             row += 1
         
-        # Emotions with intensities
-        ws[f'A{row + 1}'] = "EMOCIONES PREDOMINANTES"
+        # ENHANCED: Comprehensive Emotion Distribution with Statistics
+        ws[f'A{row + 1}'] = "DISTRIBUCIÓN COMPLETA DE EMOCIONES GRANULARES"
         ws[f'A{row + 1}'].font = section_font  
         row += 2
-        for emocion, intensidad in list(analisis.emociones_predominantes.items())[:6]:
-            ws[f'A{row}'] = emocion
-            ws[f'B{row}'] = f"{intensidad:.1f}"
-            ws[f'C{row}'] = "Intensa" if intensidad > 7 else "Moderada" if intensidad > 4 else "Leve"
+        
+        # Column headers for emotion statistics
+        ws[f'A{row}'] = "Emoción"
+        ws[f'B{row}'] = "Intensidad"
+        ws[f'C{row}'] = "Porcentaje"
+        ws[f'D{row}'] = "Clasificación"
+        ws[f'E{row}'] = "Tipo"
+        
+        # Style headers
+        header_row = row
+        for col in ['A', 'B', 'C', 'D', 'E']:
+            ws[f'{col}{header_row}'].font = openpyxl.styles.Font(bold=True)
+        
+        row += 1
+        
+        # Sort emotions by intensity (highest first) and show ALL emotions
+        if analisis.emociones_predominantes:
+            sorted_emotions = sorted(analisis.emociones_predominantes.items(), 
+                                   key=lambda x: x[1], reverse=True)
+            
+            # Define emotion types for categorization
+            emotion_types = {
+                'satisfaccion': 'Positiva', 'alegria': 'Positiva', 'entusiasmo': 'Positiva', 
+                'gratitud': 'Positiva', 'confianza': 'Positiva',
+                'frustracion': 'Negativa', 'enojo': 'Negativa', 'decepcion': 'Negativa',
+                'preocupacion': 'Negativa', 'irritacion': 'Negativa', 'ansiedad': 'Negativa',
+                'tristeza': 'Negativa', 'confusion': 'Neutra', 'esperanza': 'Neutra',
+                'curiosidad': 'Neutra', 'impaciencia': 'Neutra', 'neutral': 'Neutra'
+            }
+            
+            total_intensity = sum(analisis.emociones_predominantes.values())
+            
+            for emocion, intensidad in sorted_emotions:
+                # Calculate percentage of total emotional expression
+                percentage = (intensidad / total_intensity * 100) if total_intensity > 0 else 0
+                
+                # Enhanced classification based on intensity
+                if intensidad >= 0.8:
+                    clasificacion = "Muy Intensa"
+                elif intensidad >= 0.6:
+                    clasificacion = "Intensa"
+                elif intensidad >= 0.4:
+                    clasificacion = "Moderada"
+                elif intensidad >= 0.2:
+                    clasificacion = "Leve"
+                else:
+                    clasificacion = "Muy Leve"
+                
+                # Get emotion type
+                tipo = emotion_types.get(emocion, 'Desconocida')
+                
+                # Write to Excel
+                ws[f'A{row}'] = emocion.replace('_', ' ').title()
+                ws[f'B{row}'] = f"{intensidad:.3f}"
+                ws[f'C{row}'] = f"{percentage:.1f}%"
+                ws[f'D{row}'] = clasificacion
+                ws[f'E{row}'] = tipo
+                row += 1
+            
+            # Add summary statistics
             row += 1
+            ws[f'A{row}'] = "ESTADÍSTICAS DE EMOCIONES"
+            ws[f'A{row}'].font = openpyxl.styles.Font(bold=True)
+            row += 1
+            
+            # Calculate emotion type distributions
+            tipo_counts = {'Positiva': 0, 'Negativa': 0, 'Neutra': 0}
+            for emocion, intensidad in analisis.emociones_predominantes.items():
+                tipo = emotion_types.get(emocion, 'Neutra')
+                tipo_counts[tipo] += intensidad
+            
+            for tipo, total_intensity in tipo_counts.items():
+                ws[f'A{row}'] = f"Total {tipo}s"
+                ws[f'B{row}'] = f"{total_intensity:.2f}"
+                ws[f'C{row}'] = f"{(total_intensity/sum(tipo_counts.values())*100):.1f}%" if sum(tipo_counts.values()) > 0 else "0%"
+                row += 1
         
         # Pain points with severity
         if analisis.dolores_mas_severos:
@@ -744,7 +902,17 @@ if 'analysis_results' in st.session_state:
             # ENHANCED VISUALIZATION: AI Analysis Charts
             st.markdown("#### 📊 Visualización de Análisis IA")
             
-            # Create chart columns
+            # FIRST CHART: Comprehensive Emotion Distribution (Most Important)
+            if analisis.emociones_predominantes:
+                st.markdown("##### 🎭 Distribución Completa de Emociones Detectadas")
+                emotions_main_chart = _create_comprehensive_emotions_chart(analisis.emociones_predominantes)
+                if emotions_main_chart:
+                    st.plotly_chart(emotions_main_chart, use_container_width=True)
+                else:
+                    st.info("📊 No se detectaron emociones suficientes para visualización")
+            
+            # Additional Charts in columns
+            st.markdown("##### 📊 Métricas Adicionales")
             col_chart1, col_chart2 = st.columns(2)
             
             with col_chart1:
