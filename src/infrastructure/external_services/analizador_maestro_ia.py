@@ -89,7 +89,13 @@ class AnalizadorMaestroIA:
         tokens_minimos = 1000
         tokens_maximos = min(self.max_tokens_limit, limite_modelo)
         
+        # FORZAR límite absoluto - nunca exceder límite del modelo
         tokens_finales = max(tokens_minimos, min(tokens_con_buffer, tokens_maximos))
+        
+        # Safety check adicional: nunca exceder límite del modelo
+        if tokens_finales > limite_modelo:
+            logger.error(f"🚨 SAFETY: Forzando tokens de {tokens_finales:,} a límite modelo {limite_modelo:,}")
+            tokens_finales = limite_modelo
         
         logger.debug(f"📊 Tokens calculados: {num_comentarios} comentarios → {tokens_finales:,} max_tokens (modelo: {self.modelo}, límite: {limite_modelo:,})")
         
@@ -115,8 +121,28 @@ class AnalizadorMaestroIA:
         if not comentarios_raw:
             raise IAException("No hay comentarios para analizar")
         
+        # LÍMITE DE SEGURIDAD: Calcular máximo de comentarios basado en modelo
+        limites_por_modelo = {
+            'gpt-4o-mini': 16384,
+            'gpt-4o': 16384,
+            'gpt-4': 128000,
+            'gpt-4-turbo': 128000
+        }
+        limite_modelo = limites_por_modelo.get(self.modelo, 16384)
+        
+        # Calcular máximo de comentarios que caben en el límite del modelo
+        # Formula inversa: (limite - base) / tokens_por_comentario / buffer
+        tokens_base = 2000
+        tokens_por_comentario = 120
+        max_comentarios_teorico = int((limite_modelo - tokens_base) / tokens_por_comentario / 1.20)
+        
+        # Aplicar límite de seguridad
+        if len(comentarios_raw) > max_comentarios_teorico:
+            logger.warning(f"🚨 LÍMITE: Archivo tiene {len(comentarios_raw)} comentarios, limitando a {max_comentarios_teorico} para modelo {self.modelo}")
+            comentarios_raw = comentarios_raw[:max_comentarios_teorico]
+        
         inicio_tiempo = time.time()
-        logger.info(f"🔍 Iniciando análisis maestro de {len(comentarios_raw)} comentarios")
+        logger.info(f"🔍 Iniciando análisis maestro de {len(comentarios_raw)} comentarios (limitado para {self.modelo})")
         
         try:
             # Generar hash para cache (determinista por contenido)
