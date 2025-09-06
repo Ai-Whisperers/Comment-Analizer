@@ -139,6 +139,10 @@ class AnalizadorMaestroIA:
         if not comentarios_raw:
             raise IAException("No hay comentarios para analizar")
         
+        # CRITICAL FIX: Cleanup expired cache entries to prevent memory leak
+        if self.usar_cache:
+            self._cleanup_expired_cache()
+        
         # LÍMITE DE SEGURIDAD: Calcular máximo de comentarios basado en modelo
         limites_por_modelo = {
             'gpt-4o-mini': 16384,
@@ -398,7 +402,47 @@ REGLAS: JSON válido, campos abreviados, analizar TODOS los {len(comentarios)} c
         """Limpia el cache de análisis"""
         if self._cache:
             self._cache.clear()
+            self._cache_timestamps.clear()  # ✅ FIXED: Clear timestamps too
             logger.info("🧹 Cache de analizador maestro limpiado")
+    
+    def _cleanup_expired_cache(self) -> None:
+        """
+        CRITICAL FIX: Background cleanup of expired cache entries to prevent memory leak
+        Addresses CRITICAL-001: Memory leak in cache timestamps dictionary
+        """
+        if not self._cache or not self.usar_cache:
+            return
+        
+        import time
+        current_time = time.time()
+        expired_keys = []
+        
+        # Identify expired keys
+        for key, timestamp in self._cache_timestamps.items():
+            if current_time - timestamp > self._cache_ttl_seconds:
+                expired_keys.append(key)
+        
+        # Remove expired entries from both dictionaries
+        removed_count = 0
+        for key in expired_keys:
+            if key in self._cache:
+                del self._cache[key]
+                removed_count += 1
+            if key in self._cache_timestamps:
+                del self._cache_timestamps[key]
+        
+        if removed_count > 0:
+            logger.info(f"🧹 Cleaned {removed_count} expired cache entries (memory leak prevention)")
+        
+        # Additional safety: if timestamps dict grows larger than cache, clean it
+        if len(self._cache_timestamps) > len(self._cache):
+            # Remove timestamps that don't have corresponding cache entries
+            orphaned_keys = set(self._cache_timestamps.keys()) - set(self._cache.keys())
+            for key in list(orphaned_keys):  # Convert to list to avoid dict changing during iteration
+                if key in self._cache_timestamps:
+                    del self._cache_timestamps[key]
+            if orphaned_keys:
+                logger.debug(f"🧹 Cleaned {len(orphaned_keys)} orphaned timestamp entries")
     
     def _verificar_cache_valido(self, cache_key: str) -> bool:
         """Verifica si una entrada de cache es válida (existe y no expiró)"""
