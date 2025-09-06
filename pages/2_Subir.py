@@ -99,12 +99,12 @@ def _create_sentiment_distribution_chart(distribucion_sentimientos):
     if not distribucion_sentimientos:
         return None
         
-    # Prepare data
+    # Prepare data - handle both formats (legacy and new abbreviated)
     sentiments = ['Positivos', 'Neutrales', 'Negativos'] 
     values = [
-        distribucion_sentimientos.get('positivo', 0),
-        distribucion_sentimientos.get('neutral', 0), 
-        distribucion_sentimientos.get('negativo', 0)
+        distribucion_sentimientos.get('positivo', distribucion_sentimientos.get('pos', 0)),
+        distribucion_sentimientos.get('neutral', distribucion_sentimientos.get('neu', 0)), 
+        distribucion_sentimientos.get('negativo', distribucion_sentimientos.get('neg', 0))
     ]
     
     colors = ['#10B981', '#6B7280', '#EF4444']  # Green, Gray, Red
@@ -133,10 +133,20 @@ def _create_themes_chart(temas_relevantes):
     """Create horizontal bar chart for themes"""
     if not temas_relevantes:
         return None
+    
+    # Handle case where temas_relevantes might be a single theme from stats.tema_top
+    if isinstance(temas_relevantes, dict) and len(temas_relevantes) == 1:
+        # Single theme from abbreviated format
+        themes = list(temas_relevantes.keys())
+        relevances = list(temas_relevantes.values())
+    else:
+        # Multiple themes - take top 10
+        themes = list(temas_relevantes.keys())[:10]
+        relevances = list(temas_relevantes.values())[:10]
         
-    # Prepare data - top 10 themes
-    themes = list(temas_relevantes.keys())[:10]
-    relevances = list(temas_relevantes.values())[:10]
+    # Ensure we have data to display
+    if not themes or not relevances:
+        return None
     
     fig = go.Figure(data=[go.Bar(
         x=relevances,
@@ -203,11 +213,13 @@ def _create_emotions_donut_chart(emociones_predominantes):
 
 def _create_token_usage_gauge(tokens_utilizados, max_tokens=8000):
     """Create gauge chart for token usage"""
-    percentage = (tokens_utilizados / max_tokens) * 100
+    # Validate input data
+    tokens_used = tokens_utilizados if tokens_utilizados and tokens_utilizados > 0 else 0
+    percentage = (tokens_used / max_tokens) * 100
     
     fig = go.Figure(go.Indicator(
         mode="gauge+number+delta",
-        value=tokens_utilizados,
+        value=tokens_used,
         delta={'reference': max_tokens * 0.8},  # 80% reference
         gauge={
             'axis': {'range': [None, max_tokens]},
@@ -240,12 +252,19 @@ def _create_confidence_histogram(comentarios_analizados):
     if not comentarios_analizados:
         return None
         
-    # Extract confidence values
+    # Extract confidence values - handle both DTO objects and dict responses
     confidences = []
     for comentario in comentarios_analizados:
         if isinstance(comentario, dict):
+            # Handle abbreviated format from new AI response: 'conf' or legacy 'confianza'
             conf = comentario.get('conf', comentario.get('confianza', 0.5))
             confidences.append(float(conf))
+        elif hasattr(comentario, 'confianza_general'):
+            # Handle AnalisisComentario entity objects
+            confidences.append(float(comentario.confianza_general))
+        else:
+            # Fallback for unknown format
+            confidences.append(0.5)
     
     if not confidences:
         return None
@@ -353,7 +372,9 @@ def _create_ai_metrics_summary(analisis):
     ), row=1, col=2)
     
     # Processing speed gauge (comments per minute)
-    speed = (analisis.total_comentarios / analisis.tiempo_analisis * 60) if analisis.tiempo_analisis > 0 else 0
+    total_comments = analisis.total_comentarios if analisis.total_comentarios else 0
+    analysis_time = analisis.tiempo_analisis if analisis.tiempo_analisis else 1
+    speed = (total_comments / analysis_time * 60) if analysis_time > 0 else 0
     fig.add_trace(go.Indicator(
         mode="gauge+number",
         value=speed,
@@ -623,10 +644,12 @@ if 'analysis_results' in st.session_state:
                 st.metric("Tiempo IA", f"{analisis.tiempo_analisis:.1f}s")
             with col3:
                 sentiments = analisis.distribucion_sentimientos
-                positivos = sentiments.get('positivo', sentiments.get('POSITIVO', 0))
+                # Handle multiple format possibilities: 'positivo', 'pos', 'POSITIVO'
+                positivos = sentiments.get('positivo', sentiments.get('pos', sentiments.get('POSITIVO', 0)))
                 st.metric("Positivos", positivos)
             with col4:
-                negativos = sentiments.get('negativo', sentiments.get('NEGATIVO', 0))
+                # Handle multiple format possibilities: 'negativo', 'neg', 'NEGATIVO'  
+                negativos = sentiments.get('negativo', sentiments.get('neg', sentiments.get('NEGATIVO', 0)))
                 st.metric("Negativos", negativos)
             
             # AI Metrics Summary Gauges

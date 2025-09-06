@@ -324,10 +324,15 @@ REGLAS: JSON válido, campos abreviados, analizar TODOS los {len(comentarios)} c
             confianza_general = sum(confianzas_sentimientos) / len(confianzas_sentimientos) if confianzas_sentimientos else 0.5
             
             # Adaptar distribución de sentimientos desde stats abreviado
+            # Ensure we use consistent field names for charts
             distribucion_sentimientos = {
                 'positivo': stats.get('pos', 0),
                 'neutral': stats.get('neu', 0), 
-                'negativo': stats.get('neg', 0)
+                'negativo': stats.get('neg', 0),
+                # Also include abbreviated versions for direct chart access
+                'pos': stats.get('pos', 0),
+                'neu': stats.get('neu', 0),
+                'neg': stats.get('neg', 0)
             }
             
             return AnalisisCompletoIA(
@@ -351,7 +356,7 @@ REGLAS: JSON válido, campos abreviados, analizar TODOS los {len(comentarios)} c
                 distribucion_sentimientos=distribucion_sentimientos,
                 temas_mas_relevantes={stats.get('tema_top', 'unknown'): 1.0} if stats.get('tema_top') else {},
                 dolores_mas_severos={},  # Simplificado para eficiencia de tokens
-                emociones_predominantes={}  # Simplificado para eficiencia de tokens
+                emociones_predominantes=self._extract_emotions_from_comments(comentarios_analizados)
             )
             
         except Exception as e:
@@ -431,6 +436,39 @@ REGLAS: JSON válido, campos abreviados, analizar TODOS los {len(comentarios)} c
         self._cache[cache_key] = analisis
         self._cache_timestamps[cache_key] = time.time()
         logger.debug(f"💾 Cache: guardada nueva entrada ({len(self._cache)}/{self._cache_max_size})")
+    
+    def _extract_emotions_from_comments(self, comentarios_analizados: List[Dict]) -> Dict[str, float]:
+        """Extract and aggregate emotions from individual comment analysis"""
+        emotion_counts = {}
+        
+        for comentario in comentarios_analizados:
+            if isinstance(comentario, dict):
+                # Handle abbreviated emotion format: 'emo' field
+                emo = comentario.get('emo', comentario.get('emocion_principal', 'neutral'))
+                
+                # Map abbreviated emotions to full names
+                emotion_mapping = {
+                    'sat': 'satisfaccion',
+                    'fru': 'frustracion', 
+                    'eno': 'enojo',
+                    'neu': 'neutral',
+                    'ale': 'alegria',
+                    'pre': 'preocupacion',
+                    'dec': 'decepcion'
+                }
+                
+                emotion_name = emotion_mapping.get(emo, emo)
+                emotion_counts[emotion_name] = emotion_counts.get(emotion_name, 0) + 1
+        
+        # Convert counts to intensities (normalize by total)
+        total_comments = len(comentarios_analizados)
+        emotion_intensities = {}
+        
+        for emotion, count in emotion_counts.items():
+            intensity = count / total_comments if total_comments > 0 else 0
+            emotion_intensities[emotion] = round(intensity, 2)
+            
+        return emotion_intensities
     
     def obtener_estadisticas_cache(self) -> Dict[str, Any]:
         """Obtiene estadísticas del cache"""
