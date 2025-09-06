@@ -21,7 +21,9 @@ graph TD
     E -->|Initialize UI| CSS_LOADER[🎨 EnhancedCSSLoader]
     CSS_LOADER -->|Load Cascade| CSS_BASE[📄 base/variables.css + reset.css]
     CSS_LOADER -->|Load Components| CSS_COMP[🖼️ components/streamlit-core.css + forms.css + charts.css + layout.css]
-    CSS_LOADER -->|Load Effects| CSS_GLASS[💎 glassmorphism.css]
+    CSS_LOADER -->|Load Core| CSS_CORE[🔧 core.css - fallback & imports]
+    CSS_LOADER -->|Load Effects| CSS_GLASS[💎 css/glassmorphism.css]
+    CSS_LOADER -->|Load Docs| CSS_DOCS[📚 css/README.md - Architecture docs]
     CSS_LOADER -->|Load Animations| CSS_ANIM[✨ animations/keyframes.css]
     CSS_LOADER -->|Load Utils| CSS_UTILS[🔧 utils/utilities.css]
     CSS_GLASS -->|Apply Effects| UI_STYLED[🎨 Professional Glassmorphism UI]
@@ -148,9 +150,9 @@ graph TD
     classDef ui fill:#f1f8e9
     classDef error fill:#ffebee
     
-    %% APPLY CLASSES TO NEW VERTICES
+    %% APPLY CLASSES TO NEW VERTICES (COMPLETE)
     class ENV,TOML,REQ,RUNTIME,CONFIG config
-    class CSS_LOADER,CSS_BASE,CSS_COMP,CSS_GLASS,CSS_ANIM,CSS_UTILS,UI_STYLED css
+    class CSS_LOADER,CSS_BASE,CSS_COMP,CSS_CORE,CSS_GLASS,CSS_DOCS,CSS_ANIM,CSS_UTILS,UI_STYLED css
     class CACHE_LRU,CACHE_DB,CACHE_CLEANUP cache
     class MEM_MGR,MEM_CLEAN,MEM_GC memory
     class A,E entry
