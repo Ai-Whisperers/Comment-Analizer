@@ -2,7 +2,8 @@
 Contenedor de inyección de dependencias
 """
 import logging
-from typing import Dict, Any, Optional
+import threading
+from typing import Dict, Any, Optional, Callable, TypeVar
 
 from ...domain.services.analizador_sentimientos import ServicioAnalisisSentimientos, IAnalizadorSentimientos
 from ...domain.repositories.repositorio_comentarios import IRepositorioComentarios
@@ -18,6 +19,8 @@ from ..repositories.repositorio_comentarios_memoria import RepositorioComentario
 from ..text_processing.procesador_texto_basico import ProcesadorTextoBasico
 # DetectorTemasHibrido eliminated - Pure IA system
 
+# Type variable for generic singleton typing
+T = TypeVar('T')
 
 logger = logging.getLogger(__name__)
 
@@ -31,10 +34,14 @@ class ContenedorDependencias:
     def __init__(self, configuracion: Dict[str, Any]):
         """
         Inicializa el contenedor con la configuración del sistema
+        CRITICAL FIX: Added thread safety for multi-user Streamlit environment
         """
         self.configuracion = configuracion
         self._servicios_registrados = {}
         self._instancias_singleton = {}
+        
+        # CRITICAL-002 FIX: Add thread synchronization for singleton pattern
+        self._lock = threading.RLock()  # RLock allows recursive locking
         
         # Registrar servicios por defecto
         self._registrar_servicios_por_defecto()
@@ -164,21 +171,63 @@ class ContenedorDependencias:
             logger.error(f"Error configurando AnalizadorMaestroIA: {str(e)}")
             raise ValueError(f"Error en configuración IA: {str(e)}")
     
-    def _obtener_singleton(self, clave: str, factory_func) -> Any:
+    def _obtener_singleton(self, clave: str, factory_func: Callable[[], T]) -> T:
         """
         Obtiene una instancia singleton, creándola si no existe
+        CRITICAL FIX: Thread-safe implementation using double-checked locking
         """
-        if clave not in self._instancias_singleton:
-            self._instancias_singleton[clave] = factory_func()
+        # First check without locking (performance optimization)
+        if clave in self._instancias_singleton:
+            return self._instancias_singleton[clave]
         
-        return self._instancias_singleton[clave]
+        # Second check with locking (thread safety)
+        with self._lock:
+            if clave not in self._instancias_singleton:
+                try:
+                    # Create instance inside critical section
+                    instancia = factory_func()
+                    self._instancias_singleton[clave] = instancia
+                    logger.debug(f"🏭 Created thread-safe singleton instance: {clave}")
+                except Exception as e:
+                    logger.error(f"❌ Failed to create singleton {clave}: {str(e)}")
+                    raise
+                    
+            return self._instancias_singleton[clave]
+    
+    def cleanup_singletons(self) -> None:
+        """
+        CRITICAL FIX: Cleanup method for session end to prevent memory leaks
+        Should be called when Streamlit session ends
+        """
+        with self._lock:
+            cleaned_count = 0
+            for clave, instancia in self._instancias_singleton.items():
+                if hasattr(instancia, 'cleanup'):
+                    try:
+                        instancia.cleanup()
+                        cleaned_count += 1
+                    except Exception as e:
+                        logger.warning(f"⚠️ Error cleaning up {clave}: {str(e)}")
+            
+            # Clear all singleton instances
+            self._instancias_singleton.clear()
+            logger.info(f"🧹 All {len(self._instancias_singleton)} singletons cleaned up, {cleaned_count} had cleanup methods")
+    
+    def get_singleton_stats(self) -> Dict[str, Any]:
+        """Get statistics about singleton instances"""
+        with self._lock:
+            return {
+                "total_singletons": len(self._instancias_singleton),
+                "singleton_keys": list(self._instancias_singleton.keys()),
+                "thread_safe": True
+            }
     
     def _registrar_servicios_por_defecto(self):
         """
         Registra las implementaciones por defecto de los servicios
         """
         # Esta función puede expandirse para registrar más servicios
-        logger.info("🔧 Contenedor de dependencias inicializado")
+        logger.info("🔧 Contenedor de dependencias inicializado con thread safety")
     
     def registrar_servicio(self, clave: str, implementacion: Any):
         """
