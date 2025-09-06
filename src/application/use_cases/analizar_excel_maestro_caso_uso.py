@@ -80,7 +80,17 @@ class AnalizarExcelMaestroCasoUso:
         self.repositorio_comentarios = repositorio_comentarios
         self.lector_archivos = lector_archivos
         self.analizador_maestro = analizador_maestro
+        
+        # SAFETY NET: Force safe batch size regardless of configuration
+        if max_comments_per_batch > 25:
+            logger.error(f"❌ SAFETY: Batch size too large: {max_comments_per_batch}, forcing to 20")
+            max_comments_per_batch = 20
+        elif max_comments_per_batch < 1:
+            logger.warning(f"⚠️ SAFETY: Batch size too small: {max_comments_per_batch}, setting to 20")
+            max_comments_per_batch = 20
+            
         self.max_comments_per_batch = max_comments_per_batch
+        logger.info(f"📦 Batch processor initialized: {self.max_comments_per_batch} comentarios/lote")
         
     def ejecutar(self, comando: ComandoAnalisisExcelMaestro) -> ResultadoAnalisisMaestro:
         """

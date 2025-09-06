@@ -11,6 +11,51 @@ import logging
 # Setup logger
 logger = logging.getLogger(__name__)
 
+
+def _validate_and_log_deployment_config(config):
+    """Validate configuration parameters and log deployment info"""
+    import os
+    import datetime
+    
+    # Log deployment information for debugging
+    deployment_info = {
+        'timestamp': datetime.datetime.now().isoformat(),
+        'max_comments_config': config.get('max_comments'),
+        'max_comments_env': os.getenv('MAX_COMMENTS_PER_BATCH'),
+        'max_comments_secrets': st.secrets.get('MAX_COMMENTS_PER_BATCH', 'NOT_SET'),
+        'openai_model': config.get('openai_modelo'),
+        'openai_max_tokens': config.get('openai_max_tokens'),
+        'git_commit': os.getenv('STREAMLIT_COMMIT_SHA', 'unknown')
+    }
+    
+    logger.info(f"🚀 Deployment info: {deployment_info}")
+    
+    # Configuration validation
+    max_comments = config.get('max_comments', 20)
+    max_tokens = config.get('openai_max_tokens', 8000)
+    
+    # Critical validation: batch size too large
+    if max_comments > 25:
+        st.error(f"❌ CONFIGURACIÓN INCORRECTA: MAX_COMMENTS_PER_BATCH = {max_comments}")
+        st.error("🔧 Valor demasiado alto. Máximo permitido: 25")
+        st.info("💡 Solución: Actualizar secrets en Streamlit Cloud: MAX_COMMENTS_PER_BATCH = '20'")
+        st.info("🔄 Luego reiniciar la aplicación")
+        return False
+        
+    # Warning: token limit high
+    if max_tokens > 16000:
+        st.warning(f"⚠️ OPENAI_MAX_TOKENS alto: {max_tokens}. Recomendado: 8000")
+    
+    # Success message
+    st.sidebar.success(f"✅ Config: {max_comments} comentarios/lote, {max_tokens} tokens")
+    
+    # Show deployment info in sidebar for debugging
+    with st.sidebar.expander("🔧 Deployment Info", expanded=False):
+        st.json(deployment_info)
+    
+    return True
+
+
 # Add current directory to path for imports
 current_dir = Path(__file__).parent.absolute()
 if str(current_dir) not in sys.path:
@@ -47,9 +92,14 @@ try:
                 'openai_modelo': os.getenv('OPENAI_MODEL') or st.secrets.get('OPENAI_MODEL', 'gpt-4'),
                 'openai_temperatura': float(os.getenv('OPENAI_TEMPERATURE', '0.0') or st.secrets.get('OPENAI_TEMPERATURE', '0.0')),
                 'openai_max_tokens': int(os.getenv('OPENAI_MAX_TOKENS', '8000') or st.secrets.get('OPENAI_MAX_TOKENS', '8000')),
-                'max_comments': int(os.getenv('MAX_COMMENTS_PER_BATCH', '600') or st.secrets.get('MAX_COMMENTS_PER_BATCH', '600')),
+                'max_comments': int(os.getenv('MAX_COMMENTS_PER_BATCH', '20') or st.secrets.get('MAX_COMMENTS_PER_BATCH', '20')),
                 'cache_ttl': int(os.getenv('CACHE_TTL_SECONDS', '3600') or st.secrets.get('CACHE_TTL_SECONDS', '3600'))
             }
+            
+            # CONFIGURATION VALIDATION AND DEPLOYMENT INFO
+            if not _validate_and_log_deployment_config(config):
+                st.stop()
+            
             contenedor = ContenedorDependencias(config)
             st.session_state.contenedor = contenedor
             st.session_state.caso_uso_maestro = contenedor.obtener_caso_uso_maestro()

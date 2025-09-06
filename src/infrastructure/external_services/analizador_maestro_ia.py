@@ -57,11 +57,16 @@ class AnalizadorMaestroIA:
         Calcula max_tokens dinámicamente basado en número de comentarios
         
         Fórmula optimizada:
-        - Base: 2000 tokens para estructura JSON
-        - Por comentario: 120 tokens promedio  
-        - Buffer: 20% extra para variabilidad
+        - Base: 1200 tokens para estructura JSON
+        - Por comentario: 80 tokens promedio  
+        - Buffer: 10% extra para variabilidad
         - Límite por modelo: gpt-4o-mini=16384, gpt-4=128000
         """
+        
+        # ULTIMATE SAFETY NET: Force safe comment count regardless of input
+        if num_comentarios > 20:
+            logger.error(f"🚨 ULTIMATE SAFETY: Token calculation received {num_comentarios} comentarios, forcing to 20")
+            num_comentarios = 20
         # Tokens base para estructura JSON (OPTIMIZADO para límites estrictos)
         tokens_base = 1200  # REDUCIDO de 2000 para mayor eficiencia
         
@@ -92,12 +97,25 @@ class AnalizadorMaestroIA:
         # FORZAR límite absoluto - nunca exceder límite del modelo
         tokens_finales = max(tokens_minimos, min(tokens_con_buffer, tokens_maximos))
         
-        # Safety check adicional: nunca exceder límite del modelo
-        if tokens_finales > limite_modelo:
-            logger.error(f"🚨 SAFETY: Forzando tokens de {tokens_finales:,} a límite modelo {limite_modelo:,}")
-            tokens_finales = limite_modelo
+        # MULTIPLE SAFETY CHECKS: Never exceed any limit
         
-        logger.debug(f"📊 Tokens calculados: {num_comentarios} comentarios → {tokens_finales:,} max_tokens (modelo: {self.modelo}, límite: {limite_modelo:,})")
+        # Safety check 1: Never exceed model limit
+        if tokens_finales > limite_modelo:
+            logger.error(f"🚨 MODEL SAFETY: Forzando tokens de {tokens_finales:,} a límite modelo {limite_modelo:,}")
+            tokens_finales = limite_modelo
+            
+        # Safety check 2: Never exceed configuration limit  
+        if tokens_finales > self.max_tokens_limit:
+            logger.error(f"🚨 CONFIG SAFETY: Forzando tokens de {tokens_finales:,} a límite config {self.max_tokens_limit:,}")
+            tokens_finales = self.max_tokens_limit
+            
+        # Safety check 3: Ultra-conservative 8K limit for production
+        PRODUCTION_SAFE_LIMIT = 8000
+        if tokens_finales > PRODUCTION_SAFE_LIMIT:
+            logger.error(f"🚨 PRODUCTION SAFETY: Forzando tokens de {tokens_finales:,} a límite producción {PRODUCTION_SAFE_LIMIT:,}")
+            tokens_finales = PRODUCTION_SAFE_LIMIT
+        
+        logger.info(f"📊 Tokens finales: {num_comentarios} comentarios → {tokens_finales:,} tokens (modelo: {self.modelo}, límites: modelo={limite_modelo:,}, config={self.max_tokens_limit:,})")
         
         # Warning si llegamos al límite
         if tokens_finales >= tokens_maximos:
@@ -139,10 +157,23 @@ class AnalizadorMaestroIA:
         
         # Con 8,000 tokens configurados: comentarios_max = ~77, usamos 60 para seguridad
         
-        # Aplicar límite de seguridad
+        # MULTIPLE SAFETY NETS: Force safe limits regardless of configuration
+        
+        # SAFETY NET 1: Absolute maximum for any model (ultra-conservative)
+        ABSOLUTE_MAX_COMMENTS = 25
+        if len(comentarios_raw) > ABSOLUTE_MAX_COMMENTS:
+            logger.error(f"🚨 ABSOLUTE SAFETY: {len(comentarios_raw)} comentarios > {ABSOLUTE_MAX_COMMENTS}, forcing to {ABSOLUTE_MAX_COMMENTS}")
+            comentarios_raw = comentarios_raw[:ABSOLUTE_MAX_COMMENTS]
+            
+        # SAFETY NET 2: Model-specific limits
         if len(comentarios_raw) > max_comentarios_teorico:
-            logger.warning(f"🚨 LÍMITE: Archivo tiene {len(comentarios_raw)} comentarios, limitando a {max_comentarios_teorico} para modelo {self.modelo}")
+            logger.warning(f"🚨 MODEL LIMIT: {len(comentarios_raw)} comentarios > {max_comentarios_teorico}, limitando para {self.modelo}")
             comentarios_raw = comentarios_raw[:max_comentarios_teorico]
+            
+        # SAFETY NET 3: Ultra-conservative for 8K token limit
+        if len(comentarios_raw) > 20:
+            logger.warning(f"🚨 TOKEN SAFETY: {len(comentarios_raw)} comentarios > 20, forzando a 20 para garantizar <8K tokens")
+            comentarios_raw = comentarios_raw[:20]
         
         inicio_tiempo = time.time()
         logger.info(f"🔍 Iniciando análisis maestro de {len(comentarios_raw)} comentarios (limitado para {self.modelo})")
