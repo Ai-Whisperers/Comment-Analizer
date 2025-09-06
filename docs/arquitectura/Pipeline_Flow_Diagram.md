@@ -4,17 +4,33 @@
 
 ```mermaid
 graph TD
-    %% Entry Point
-    A[📱 streamlit_app.py] -->|Bootstrap| B[🔧 ContenedorDependencias]
-    A -->|Load Config| C[⚙️ Environment Variables]
-    C -->|OpenAI Key| D[🤖 AI System Init]
+    %% CONFIGURATION LAYER (DISCOVERED - NEW)
+    ENV[📋 .env] -->|Load| CONFIG[⚙️ Multi-Source Config Manager]
+    TOML[📄 .streamlit/config.toml] -->|Production Settings| CONFIG
+    REQ[📦 requirements.txt] -->|Dependencies| CONFIG
+    RUNTIME[🐍 runtime.txt] -->|Python 3.12| CONFIG
+    CONFIG -->|Configure| A[📱 streamlit_app.py]
+    
+    %% Entry Point with Enhanced Initialization
+    A -->|Bootstrap| B[🔧 ContenedorDependencias]
+    A -->|Load Config| C[⚙️ Environment Variables + Secrets]
+    C -->|OpenAI Key + Params| D[🤖 AI System Init]
     D -->|Ready| E[📄 pages/2_Subir.py]
     
-    %% File Upload Flow
-    E -->|Upload| F[📂 File Validation]
-    F -->|Preview| G[📊 Pandas DataFrame]
-    G -->|Detect Columns| H[💬 Comment Detection]
-    H -->|Valid| I[🔘 Analysis Button]
+    %% CSS SYSTEM INTEGRATION (DISCOVERED - MAJOR NEW VERTEX)
+    E -->|Initialize UI| CSS_LOADER[🎨 EnhancedCSSLoader]
+    CSS_LOADER -->|Load Cascade| CSS_BASE[📄 base/variables.css + reset.css]
+    CSS_LOADER -->|Load Components| CSS_COMP[🖼️ components/streamlit-core.css + forms.css + charts.css + layout.css]
+    CSS_LOADER -->|Load Effects| CSS_GLASS[💎 glassmorphism.css]
+    CSS_LOADER -->|Load Animations| CSS_ANIM[✨ animations/keyframes.css]
+    CSS_LOADER -->|Load Utils| CSS_UTILS[🔧 utils/utilities.css]
+    CSS_GLASS -->|Apply Effects| UI_STYLED[🎨 Professional Glassmorphism UI]
+    
+    %% File Upload Flow with Styled UI
+    UI_STYLED -->|Enhanced Upload| F[📂 File Validation + Preview]
+    F -->|Pandas Preview| G[📊 DataFrame with Styled Display]
+    G -->|Auto-Detect| H[💬 Comment Column Detection]
+    H -->|Validation Complete| I[🔘 AI Analysis Button]
     
     %% Analysis Trigger
     I -->|Click| J[🔍 _run_analysis()]
@@ -53,11 +69,21 @@ graph TD
     AB -->|Yes| AC[🌐 OpenAI API Call]
     AB -->|No| AD[❌ IAException]
     
+    %% CACHE SYSTEM INTEGRATION (DISCOVERED - MAJOR NEW VERTEX)
+    AC -.->|Check Cache| CACHE_LRU[💾 LRU Cache Manager]
+    CACHE_LRU -.->|Cache Hit| AG[📊 Cached AnalisisCompletoIA]
+    CACHE_LRU -.->|Cache Miss| AC
+    CACHE_LRU -.->|Persist| CACHE_DB[🗄️ data/cache/api_cache.db]
+    CACHE_LRU -.->|TTL Expire| CACHE_CLEANUP[🧹 Cache Cleanup]
+    
     %% AI Response Processing
     AC -->|JSON Response| AE[📋 _procesar_respuesta_maestra()]
-    AE -->|Parse| AF[🔍 JSON Validation]
+    AE -->|Parse Compact| AF[🔍 Abbreviated JSON Validation]
     AF -->|Valid| AG[📊 AnalisisCompletoIA]
-    AF -->|Invalid| AH[❌ JSON Error]
+    AF -->|Invalid| AH[❌ JSON Truncation Error]
+    
+    %% CACHE STORAGE (NEW)
+    AG -->|Store Result| CACHE_LRU
     
     %% Result Consolidation
     AG -->|From Single| AI[🎯 Single Result]
@@ -76,11 +102,19 @@ graph TD
     AP -->|Store| AQ[📁 In-Memory Storage]
     AQ -->|Return| AR[✅ ResultadoAnalisisMaestro]
     
-    %% UI Display
-    AR -->|Display| AS[📊 Metrics Display]
-    AS -->|Show| AT[📈 Streamlit Charts]
-    AT -->|Render| AU[💡 AI Insights]
-    AU -->|Detect| AV[🚨 Critical Comments]
+    %% MEMORY MANAGEMENT (DISCOVERED - NEW VERTEX)
+    AQ -->|Memory Check| MEM_MGR[🧹 Memory Manager]
+    MEM_MGR -->|Cleanup Sessions| MEM_CLEAN[♻️ Session Cleanup]
+    MEM_MGR -->|Garbage Collection| MEM_GC[🗑️ GC Optimization]
+    
+    %% UI DISPLAY WITH PROFESSIONAL STYLING
+    AR -->|Display with Glass Effects| AS[📊 Glassmorphism Metrics]
+    CSS_GLASS -.->|Style| AS
+    AS -->|Styled Charts| AT[📈 Professional Charts with CSS]
+    CSS_COMP -.->|Style| AT  
+    AT -->|Enhanced Insights| AU[💡 AI Insights with Animation]
+    CSS_ANIM -.->|Animate| AU
+    AU -->|Critical Detection| AV[🚨 Critical Comments with Glass Cards]
     
     %% Export Generation
     AV -->|Export| AW[📄 _create_professional_excel()]
@@ -101,7 +135,11 @@ graph TD
     C -.->|Config| CD[⚙️ OPENAI_MODEL]
     C -.->|Config| CE[⚙️ OPENAI_MAX_TOKENS]
     
-    %% Style Classes
+    %% Style Classes (EXPANDED for NEW VERTICES)
+    classDef config fill:#e3f2fd
+    classDef css fill:#fce4ec  
+    classDef cache fill:#f3e5f5
+    classDef memory fill:#e8f5e8
     classDef entry fill:#e1f5fe
     classDef processing fill:#f3e5f5
     classDef ai fill:#fff3e0
@@ -110,6 +148,11 @@ graph TD
     classDef ui fill:#f1f8e9
     classDef error fill:#ffebee
     
+    %% APPLY CLASSES TO NEW VERTICES
+    class ENV,TOML,REQ,RUNTIME,CONFIG config
+    class CSS_LOADER,CSS_BASE,CSS_COMP,CSS_GLASS,CSS_ANIM,CSS_UTILS,UI_STYLED css
+    class CACHE_LRU,CACHE_DB,CACHE_CLEANUP cache
+    class MEM_MGR,MEM_CLEAN,MEM_GC memory
     class A,E entry
     class M,N,O,P processing
     class T,W,Z,AA,AC,AE ai

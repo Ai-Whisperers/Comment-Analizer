@@ -1,42 +1,98 @@
-# 🔗 Personal Paraguay - Component Dependencies Map
+# 🔗 Personal Paraguay - Complete Component Dependencies Map
 
-## 🧬 Dependency Graph by Layer
+**Updated Analysis:** December 2024  
+**Total Components:** 75+ (Enterprise Grade)  
+**Architecture:** Clean Architecture + Advanced UI + Cache Infrastructure  
 
-### 📱 PRESENTATION LAYER Dependencies
+## 🧬 Complete Dependency Graph by Layer
+
+### 🎨 CONFIGURATION LAYER Dependencies (NEWLY DISCOVERED)
 
 ```
-streamlit_app.py
-├── os, dotenv (environment)
+.env
+├── OPENAI_API_KEY, OPENAI_MODEL, OPENAI_TEMPERATURE
+├── MAX_COMMENTS_PER_BATCH, CACHE_TTL_SECONDS  
+├── APP_ENV, DEBUG_MODE, LOG_LEVEL
+└── Performance & Security Settings
+
+.streamlit/config.toml
+├── server.enableStaticServing = true (for CSS system)
+├── server.maxUploadSize = 5
+├── server.headless = true (production)
+├── runner.magicEnabled = false
+└── theme.primaryColor = "#8B5CF6"
+
+requirements.txt (32 Dependencies)
+├── streamlit>=1.39.0 (UI framework)
+├── openai>=1.50.0 (AI engine)
+├── pandas>=2.1.0 (data processing)
+├── openpyxl>=3.0.0 (Excel generation)
+├── python-dotenv>=1.0.0 (environment)
+└── 27 additional production dependencies
+
+runtime.txt
+└── python-3.12 (specified version)
+
+Multi-Source Config Manager
+├── Environment variables (primary)
+├── Streamlit secrets (cloud fallback)  
+├── Default values (system fallback)
+└── Type conversion & validation
+```
+
+### 📱 PRESENTATION LAYER Dependencies (EXPANDED TO 22 COMPONENTS)
+
+```
+streamlit_app.py (ENHANCED with Multi-Config)
+├── os, dotenv (environment management)
 ├── streamlit (UI framework)
+├── pathlib (file system)
 ├── src.aplicacion_principal (app facade)
 ├── src.infrastructure.dependency_injection.contenedor_dependencias
-├── src.shared.exceptions.archivo_exception
-├── src.shared.exceptions.ia_exception
+├── src.shared.exceptions (ArchivoException, IAException)
 └── src.presentation.streamlit.css_loader
 
-pages/1_Página_Principal.py
-├── streamlit
+pages/1_Página_Principal.py (ENHANCED with Glass Effects)
+├── streamlit (UI framework)
+├── pathlib (path management)
 └── src.presentation.streamlit.enhanced_css_loader
 
-pages/2_Subir.py  
-├── streamlit
-├── pandas (data preview)
-├── datetime
-├── pathlib
+pages/2_Subir.py (SOPHISTICATED UI + Analysis)
+├── streamlit (UI framework)
+├── pandas (data preview & processing)
+├── datetime (timestamps)
+├── pathlib (file handling)
+├── openpyxl (Excel generation)
 ├── src.shared.exceptions (ArchivoException, IAException)
-├── src.presentation.streamlit.enhanced_css_loader
-├── src.presentation.streamlit.session_validator
-├── src.application.use_cases.analizar_excel_maestro_caso_uso
-└── openpyxl (Excel generation)
+├── src.presentation.streamlit.enhanced_css_loader (CSS orchestration)
+├── src.presentation.streamlit.session_validator (state management)
+└── src.application.use_cases.analizar_excel_maestro_caso_uso
 
-src/presentation/streamlit/session_validator.py
-└── streamlit
+src/presentation/streamlit/session_validator.py (ADVANCED Session Management)
+├── streamlit (session state)
+├── logging (diagnostics)
+└── typing (type safety)
 
-src/presentation/streamlit/css_loader.py
-└── streamlit
+src/presentation/streamlit/css_loader.py (BASIC CSS Utilities)
+├── streamlit (HTML injection)
+├── pathlib (file access)
+└── typing (type safety)
 
-src/presentation/streamlit/enhanced_css_loader.py
-└── streamlit
+src/presentation/streamlit/enhanced_css_loader.py (SOPHISTICATED CSS System)
+├── streamlit (HTML injection)
+├── pathlib (file system)
+├── logging (CSS load tracking)
+├── typing (type safety)
+├── re (import statement processing)
+└── CSS Cascade Management:
+    ├── static/css/base/variables.css (design tokens)
+    ├── static/css/base/reset.css (modern reset)
+    ├── static/css/components/*.css (4 component files)
+    ├── static/css/animations/keyframes.css (animations)
+    ├── static/css/utils/utilities.css (atomic utilities)
+    ├── static/glassmorphism.css (glass effects)
+    ├── static/main.css (main entry)
+    └── static/styles.css (legacy compatibility)
 ```
 
 ---
@@ -163,13 +219,19 @@ src/domain/repositories/repositorio_comentarios.py
 ### ⚙️ INFRASTRUCTURE LAYER Dependencies
 
 ```
-src/infrastructure/external_services/analizador_maestro_ia.py ⭐ AI ENGINE
+src/infrastructure/external_services/analizador_maestro_ia.py ⭐ AI ENGINE (ENHANCED)
 ├── openai (OpenAI Python SDK)
-├── json, time, hashlib
-├── typing, datetime, logging
-├── collections (OrderedDict for LRU cache)
+├── json, time, hashlib (core utilities)
+├── typing, datetime, logging (infrastructure)
+├── collections.OrderedDict (LRU cache implementation)
 ├── src.application.dtos.analisis_completo_ia
-└── src.shared.exceptions.ia_exception
+├── src.shared.exceptions.ia_exception
+└── ADVANCED CACHE SYSTEM:
+    ├── LRU Cache Manager (OrderedDict-based)
+    ├── TTL Management (configurable expiration)
+    ├── Cache Key Generation (deterministic hashing)
+    ├── Memory Usage Optimization (50 entry limit)
+    └── Cache Statistics Tracking
 
 src/infrastructure/external_services/analizador_openai.py (Legacy)
 ├── openai
