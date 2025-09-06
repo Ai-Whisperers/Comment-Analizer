@@ -17,6 +17,9 @@
 ## 📁 Estructura de Documentación Actualizada
 
 ### 🏗️ **Arquitectura Sistema IA**
+- **[`arquitectura/AI_Pipeline_Architecture_Report.md`](arquitectura/AI_Pipeline_Architecture_Report.md)** - **📊 REPORTE COMPLETO DE ARQUITECTURA**
+- **[`arquitectura/Pipeline_Flow_Diagram.md`](arquitectura/Pipeline_Flow_Diagram.md)** - **🔄 DIAGRAMA DE FLUJO END-TO-END**  
+- **[`arquitectura/Component_Dependencies.md`](arquitectura/Component_Dependencies.md)** - **🔗 MAPA DE 45+ DEPENDENCIAS**
 - [`arquitectura/sistema-ia-puro.md`](arquitectura/sistema-ia-puro.md) - Arquitectura IA-first completa
 - [`arquitectura/clean-architecture-final.md`](arquitectura/clean-architecture-final.md) - Clean Architecture + IA integrada
 
