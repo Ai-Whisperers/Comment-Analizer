@@ -142,23 +142,20 @@ st.set_page_config(
 if 'dark_mode' not in st.session_state:
     st.session_state.dark_mode = True
 
-# Load enhanced CSS system with glassmorphism support
+# Load enhanced CSS system with improved static/ integration
 if CLEAN_ARCHITECTURE_AVAILABLE:
     try:
-        # Try enhanced CSS loader first
-        from src.presentation.streamlit.enhanced_css_loader import ensure_css_loaded, load_glassmorphism
+        # Enhanced CSS loader with better static/ folder integration
+        from src.presentation.streamlit.enhanced_css_loader import ensure_css_loaded
         
-        # Ensure all CSS including glassmorphism is loaded
+        # Load complete CSS cascade from static/ folder
         css_loaded = ensure_css_loaded()
+        logger.info(f"🎨 CSS system loaded: {css_loaded}")
         
         if not css_loaded:
-            # Fallback to original CSS loader
-            try:
-                from src.presentation.streamlit.css_loader import CSSLoader
-                css_loader = CSSLoader()
-                css_loaded = css_loader.load_main_css()
-            except:
-                pass
+            # Enhanced fallback with core glassmorphism
+            logger.warning("⚠️ CSS files not found, loading enhanced fallback")
+            _load_enhanced_fallback_css()
         
         if not css_loaded:
             # Final fallback - load critical CSS files directly
@@ -220,7 +217,83 @@ if CLEAN_ARCHITECTURE_AVAILABLE:
         
     except Exception as e:
         st.session_state.css_loaded = False
-        logger.warning(f"CSS loading failed: {str(e)}")
+        logger.error(f"❌ CSS loading failed: {str(e)}")
+        # Try basic fallback
+        _load_basic_fallback_css()
+
+
+def _load_enhanced_fallback_css():
+    """Enhanced fallback CSS when static/ files not accessible"""
+    enhanced_fallback = """
+    <style>
+    :root {
+        --primary-purple: #8B5CF6;
+        --secondary-cyan: #06B6D4;
+        --glass-bg: rgba(255, 255, 255, 0.08);
+        --glass-border: rgba(255, 255, 255, 0.15);
+    }
+    
+    /* Enhanced glassmorphism for all components */
+    .glass, .glass-card {
+        background: var(--glass-bg) !important;
+        backdrop-filter: blur(16px) !important;
+        -webkit-backdrop-filter: blur(16px) !important;
+        border: 1px solid var(--glass-border) !important;
+        border-radius: 16px !important;
+        box-shadow: 0 2px 8px rgba(139, 92, 246, 0.08) !important;
+    }
+    
+    /* Streamlit button enhancement */
+    .stButton > button {
+        background: linear-gradient(135deg, var(--primary-purple), var(--secondary-cyan)) !important;
+        backdrop-filter: blur(10px) !important;
+        border: 1px solid rgba(255, 255, 255, 0.1) !important;
+        border-radius: 12px !important;
+        color: white !important;
+        transition: all 0.3s ease !important;
+    }
+    
+    .stButton > button:hover {
+        transform: translateY(-2px) !important;
+        box-shadow: 0 8px 20px rgba(139, 92, 246, 0.25) !important;
+    }
+    
+    /* Chart containers with glass effects */
+    .plotly-graph-div {
+        background: rgba(255, 255, 255, 0.03) !important;
+        border-radius: 12px !important;
+        backdrop-filter: blur(8px) !important;
+        border: 1px solid rgba(255, 255, 255, 0.1) !important;
+        padding: 0.5rem !important;
+    }
+    
+    /* Metrics with glassmorphism */
+    div[data-testid="metric-container"] {
+        background: rgba(255, 255, 255, 0.06) !important;
+        border-radius: 8px !important;
+        backdrop-filter: blur(12px) !important;
+        border: 1px solid rgba(255, 255, 255, 0.12) !important;
+    }
+    </style>
+    """
+    st.markdown(enhanced_fallback, unsafe_allow_html=True)
+    logger.info("✅ Enhanced fallback CSS loaded")
+
+
+def _load_basic_fallback_css():
+    """Basic fallback CSS for emergency situations"""
+    basic_css = """
+    <style>
+    .stButton > button {
+        background: linear-gradient(135deg, #8B5CF6, #06B6D4);
+        color: white;
+        border: none;
+        border-radius: 8px;
+        transition: all 0.3s ease;
+    }
+    </style>
+    """
+    st.markdown(basic_css, unsafe_allow_html=True)
 
 # Memory monitoring not available after cleanup
 MEMORY_MONITORING_AVAILABLE = False

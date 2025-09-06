@@ -27,9 +27,10 @@ try:
         from src.presentation.streamlit.enhanced_css_loader import ensure_css_loaded, inject_page_css
         from src.presentation.streamlit.css_loader import glass_card, metric_card
         
-        # Ensure CSS is loaded for this page
+        # Ensure CSS is loaded for this page with analysis-specific styles
         ensure_css_loaded()
-        inject_page_css('upload')  # Add upload-specific styles
+        inject_page_css('upload')    # Upload page styles
+        inject_page_css('analysis')  # Analysis and chart styles
         
         CSS_UTILS_AVAILABLE = True
     except ImportError:

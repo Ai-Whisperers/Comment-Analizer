@@ -12,14 +12,24 @@ current_dir = Path(__file__).parent.parent
 if str(current_dir) not in sys.path:
     sys.path.insert(0, str(current_dir))
 
-# Load enhanced CSS for glassmorphism effects
+# Load enhanced CSS with better static/ integration
 try:
     from src.presentation.streamlit.enhanced_css_loader import ensure_css_loaded, inject_page_css
-    ensure_css_loaded()
-    inject_page_css('main')  # Add main page specific styles
-    CSS_LOADED = True
-except ImportError:
-    # CSS will be loaded from main app
+    
+    # Ensure complete CSS cascade is loaded
+    css_loaded = ensure_css_loaded()
+    
+    # Inject main page specific styles
+    inject_page_css('main')
+    
+    CSS_LOADED = css_loaded
+    if css_loaded:
+        logger.info("✅ Main page CSS loaded successfully")
+    else:
+        logger.warning("⚠️ CSS loading incomplete, using fallbacks")
+        
+except ImportError as e:
+    logger.warning(f"CSS loader not available: {str(e)}")
     CSS_LOADED = False
 
 # Page content with styling support
