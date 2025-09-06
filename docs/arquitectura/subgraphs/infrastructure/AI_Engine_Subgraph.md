@@ -69,7 +69,7 @@ graph TD
 #### **`analizar_excel_completo(comentarios_raw: List[str])`**
 **Purpose:** Master analysis orchestrator  
 **Input:** List of raw comments  
-**Output:** AnalisisCompletoIA DTO  
+**Output:** AnalisisCompletoIA DTO *(Enhanced for Chart Integration - Sept 2025)*
 
 **Internal Sub-Process:**
 ```mermaid
@@ -82,7 +82,8 @@ graph TD
     PROMPT --> API[Make API call]
     API --> PROCESS[Process response]
     PROCESS --> CACHE_SAVE[Save to cache]
-    CACHE_SAVE --> RETURN[Return AnalisisCompletoIA]
+    CACHE_SAVE --> VISUALIZATION[NEW: Chart Data Preparation]
+    VISUALIZATION --> RETURN[Return AnalisisCompletoIA + Chart Data]
 ```
 
 #### **`_calcular_tokens_dinamicos(num_comentarios: int)`**  
@@ -117,6 +118,79 @@ graph TD
     TEMPLATE --> COMPACT[Apply compact JSON format]
     COMPACT --> OUTPUT[Final prompt string]
 ```
+
+---
+
+## 📊 NEW: CHART DATA INTEGRATION *(Sept 2025)*
+
+### **🎨 Data Visualization Enhancement**
+
+The AI Engine now produces **chart-ready data structures** that integrate seamlessly with the presentation layer's visualization system.
+
+#### **📊 AnalisisCompletoIA → Chart Data Flow**
+```mermaid
+graph TD
+    subgraph "📊 CHART DATA INTEGRATION PIPELINE"
+        AI_RESULT[AnalisisCompletoIA DTO] --> EXTRACT[Chart Data Extraction]
+        
+        subgraph "📈 Chart Data Sources"
+            SENTIMENT[distribucion_sentimientos]
+            THEMES[temas_mas_relevantes] 
+            EMOTIONS[emociones_predominantes]
+            TOKENS[tokens_utilizados]
+            CONFIDENCE[comentarios_analizados]
+            TIMING[tiempo_analisis]
+            METRICS[AI performance metrics]
+        end
+        
+        EXTRACT --> SENTIMENT
+        EXTRACT --> THEMES
+        EXTRACT --> EMOTIONS
+        EXTRACT --> TOKENS
+        EXTRACT --> CONFIDENCE
+        EXTRACT --> TIMING
+        EXTRACT --> METRICS
+        
+        subgraph "📊 Visualization Components"
+            PIE_CHART[Sentiment Pie Chart]
+            BAR_CHART[Theme Bar Chart]
+            DONUT_CHART[Emotion Donut Chart]
+            GAUGE_CHART[Token Usage Gauge]
+            HISTOGRAM[Confidence Histogram]
+            TIMELINE[Processing Timeline]
+            DASHBOARD[AI Metrics Dashboard]
+        end
+        
+        SENTIMENT --> PIE_CHART
+        THEMES --> BAR_CHART
+        EMOTIONS --> DONUT_CHART
+        TOKENS --> GAUGE_CHART
+        CONFIDENCE --> HISTOGRAM
+        TIMING --> TIMELINE
+        METRICS --> DASHBOARD
+    end
+```
+
+#### **🔗 Chart Integration Points**
+```python
+# AI Engine produces chart-ready data structures
+analysis_result: AnalisisCompletoIA = ai_engine.analizar_excel_completo()
+
+# Direct data mapping to visualization functions
+├── analysis_result.distribucion_sentimientos → _create_sentiment_distribution_chart()
+├── analysis_result.temas_mas_relevantes → _create_themes_chart()
+├── analysis_result.emociones_predominantes → _create_emotions_donut_chart()
+├── analysis_result.tokens_utilizados → _create_token_usage_gauge()
+├── analysis_result.comentarios_analizados → _create_confidence_histogram()
+├── analysis_result.tiempo_analisis → _create_batch_processing_timeline()
+└── AI performance metrics → _create_ai_metrics_summary()
+```
+
+### **⚡ Performance Optimization for Charts**
+- **Structured Data Output:** AI produces visualization-ready data formats
+- **Efficient Data Transfer:** DTO structure optimized for chart consumption
+- **Real-time Metrics:** Performance data integrated for gauge dashboards
+- **Cached Chart Data:** Visualization data cached alongside AI results
 
 ---
 

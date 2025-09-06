@@ -56,6 +56,69 @@ def _validate_and_log_deployment_config(config):
     return True
 
 
+def _load_enhanced_fallback_css():
+    """Enhanced fallback CSS loader when static files are not available"""
+    try:
+        # Try to load glassmorphism directly from enhanced CSS loader
+        if CSS_LOADER_ENHANCED:
+            success = load_glassmorphism()
+            if success:
+                logger.info("✅ Enhanced fallback: Glassmorphism loaded")
+                return True
+        
+        # Fallback to inline enhanced CSS
+        enhanced_fallback_css = """
+        <style>
+        /* Enhanced Fallback CSS - Professional Glassmorphism */
+        :root {
+            --primary-purple: #8B5CF6;
+            --secondary-cyan: #06B6D4;
+            --glass-bg: rgba(255, 255, 255, 0.08);
+            --glass-border: rgba(255, 255, 255, 0.15);
+            --glass-shadow: rgba(139, 92, 246, 0.08);
+        }
+        
+        .glass, .glass-card {
+            background: var(--glass-bg) !important;
+            backdrop-filter: blur(16px) !important;
+            -webkit-backdrop-filter: blur(16px) !important;
+            border: 1px solid var(--glass-border) !important;
+            border-radius: 16px !important;
+            box-shadow: 0 2px 8px var(--glass-shadow) !important;
+            transition: all 0.3s ease !important;
+        }
+        
+        .glass-card:hover {
+            transform: translateY(-2px) !important;
+            box-shadow: 0 8px 20px rgba(139, 92, 246, 0.25) !important;
+        }
+        
+        /* Streamlit component enhancements */
+        .stButton > button {
+            background: linear-gradient(135deg, var(--primary-purple), var(--secondary-cyan)) !important;
+            color: white !important;
+            border: none !important;
+            border-radius: 12px !important;
+            backdrop-filter: blur(10px) !important;
+        }
+        
+        .stSelectbox [data-baseweb="select"] {
+            background: var(--glass-bg) !important;
+            border: 1px solid var(--glass-border) !important;
+            border-radius: 8px !important;
+        }
+        </style>
+        """
+        
+        st.markdown(enhanced_fallback_css, unsafe_allow_html=True)
+        logger.info("✅ Enhanced fallback CSS loaded (inline)")
+        return True
+        
+    except Exception as e:
+        logger.error(f"❌ Enhanced fallback CSS failed: {str(e)}")
+        return False
+
+
 # Add current directory to path for imports
 current_dir = Path(__file__).parent.absolute()
 if str(current_dir) not in sys.path:
@@ -66,7 +129,15 @@ try:
     from src.aplicacion_principal import crear_aplicacion
     from src.shared.exceptions.archivo_exception import ArchivoException
     from src.shared.exceptions.ia_exception import IAException
-    from src.presentation.streamlit.css_loader import load_css, load_component_css
+    
+    # Import enhanced CSS loader for glassmorphism and chart integration  
+    try:
+        from src.presentation.streamlit.enhanced_css_loader import ensure_css_loaded, load_glassmorphism
+        CSS_LOADER_ENHANCED = True
+    except ImportError:
+        # Fallback to basic CSS loader
+        from src.presentation.streamlit.css_loader import load_css, load_component_css
+        CSS_LOADER_ENHANCED = False
     
     # Initialize app in session state
     if 'analizador_app' not in st.session_state:

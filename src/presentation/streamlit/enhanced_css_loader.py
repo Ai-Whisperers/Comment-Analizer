@@ -143,6 +143,41 @@ class EnhancedCSSLoader:
             logger.error(f"Error loading {file_path}: {str(e)}")
             return False
     
+    def _load_css_file_with_imports(self, file_path: str) -> str:
+        """
+        Process CSS files with automatic @import resolution
+        NEW METHOD: Enhanced import processing for complex CSS cascades
+        
+        Args:
+            file_path: Path to CSS file to process
+            
+        Returns:
+            str: Processed CSS content with imports inlined
+        """
+        try:
+            css_file = Path(file_path) if not isinstance(file_path, Path) else file_path
+            
+            # Resolve absolute path if needed
+            if not css_file.is_absolute():
+                css_file = self.static_path / css_file
+            
+            if not css_file.exists():
+                logger.warning(f"CSS file not found: {css_file}")
+                return ""
+            
+            with open(css_file, 'r', encoding='utf-8') as f:
+                css_content = f.read()
+            
+            # Process imports with enhanced error handling
+            processed_content = self._process_imports(css_content, css_file.parent)
+            
+            logger.debug(f"Processed CSS file with imports: {css_file}")
+            return processed_content
+            
+        except Exception as e:
+            logger.error(f"Error processing CSS with imports {file_path}: {str(e)}")
+            return ""
+    
     def _process_imports(self, css_content: str, base_path: Path) -> str:
         """
         Process @import statements and inline them
@@ -275,7 +310,7 @@ class EnhancedCSSLoader:
         Inject page-specific CSS if needed
         
         Args:
-            page_name: Name of the page (e.g., 'upload', 'main')
+            page_name: Name of the page (e.g., 'upload', 'main', 'analysis')
         """
         page_css = {
             'upload': """
@@ -305,11 +340,92 @@ class EnhancedCSSLoader:
                     border-radius: 20px !important;
                     margin-bottom: 2rem !important;
                 }
-            """
+            """,
+            'analysis': self._get_analysis_page_css()
         }
         
         if page_name in page_css:
             st.markdown(f'<style>{page_css[page_name]}</style>', unsafe_allow_html=True)
+    
+    def _get_analysis_page_css(self) -> str:
+        """
+        Enhanced glassmorphism for plotly charts and metrics
+        NEW METHOD: Specialized CSS for data visualization pages
+        
+        Returns:
+            str: CSS optimized for chart and metrics visualization
+        """
+        return """
+            /* Analysis page chart-specific styles */
+            .plotly-graph-div {
+                background: var(--glass-bg, rgba(255, 255, 255, 0.08)) !important;
+                border-radius: 16px !important;
+                padding: 1rem !important;
+                backdrop-filter: blur(16px) !important;
+                -webkit-backdrop-filter: blur(16px) !important;
+                border: 1px solid rgba(255, 255, 255, 0.15) !important;
+                transition: transform 0.3s ease, box-shadow 0.3s ease !important;
+                margin-bottom: 1rem !important;
+            }
+            
+            .plotly-graph-div:hover {
+                transform: translateY(-2px) !important;
+                box-shadow: 0 8px 32px rgba(139, 92, 246, 0.15) !important;
+            }
+            
+            /* Enhanced metric containers */
+            .metric-card {
+                background: rgba(255, 255, 255, 0.08) !important;
+                backdrop-filter: blur(16px) !important;
+                -webkit-backdrop-filter: blur(16px) !important;
+                border: 1px solid rgba(255, 255, 255, 0.15) !important;
+                border-radius: 16px !important;
+                padding: 1.5rem !important;
+                transition: all 0.3s ease !important;
+                margin: 0.5rem 0 !important;
+            }
+            
+            .metric-card:hover {
+                transform: translateY(-1px) !important;
+                box-shadow: 0 4px 16px rgba(139, 92, 246, 0.1) !important;
+            }
+            
+            /* Interactive chart theme consistency */
+            .plotly .modebar {
+                background: rgba(139, 92, 246, 0.1) !important;
+                border-radius: 8px !important;
+            }
+            
+            .plotly .modebar-btn {
+                color: rgba(139, 92, 246, 0.8) !important;
+            }
+            
+            .plotly .modebar-btn:hover {
+                background: rgba(139, 92, 246, 0.2) !important;
+                color: rgba(139, 92, 246, 1) !important;
+            }
+            
+            /* Chart container glassmorphism integration */
+            .js-plotly-plot {
+                border-radius: 16px !important;
+                overflow: hidden !important;
+            }
+            
+            /* Enhanced metrics styling */
+            [data-testid="metric-container"] {
+                background: rgba(255, 255, 255, 0.05) !important;
+                backdrop-filter: blur(10px) !important;
+                border: 1px solid rgba(255, 255, 255, 0.1) !important;
+                border-radius: 12px !important;
+                padding: 1rem !important;
+                transition: all 0.2s ease !important;
+            }
+            
+            [data-testid="metric-container"]:hover {
+                background: rgba(255, 255, 255, 0.08) !important;
+                border-color: rgba(139, 92, 246, 0.3) !important;
+            }
+        """
 
 
 # Global instance

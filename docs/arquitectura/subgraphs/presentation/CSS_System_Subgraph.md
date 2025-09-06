@@ -132,12 +132,12 @@ static/css/
 
 ## 🎛️ CSS ORCHESTRATION SYSTEM
 
-### **🔧 EnhancedCSSLoader Methods**
+### **🔧 EnhancedCSSLoader Methods** *(Recently Enhanced - Sept 2025)*
 
 #### **`ensure_css_loaded()`** - Main Orchestrator
 ```python
 def ensure_css_loaded() -> bool:
-    """Load CSS cascade in optimal order"""
+    """Load CSS cascade in optimal order with @import processing"""
     css_files = [
         'static/css/base/variables.css',      # 1. Design tokens first
         'static/css/base/reset.css',          # 2. CSS reset
@@ -151,23 +151,37 @@ def ensure_css_loaded() -> bool:
         'static/main.css',                    # 10. Main styles
         'static/styles.css'                   # 11. Legacy compatibility
     ]
+    # NEW: Enhanced with _load_css_file_with_imports() for @import resolution
 ```
 
 #### **`inject_page_css(page_name: str)`** - Page-Specific Styling
 ```python
-# Page-specific CSS injection
+# Page-specific CSS injection with chart optimization
 page_styles = {
     'main': ['glassmorphism', 'animations'],
     'upload': ['forms', 'glassmorphism'],  
-    'analysis': ['charts', 'glassmorphism']
+    'analysis': ['charts', 'glassmorphism', 'plotly-integration']  # NEW: Chart styling
 }
 ```
 
-#### **`_process_imports(css_content: str)`** - Import Resolution
+#### **`_load_css_file_with_imports(file_path: str)`** - *NEW: Import Resolution*
 ```python
-# Automatic @import processing
-@import url('./variables.css');  # → Inlines variables.css content
-@import url('./reset.css');      # → Inlines reset.css content
+# NEW METHOD: Automatic @import processing and inlining
+def _load_css_file_with_imports(file_path: str) -> str:
+    """Process CSS files with automatic @import resolution"""
+    # Resolves: @import url('./variables.css') → Inlined content
+    # Resolves: @import url('./reset.css') → Inlined content
+    # Enhanced error handling and relative path resolution
+```
+
+#### **`_get_analysis_page_css()`** - *NEW: Chart-Specific Styling*
+```python
+# NEW METHOD: Specialized CSS for data visualization pages
+def _get_analysis_page_css() -> str:
+    """Enhanced glassmorphism for plotly charts and metrics"""
+    # Plotly-graph-div containers with glass effects
+    # Metric containers with enhanced glassmorphism
+    # Chart integration with purple-cyan theme consistency
 ```
 
 ---
@@ -233,37 +247,69 @@ page_styles = {
 }
 ```
 
-### **📊 Chart Styling Integration** 
+### **📊 Chart Styling Integration** *(Enhanced Sept 2025)*
 ```css
-/* Plotly chart enhancements */
+/* NEW: Enhanced Plotly chart integration */
 .plotly-graph-div {
     background: var(--glass-bg);
     border-radius: 12px;
     padding: 1rem;
+    backdrop-filter: blur(16px);  /* NEW: Enhanced glass effect */
+    transition: transform 0.3s ease, box-shadow 0.3s ease;  /* NEW: Hover animations */
 }
 
-/* Data table styling */
+/* NEW: Chart container hover effects */
+.plotly-graph-div:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 32px rgba(139, 92, 246, 0.15);
+}
+
+/* NEW: Metric containers with glassmorphism */
+.metric-card {
+    background: var(--glass-bg);
+    backdrop-filter: blur(16px);
+    border: 1px solid var(--glass-border);
+    border-radius: 16px;
+    padding: 1.5rem;
+    transition: all 0.3s ease;
+}
+
+/* Enhanced data table styling */
 .dataframe {
     backdrop-filter: blur(8px);
     border: 1px solid var(--glass-border);
+    border-radius: 12px;  /* NEW: Consistent border radius */
+}
+
+/* NEW: Interactive chart theme consistency */
+.plotly .modebar {
+    background: rgba(139, 92, 246, 0.1);  /* Purple-cyan theme integration */
 }
 ```
 
 ---
 
-## 🚀 PERFORMANCE OPTIMIZATIONS
+## 🚀 PERFORMANCE OPTIMIZATIONS *(Enhanced Sept 2025)*
 
 ### **⚡ Loading Strategy**
 - **Cascade order:** Variables → Reset → Layout → Components → Effects
-- **Import inlining:** Automatic @import resolution
-- **Deduplication:** Prevent duplicate CSS loading
-- **Caching:** CSS content caching for performance
+- **NEW: @Import inlining:** Automatic @import resolution with `_load_css_file_with_imports()`
+- **Enhanced deduplication:** Prevent duplicate CSS loading across pages
+- **Multi-level caching:** CSS content caching for performance
+- **NEW: Fallback system:** Multi-tier fallback (enhanced → basic → emergency)
 
 ### **🖥️ Browser Optimization**  
 - **Hardware acceleration:** transform3d() for animations
 - **Will-change hints:** Optimize rendering pipeline
 - **Reduced repaints:** Efficient CSS properties
 - **Vendor prefixes:** Cross-browser compatibility
+- **NEW: Chart optimization:** Optimized glassmorphism for plotly containers
+
+### **📊 NEW: Chart Performance** *(Sept 2025)*
+- **Transparent backgrounds:** Seamless CSS integration
+- **GPU-accelerated effects:** backdrop-filter optimizations
+- **Hover performance:** CSS transforms with will-change hints
+- **Theme consistency:** Unified purple-cyan across all visual components
 
 ---
 
