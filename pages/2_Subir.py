@@ -12,6 +12,13 @@ import plotly.express as px
 import plotly.graph_objects as go
 from plotly.subplots import make_subplots
 
+# POLISH-002 FIX: Import constants for consistent configuration
+try:
+    from src.infrastructure.external_services.ai_engine_constants import AIEngineConstants
+    CONSTANTS_AVAILABLE = True
+except ImportError:
+    CONSTANTS_AVAILABLE = False
+
 # Add src to path
 current_dir = Path(__file__).parent.parent
 if str(current_dir) not in sys.path:
@@ -156,33 +163,23 @@ def _create_comprehensive_emotions_chart(emociones_predominantes):
     if not emotions:
         return None
     
-    # Enhanced color mapping for all 16 emotion types
-    emotion_colors = {
-        # Positive emotions - Green/Blue spectrum
-        'satisfaccion': '#10B981',    # Emerald
-        'alegria': '#06D6A0',         # Bright green  
-        'entusiasmo': '#FFD23F',      # Bright yellow
-        'gratitud': '#118AB2',        # Blue
-        'confianza': '#073B4C',       # Dark blue
-        
-        # Negative emotions - Red/Orange spectrum  
-        'frustracion': '#EF4444',     # Red
-        'enojo': '#DC2626',           # Dark red
-        'decepcion': '#991B1B',       # Very dark red
-        'preocupacion': '#F97316',    # Orange
-        'irritacion': '#EA580C',      # Dark orange
-        'ansiedad': '#C2410C',        # Very dark orange
-        'tristeza': '#7C2D12',        # Brown-red
-        
-        # Neutral/Mixed emotions - Purple/Gray spectrum
-        'confusion': '#6B7280',       # Gray  
-        'esperanza': '#8B5CF6',       # Purple
-        'curiosidad': '#A855F7',      # Light purple
-        'impaciencia': '#9333EA',     # Medium purple
-        'neutral': '#9CA3AF'          # Light gray
-    }
+    # POLISH-002 FIX: Use constants for color mapping
+    if CONSTANTS_AVAILABLE:
+        emotion_colors = AIEngineConstants.EMOTION_COLORS
+        default_color = AIEngineConstants.DEFAULT_EMOTION_COLOR
+    else:
+        # Fallback color mapping
+        emotion_colors = {
+            'satisfaccion': '#10B981', 'alegria': '#06D6A0', 'entusiasmo': '#FFD23F',
+            'gratitud': '#118AB2', 'confianza': '#073B4C', 'frustracion': '#EF4444',
+            'enojo': '#DC2626', 'decepcion': '#991B1B', 'preocupacion': '#F97316',
+            'irritacion': '#EA580C', 'ansiedad': '#C2410C', 'tristeza': '#7C2D12',
+            'confusion': '#6B7280', 'esperanza': '#8B5CF6', 'curiosidad': '#A855F7',
+            'impaciencia': '#9333EA', 'neutral': '#9CA3AF'
+        }
+        default_color = '#8B5CF6'
     
-    colors = [emotion_colors.get(emotion, '#8B5CF6') for emotion in emotions]
+    colors = [emotion_colors.get(emotion, default_color) for emotion in emotions]
     
     # Create horizontal bar chart for better readability with many emotions
     fig = go.Figure(data=[go.Bar(
@@ -209,7 +206,7 @@ def _create_comprehensive_emotions_chart(emociones_predominantes):
         font=dict(color='white'),
         paper_bgcolor='rgba(0,0,0,0)',
         plot_bgcolor='rgba(0,0,0,0)',
-        height=max(400, len(emotions) * 25 + 100),  # Dynamic height based on emotion count
+        height=AIEngineConstants.calculate_dynamic_chart_height(len(emotions)) if CONSTANTS_AVAILABLE else max(400, len(emotions) * 25 + 100),
         margin=dict(l=120, r=50, t=80, b=50),  # More left margin for emotion names
         xaxis=dict(
             gridcolor='rgba(255,255,255,0.1)',
@@ -624,17 +621,21 @@ def _create_professional_excel(resultado):
                 # Calculate percentage of total emotional expression
                 percentage = (intensidad / total_intensity * 100) if total_intensity > 0 else 0
                 
-                # Enhanced classification based on intensity
-                if intensidad >= 0.8:
-                    clasificacion = "Muy Intensa"
-                elif intensidad >= 0.6:
-                    clasificacion = "Intensa"
-                elif intensidad >= 0.4:
-                    clasificacion = "Moderada"
-                elif intensidad >= 0.2:
-                    clasificacion = "Leve"
+                # POLISH-002 FIX: Use constants for intensity classification
+                if CONSTANTS_AVAILABLE:
+                    clasificacion = AIEngineConstants.classify_emotion_intensity(intensidad)
                 else:
-                    clasificacion = "Muy Leve"
+                    # Fallback classification
+                    if intensidad >= 0.8:
+                        clasificacion = "Muy Intensa"
+                    elif intensidad >= 0.6:
+                        clasificacion = "Intensa"
+                    elif intensidad >= 0.4:
+                        clasificacion = "Moderada"
+                    elif intensidad >= 0.2:
+                        clasificacion = "Leve"
+                    else:
+                        clasificacion = "Muy Leve"
                 
                 # Get emotion type
                 tipo = emotion_types.get(emocion, 'Desconocida')

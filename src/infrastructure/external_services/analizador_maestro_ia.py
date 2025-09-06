@@ -18,6 +18,13 @@ try:
 except ImportError:
     RETRY_AVAILABLE = False
 
+# POLISH-002 FIX: Import constants to eliminate magic numbers
+try:
+    from .ai_engine_constants import AIEngineConstants
+    CONSTANTS_AVAILABLE = True
+except ImportError:
+    CONSTANTS_AVAILABLE = False
+
 
 logger = logging.getLogger(__name__)
 
@@ -45,17 +52,27 @@ class AnalizadorMaestroIA:
         if usar_cache:
             from collections import OrderedDict
             self._cache = OrderedDict()
-            self._cache_max_size = 50  # Límite máximo de entradas
-            self._cache_ttl_seconds = cache_ttl  # TTL configurable
+            
+            # POLISH-002 FIX: Use constants instead of magic numbers
+            if CONSTANTS_AVAILABLE:
+                self._cache_max_size = AIEngineConstants.DEFAULT_CACHE_SIZE
+                self._cache_ttl_seconds = cache_ttl or AIEngineConstants.DEFAULT_CACHE_TTL
+            else:
+                self._cache_max_size = 50  # Fallback
+                self._cache_ttl_seconds = cache_ttl or 3600
+                
             self._cache_timestamps = {}  # Track cuando se creó cada entry
         else:
             self._cache = None
             
         self.disponible = self._verificar_disponibilidad()
         
-        # Configuración determinista configurable
+        # POLISH-002 FIX: Use constants for deterministic configuration
         self.temperatura = temperatura    # ← Configurable para consistencia
-        self.seed = 12345                 # ← Seed fijo para máxima reproducibilidad
+        if CONSTANTS_AVAILABLE:
+            self.seed = AIEngineConstants.FIXED_SEED
+        else:
+            self.seed = 12345  # Fallback
         
         # HIGH-004 FIX: Initialize retry strategy for error recovery
         if RETRY_AVAILABLE:
@@ -78,32 +95,42 @@ class AnalizadorMaestroIA:
         - Límite por modelo: gpt-4o-mini=16384, gpt-4=128000
         """
         
+        # POLISH-002 FIX: Use constants for safety limits and calculations
+        if CONSTANTS_AVAILABLE:
+            safety_limit = AIEngineConstants.SAFETY_COMMENT_LIMIT
+            tokens_base = AIEngineConstants.BASE_TOKENS_JSON_STRUCTURE
+            tokens_por_comentario = AIEngineConstants.TOKENS_PER_COMMENT
+            buffer_percentage = AIEngineConstants.TOKEN_BUFFER_PERCENTAGE
+        else:
+            # Fallback values
+            safety_limit = 20
+            tokens_base = 1200
+            tokens_por_comentario = 80  
+            buffer_percentage = 1.10
+        
         # ULTIMATE SAFETY NET: Force safe comment count regardless of input
-        if num_comentarios > 20:
-            logger.error(f"🚨 ULTIMATE SAFETY: Token calculation received {num_comentarios} comentarios, forcing to 20")
-            num_comentarios = 20
-        # Tokens base para estructura JSON (OPTIMIZADO para límites estrictos)
-        tokens_base = 1200  # REDUCIDO de 2000 para mayor eficiencia
-        
-        # Tokens por comentario (análisis optimizado)
-        tokens_por_comentario = 80  # REDUCIDO de 120 para ser más conservador
-        
-        # Cálculo básico
+        if num_comentarios > safety_limit:
+            logger.error(f"🚨 ULTIMATE SAFETY: Token calculation received {num_comentarios} comentarios, forcing to {safety_limit}")
+            num_comentarios = safety_limit
+            
+        # Cálculo básico con constantes
         tokens_calculados = tokens_base + (num_comentarios * tokens_por_comentario)
         
-        # Buffer del 10% para variabilidad (REDUCIDO del 20%)
-        tokens_con_buffer = int(tokens_calculados * 1.10)
+        # Buffer configurable para variabilidad
+        tokens_con_buffer = int(tokens_calculados * buffer_percentage)
         
-        # Límites específicos por modelo
-        limites_por_modelo = {
-            'gpt-4o-mini': 16384,      # Límite real de gpt-4o-mini
-            'gpt-4o': 16384,           # gpt-4o también tiene límite 16K
-            'gpt-4': 128000,           # gpt-4 Turbo
-            'gpt-4-turbo': 128000      # gpt-4 Turbo
-        }
-        
-        # Obtener límite del modelo actual
-        limite_modelo = limites_por_modelo.get(self.modelo, 16384)  # Default a gpt-4o-mini limit
+        # POLISH-002 FIX: Use constants for model limits  
+        if CONSTANTS_AVAILABLE:
+            limite_modelo = AIEngineConstants.get_model_token_limit(self.modelo)
+        else:
+            # Fallback model limits
+            limites_por_modelo = {
+                'gpt-4o-mini': 16384,
+                'gpt-4o': 16384,
+                'gpt-4': 128000,
+                'gpt-4-turbo': 128000
+            }
+            limite_modelo = limites_por_modelo.get(self.modelo, 16384)
         
         # Aplicar límites: usar el menor entre configurado y límite del modelo
         tokens_minimos = 1000

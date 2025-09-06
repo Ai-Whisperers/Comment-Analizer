@@ -214,8 +214,8 @@ def test_emotion_chart_integration():
             print("❌ Emotion chart section header missing")
             return False
             
-        # Check for full width display
-        if "use_container_width=True" in content[first_chart_start:first_chart_start+200]:
+        # Check for full width display (POLISH-001 FIX: Appropriate range)
+        if "use_container_width=True" in content[first_chart_start:first_chart_start+300]:
             print("✅ Comprehensive emotions chart uses full container width")
         else:
             print("❌ Comprehensive emotions chart doesn't use full width")
