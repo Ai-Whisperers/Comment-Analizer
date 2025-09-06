@@ -39,6 +39,21 @@ This directory contains comprehensive architectural documentation for the Person
    - System sophistication assessment
    - Gap analysis and recommendations
 
+6. **[Hierarchical_Graph_System_Design.md](./Hierarchical_Graph_System_Design.md)** 🔄 **HIERARCHICAL SYSTEM**
+   - Multi-level architecture mapping (78 → 400+ vertices)
+   - Sub-graph expansion design for maximum granularity
+   - Interactive navigation system architecture
+
+7. **[00_Master_Graph_Navigation.md](./00_Master_Graph_Navigation.md)** 🗺️ **NAVIGATION HUB**
+   - Interactive exploration interface for 78 master vertices
+   - Progressive disclosure navigation system
+   - Cross-reference links to detailed sub-graphs
+
+8. **[Interactive_Graph_Explorer.md](./Interactive_Graph_Explorer.md)** 🎮 **INTERACTIVE EXPLORER**
+   - Advanced navigation interface design
+   - Multi-level exploration flows (Master → Sub → Implementation)
+   - Mobile-friendly responsive documentation system
+
 ### 📖 Additional Architecture Documents
 
 - **[clean-architecture-final.md](./clean-architecture-final.md)** - Clean Architecture implementation details
