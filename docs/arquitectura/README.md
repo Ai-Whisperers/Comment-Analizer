@@ -54,6 +54,13 @@ This directory contains comprehensive architectural documentation for the Person
    - Multi-level exploration flows (Master → Sub → Implementation)
    - Mobile-friendly responsive documentation system
 
+9. **[Level_-1_Root_Orchestration.md](./Level_-1_Root_Orchestration.md)** 🌍 **ROOT ORCHESTRATION**
+   - **Level -1**: Project folder → Live web app transformation
+   - streamlit_app.py bootstrap and web app startup orchestration
+   - pages/ multi-page navigation system integration
+   - static/ CSS asset system integration with UI
+   - Complete deployment flow from folder to live application
+
 ### 📖 Additional Architecture Documents
 
 - **[clean-architecture-final.md](./clean-architecture-final.md)** - Clean Architecture implementation details
@@ -81,22 +88,35 @@ This directory contains comprehensive architectural documentation for the Person
 
 ---
 
-## 🔄 System Overview
+## 🔄 Complete System Overview
 
-The Personal Paraguay AI Comment Analyzer is built using **Clean Architecture** principles with these key layers:
+The Personal Paraguay AI Comment Analyzer is built using **Clean Architecture** with **4-level hierarchical mapping**:
 
 ```
+🌍 LEVEL -1: ROOT ORCHESTRATION
 ┌─────────────────────────────────────────┐
-│           PRESENTATION LAYER            │ ← Streamlit UI, CSS, Session Management
-├─────────────────────────────────────────┤
-│           APPLICATION LAYER             │ ← Use Cases, DTOs, Business Logic  
-├─────────────────────────────────────────┤
-│             DOMAIN LAYER                │ ← Entities, Value Objects, Services
-├─────────────────────────────────────────┤
-│          INFRASTRUCTURE LAYER           │ ← AI Engine, File Handlers, DI
-├─────────────────────────────────────────┤
-│            SHARED LAYER                 │ ← Exceptions, Utils, Validators
+│    PROJECT FOLDER → LIVE WEB APP       │ ← Bootstrap & Deployment
+│  streamlit_app.py • pages/ • static/   │
 └─────────────────────────────────────────┘
+            ↓ Orchestrates ↓
+📊 LEVEL 0: MASTER ARCHITECTURE (78 vertices)
+┌─────────────────────────────────────────┐
+│        CONFIGURATION LAYER (5)          │ ← Environment, Dependencies, Runtime
+├─────────────────────────────────────────┤
+│        PRESENTATION LAYER (25)          │ ← Streamlit UI, Advanced CSS, Sessions
+├─────────────────────────────────────────┤
+│        APPLICATION LAYER (10)           │ ← Use Cases, DTOs, Business Logic  
+├─────────────────────────────────────────┤
+│          DOMAIN LAYER (14)              │ ← Entities, Value Objects, Services
+├─────────────────────────────────────────┤
+│       INFRASTRUCTURE LAYER (18)         │ ← AI Engine, Cache, File Handlers, DI
+├─────────────────────────────────────────┤
+│          SHARED LAYER (6)               │ ← Exceptions, Utils, Validators
+└─────────────────────────────────────────┘
+            ↓ Expands to ↓
+🔧 LEVEL 1: SUB-GRAPHS (15+ detailed component sub-graphs)
+            ↓ Drills down to ↓  
+⚙️ LEVEL 2: IMPLEMENTATION (400+ methods and functions)
 ```
 
 ### Key Capabilities (ENTERPRISE GRADE)

@@ -1,8 +1,30 @@
 # 🗺️ Personal Paraguay - Master Graph Navigation System
 
-**System:** Hierarchical Architecture Mapping (78 → 400+ Vertices)  
-**Navigation:** Interactive drill-down from overview to implementation  
-**Purpose:** Granular system exploration with controlled complexity  
+**System:** Hierarchical Architecture Mapping (-1 → 0 → 1 → 2)  
+**Navigation:** Interactive drill-down from root to implementation  
+**Purpose:** Complete system exploration with controlled complexity
+
+## 🌍 NAVIGATION LEVELS
+
+```
+Level -1: ROOT ORCHESTRATION (Project → Web App Bootstrap)
+    ↓ 🌐 How folder becomes live web app
+Level  0: MASTER ARCHITECTURE (78 vertices → System components)  
+    ↓ 🎯 Main system components and flows
+Level  1: SUB-GRAPHS (15+ sub-graphs → Component internals)
+    ↓ 🔧 Internal component architecture
+Level  2: IMPLEMENTATION (400+ methods → Code detail)
+```
+
+## 🎭 START YOUR EXPLORATION
+
+### **🌍 [LEVEL -1: ROOT ORCHESTRATION](./Level_-1_Root_Orchestration.md)**
+**"How does the project folder become a live web application?"**
+- Streamlit Cloud deployment sequence
+- streamlit_app.py bootstrap orchestration  
+- pages/ multi-page navigation setup
+- static/ CSS system integration
+- src/ backend architecture integration  
 
 ---
 
