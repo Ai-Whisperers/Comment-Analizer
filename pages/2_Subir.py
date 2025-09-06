@@ -8,6 +8,9 @@ import sys
 from pathlib import Path
 import pandas as pd
 from datetime import datetime
+import plotly.express as px
+import plotly.graph_objects as go
+from plotly.subplots import make_subplots
 
 # Add src to path
 current_dir = Path(__file__).parent.parent
@@ -89,6 +92,285 @@ def _run_analysis(uploaded_file, analysis_type):
         except Exception as e:
             st.error(f"Error inesperado: {str(e)}")
             st.error("Este es un error no manejado. Por favor contacta soporte técnico.")
+
+
+def _create_sentiment_distribution_chart(distribucion_sentimientos):
+    """Create pie chart for sentiment distribution"""
+    if not distribucion_sentimientos:
+        return None
+        
+    # Prepare data
+    sentiments = ['Positivos', 'Neutrales', 'Negativos'] 
+    values = [
+        distribucion_sentimientos.get('positivo', 0),
+        distribucion_sentimientos.get('neutral', 0), 
+        distribucion_sentimientos.get('negativo', 0)
+    ]
+    
+    colors = ['#10B981', '#6B7280', '#EF4444']  # Green, Gray, Red
+    
+    fig = go.Figure(data=[go.Pie(
+        labels=sentiments,
+        values=values,
+        hole=0.3,
+        marker_colors=colors,
+        textinfo='label+percent',
+        textfont_size=12
+    )])
+    
+    fig.update_layout(
+        title="Distribución de Sentimientos",
+        font=dict(color='white'),
+        paper_bgcolor='rgba(0,0,0,0)',
+        plot_bgcolor='rgba(0,0,0,0)',
+        height=400
+    )
+    
+    return fig
+
+
+def _create_themes_chart(temas_relevantes):
+    """Create horizontal bar chart for themes"""
+    if not temas_relevantes:
+        return None
+        
+    # Prepare data - top 10 themes
+    themes = list(temas_relevantes.keys())[:10]
+    relevances = list(temas_relevantes.values())[:10]
+    
+    fig = go.Figure(data=[go.Bar(
+        x=relevances,
+        y=themes,
+        orientation='h',
+        marker_color='#8B5CF6',  # Purple
+        text=[f'{r:.1f}' for r in relevances],
+        textposition='auto'
+    )])
+    
+    fig.update_layout(
+        title="Temas Más Relevantes",
+        xaxis_title="Relevancia",
+        yaxis_title="Temas", 
+        font=dict(color='white'),
+        paper_bgcolor='rgba(0,0,0,0)',
+        plot_bgcolor='rgba(0,0,0,0)',
+        height=400
+    )
+    
+    return fig
+
+
+def _create_emotions_donut_chart(emociones_predominantes):
+    """Create donut chart for emotions with intensity"""
+    if not emociones_predominantes:
+        return None
+        
+    emotions = list(emociones_predominantes.keys())[:8]  # Top 8 emotions
+    intensities = list(emociones_predominantes.values())[:8]
+    
+    # Color mapping for emotions
+    emotion_colors = {
+        'satisfaccion': '#10B981',
+        'frustracion': '#EF4444', 
+        'enojo': '#DC2626',
+        'alegria': '#F59E0B',
+        'decepcion': '#6B7280',
+        'preocupacion': '#F97316',
+        'neutral': '#9CA3AF'
+    }
+    
+    colors = [emotion_colors.get(e, '#8B5CF6') for e in emotions]
+    
+    fig = go.Figure(data=[go.Pie(
+        labels=emotions,
+        values=intensities,
+        hole=0.4,
+        marker_colors=colors,
+        textinfo='label+value',
+        textfont_size=11
+    )])
+    
+    fig.update_layout(
+        title="Emociones Detectadas por IA", 
+        font=dict(color='white'),
+        paper_bgcolor='rgba(0,0,0,0)',
+        plot_bgcolor='rgba(0,0,0,0)',
+        height=400
+    )
+    
+    return fig
+
+
+def _create_token_usage_gauge(tokens_utilizados, max_tokens=8000):
+    """Create gauge chart for token usage"""
+    percentage = (tokens_utilizados / max_tokens) * 100
+    
+    fig = go.Figure(go.Indicator(
+        mode="gauge+number+delta",
+        value=tokens_utilizados,
+        delta={'reference': max_tokens * 0.8},  # 80% reference
+        gauge={
+            'axis': {'range': [None, max_tokens]},
+            'bar': {'color': "#06B6D4"},  # Cyan
+            'steps': [
+                {'range': [0, max_tokens * 0.6], 'color': "rgba(16, 185, 129, 0.2)"},  # Green zone
+                {'range': [max_tokens * 0.6, max_tokens * 0.8], 'color': "rgba(245, 158, 11, 0.2)"},  # Yellow zone
+                {'range': [max_tokens * 0.8, max_tokens], 'color': "rgba(239, 68, 68, 0.2)"}  # Red zone
+            ],
+            'threshold': {
+                'line': {'color': "red", 'width': 4},
+                'thickness': 0.75,
+                'value': max_tokens * 0.9
+            }
+        }
+    ))
+    
+    fig.update_layout(
+        title=f"Uso de Tokens ({percentage:.1f}%)",
+        font=dict(color='white'),
+        paper_bgcolor='rgba(0,0,0,0)', 
+        height=300
+    )
+    
+    return fig
+
+
+def _create_confidence_histogram(comentarios_analizados):
+    """Create histogram for confidence distribution"""
+    if not comentarios_analizados:
+        return None
+        
+    # Extract confidence values
+    confidences = []
+    for comentario in comentarios_analizados:
+        if isinstance(comentario, dict):
+            conf = comentario.get('conf', comentario.get('confianza', 0.5))
+            confidences.append(float(conf))
+    
+    if not confidences:
+        return None
+        
+    fig = go.Figure(data=[go.Histogram(
+        x=confidences,
+        nbinsx=10,
+        marker_color='#8B5CF6',
+        opacity=0.7
+    )])
+    
+    fig.update_layout(
+        title="Distribución de Confianza del Análisis IA",
+        xaxis_title="Confianza",
+        yaxis_title="Frecuencia", 
+        font=dict(color='white'),
+        paper_bgcolor='rgba(0,0,0,0)',
+        plot_bgcolor='rgba(0,0,0,0)',
+        height=300
+    )
+    
+    return fig
+
+
+def _create_batch_processing_timeline(analisis):
+    """Create timeline chart for batch processing metrics"""
+    if not analisis or not hasattr(analisis, 'tiempo_analisis'):
+        return None
+    
+    # Estimate batch information
+    total_comments = analisis.total_comentarios
+    batch_size = 20
+    num_batches = max(1, (total_comments + batch_size - 1) // batch_size)  # Ceiling division
+    time_per_batch = analisis.tiempo_analisis / num_batches if num_batches > 0 else 0
+    
+    # Create timeline data
+    batch_numbers = list(range(1, num_batches + 1))
+    cumulative_times = [i * time_per_batch for i in batch_numbers]
+    
+    fig = go.Figure()
+    
+    # Add timeline line
+    fig.add_trace(go.Scatter(
+        x=batch_numbers,
+        y=cumulative_times,
+        mode='lines+markers',
+        name='Tiempo Acumulado',
+        line=dict(color='#06B6D4', width=3),
+        marker=dict(size=8)
+    ))
+    
+    fig.update_layout(
+        title=f"Timeline de Procesamiento ({num_batches} lotes)",
+        xaxis_title="Número de Lote",
+        yaxis_title="Tiempo Acumulado (segundos)",
+        font=dict(color='white'),
+        paper_bgcolor='rgba(0,0,0,0)',
+        plot_bgcolor='rgba(0,0,0,0)',
+        height=300
+    )
+    
+    return fig
+
+
+def _create_ai_metrics_summary(analisis):
+    """Create summary metrics visualization"""
+    if not analisis:
+        return None
+    
+    # Create multi-metric gauge chart
+    fig = make_subplots(
+        rows=1, cols=3,
+        specs=[[{'type': 'indicator'}, {'type': 'indicator'}, {'type': 'indicator'}]],
+        subplot_titles=('Confianza IA', 'Eficiencia Tokens', 'Velocidad Análisis')
+    )
+    
+    # Confidence gauge
+    confidence_pct = analisis.confianza_general * 100 if analisis.confianza_general else 50
+    fig.add_trace(go.Indicator(
+        mode="gauge+number",
+        value=confidence_pct,
+        gauge={
+            'axis': {'range': [0, 100]},
+            'bar': {'color': "#10B981"},
+            'steps': [
+                {'range': [0, 60], 'color': "rgba(239, 68, 68, 0.2)"},
+                {'range': [60, 80], 'color': "rgba(245, 158, 11, 0.2)"},
+                {'range': [80, 100], 'color': "rgba(16, 185, 129, 0.2)"}
+            ]
+        },
+        number={'suffix': '%'}
+    ), row=1, col=1)
+    
+    # Token efficiency gauge
+    max_tokens = 8000
+    token_efficiency = ((max_tokens - analisis.tokens_utilizados) / max_tokens) * 100 if analisis.tokens_utilizados else 50
+    fig.add_trace(go.Indicator(
+        mode="gauge+number",
+        value=token_efficiency,
+        gauge={
+            'axis': {'range': [0, 100]},
+            'bar': {'color': "#8B5CF6"},
+        },
+        number={'suffix': '%'}
+    ), row=1, col=2)
+    
+    # Processing speed gauge (comments per minute)
+    speed = (analisis.total_comentarios / analisis.tiempo_analisis * 60) if analisis.tiempo_analisis > 0 else 0
+    fig.add_trace(go.Indicator(
+        mode="gauge+number",
+        value=speed,
+        gauge={
+            'axis': {'range': [0, 200]},
+            'bar': {'color': "#06B6D4"},
+        },
+        number={'suffix': '/min'}
+    ), row=1, col=3)
+    
+    fig.update_layout(
+        font=dict(color='white'),
+        paper_bgcolor='rgba(0,0,0,0)',
+        height=250
+    )
+    
+    return fig
 
 
 def _create_professional_excel(resultado):
@@ -327,25 +609,30 @@ if 'analysis_results' in st.session_state:
     
     # Show IA analysis results (pure IA format)
     if hasattr(results, 'es_exitoso') and results.es_exitoso():
-        # IA Analysis metrics
-        col1, col2, col3, col4 = st.columns(4)
-        
+        # Enhanced IA Analysis with Interactive Charts
         if hasattr(results, 'analisis_completo_ia') and results.analisis_completo_ia:
-            # Pure IA maestro results - use REAL DTO structure
             analisis = results.analisis_completo_ia
             
+            st.markdown("---")  # Visual separator
+            
+            # Key Metrics Row
+            col1, col2, col3, col4 = st.columns(4)
             with col1:
                 st.metric("Total Comentarios", analisis.total_comentarios)
             with col2:
                 st.metric("Tiempo IA", f"{analisis.tiempo_analisis:.1f}s")
             with col3:
-                # Use real field names from AnalisisCompletoIA
                 sentiments = analisis.distribucion_sentimientos
-                positivos = sentiments.get('POSITIVO', 0)
+                positivos = sentiments.get('positivo', sentiments.get('POSITIVO', 0))
                 st.metric("Positivos", positivos)
             with col4:
-                negativos = sentiments.get('NEGATIVO', 0) 
+                negativos = sentiments.get('negativo', sentiments.get('NEGATIVO', 0))
                 st.metric("Negativos", negativos)
+            
+            # AI Metrics Summary Gauges
+            ai_metrics_chart = _create_ai_metrics_summary(analisis)
+            if ai_metrics_chart:
+                st.plotly_chart(ai_metrics_chart, use_container_width=True)
         else:
             # Fallback metrics if IA structure incomplete
             with col1:
@@ -356,6 +643,9 @@ if 'analysis_results' in st.session_state:
                 st.metric("Método", "IA Avanzada")
             with col4:
                 st.metric("Calidad", "Máxima")
+                
+            # Fallback message for incomplete data
+            st.info("📊 Visualizaciones avanzadas disponibles con análisis IA completo")
             
         # IA Insights (pure mechanical mapping using REAL DTO structure)
         st.markdown("#### Insights de Inteligencia Artificial")
@@ -385,17 +675,64 @@ if 'analysis_results' in st.session_state:
                     criticos = len([c for c in results.comentarios_analizados if hasattr(c, 'es_critico') and c.es_critico()])
                     st.metric("Comentarios Críticos", criticos)
             
-            # Themes from IA (using real structure)
-            if analisis.temas_mas_relevantes:
-                st.markdown("**🏷️ Temas Principales (IA):**")
-                for tema, relevancia in list(analisis.temas_mas_relevantes.items())[:5]:
-                    st.markdown(f"• **{tema}**: {relevancia:.1f} relevancia")
+            # ENHANCED VISUALIZATION: AI Analysis Charts
+            st.markdown("#### 📊 Visualización de Análisis IA")
             
-            # Emotions from IA (using real structure)
+            # Create chart columns
+            col_chart1, col_chart2 = st.columns(2)
+            
+            with col_chart1:
+                # Sentiment Distribution Chart
+                if analisis.distribucion_sentimientos:
+                    sentiment_chart = _create_sentiment_distribution_chart(analisis.distribucion_sentimientos)
+                    if sentiment_chart:
+                        st.plotly_chart(sentiment_chart, use_container_width=True)
+                
+                # Token Usage Gauge
+                if analisis.tokens_utilizados:
+                    token_chart = _create_token_usage_gauge(analisis.tokens_utilizados)
+                    if token_chart:
+                        st.plotly_chart(token_chart, use_container_width=True)
+            
+            with col_chart2:
+                # Themes Chart
+                if analisis.temas_mas_relevantes:
+                    themes_chart = _create_themes_chart(analisis.temas_mas_relevantes)
+                    if themes_chart:
+                        st.plotly_chart(themes_chart, use_container_width=True)
+                
+                # Emotions Chart  
+                if analisis.emociones_predominantes:
+                    emotions_chart = _create_emotions_donut_chart(analisis.emociones_predominantes)
+                    if emotions_chart:
+                        st.plotly_chart(emotions_chart, use_container_width=True)
+            
+            # Additional Insights Charts
+            col_insight1, col_insight2 = st.columns(2) 
+            
+            with col_insight1:
+                # Confidence Distribution Chart
+                if hasattr(results, 'comentarios_analizados') and results.comentarios_analizados:
+                    confidence_chart = _create_confidence_histogram(results.comentarios_analizados)
+                    if confidence_chart:
+                        st.plotly_chart(confidence_chart, use_container_width=True)
+            
+            with col_insight2:
+                # Batch Processing Timeline
+                batch_timeline = _create_batch_processing_timeline(analisis)
+                if batch_timeline:
+                    st.plotly_chart(batch_timeline, use_container_width=True)
+            
+            # Text Summary (Reduced, complementing charts)
+            if analisis.temas_mas_relevantes:
+                st.markdown("**🏷️ Top 3 Temas Detectados:**")
+                for tema, relevancia in list(analisis.temas_mas_relevantes.items())[:3]:
+                    st.markdown(f"• **{tema}**: {relevancia:.1f}")
+            
             if analisis.emociones_predominantes:
-                st.markdown("**😊 Emociones Predominantes (IA):**")
-                for emocion, intensidad in list(analisis.emociones_predominantes.items())[:5]:
-                    st.markdown(f"• **{emocion}**: {intensidad:.1f} intensidad")
+                st.markdown("**😊 Top 3 Emociones Identificadas:**") 
+                for emocion, intensidad in list(analisis.emociones_predominantes.items())[:3]:
+                    st.markdown(f"• **{emocion}**: {intensidad:.1f}")
             
             # Pain points from IA
             if analisis.dolores_mas_severos:
