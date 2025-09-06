@@ -74,11 +74,13 @@ class AnalizarExcelMaestroCasoUso:
         self,
         repositorio_comentarios: IRepositorioComentarios,
         lector_archivos: ILectorArchivos,
-        analizador_maestro: AnalizadorMaestroIA
+        analizador_maestro: AnalizadorMaestroIA,
+        max_comments_per_batch: int = 42
     ):
         self.repositorio_comentarios = repositorio_comentarios
         self.lector_archivos = lector_archivos
         self.analizador_maestro = analizador_maestro
+        self.max_comments_per_batch = max_comments_per_batch
         
     def ejecutar(self, comando: ComandoAnalisisExcelMaestro) -> ResultadoAnalisisMaestro:
         """
@@ -111,13 +113,30 @@ class AnalizarExcelMaestroCasoUso:
             if not comentarios_validos:
                 return self._crear_resultado_error("No se encontraron comentarios válidos después del filtrado")
             
-            logger.info(f"📊 Procesando {len(comentarios_validos)} comentarios válidos")
+            # Validar límites de procesamiento 
+            if len(comentarios_validos) > 1200:
+                logger.warning(f"🚨 ARCHIVO MUY GRANDE: {len(comentarios_validos)} comentarios, limitando a 1200")
+                comentarios_validos = comentarios_validos[:1200]
+                comentarios_raw_data = comentarios_raw_data[:1200]
+            elif len(comentarios_validos) < 100:
+                logger.info(f"📊 Archivo pequeño: {len(comentarios_validos)} comentarios")
             
-            # 3. UNA sola llamada al AnalizadorMaestroIA
-            analisis_completo_ia = self.analizador_maestro.analizar_excel_completo(comentarios_validos)
+            logger.info(f"📊 Procesando {len(comentarios_validos)} comentarios válidos en lotes de {self.max_comments_per_batch}")
             
-            if not analisis_completo_ia.es_exitoso():
-                return self._crear_resultado_error("El análisis maestro de IA falló")
+            # 3. Procesamiento en múltiples lotes
+            if len(comentarios_validos) <= self.max_comments_per_batch:
+                # Archivo pequeño - procesamiento directo
+                analisis_completo_ia = self.analizador_maestro.analizar_excel_completo(comentarios_validos)
+                
+                if not analisis_completo_ia.es_exitoso():
+                    return self._crear_resultado_error("El análisis maestro de IA falló")
+                    
+            else:
+                # Archivo grande - procesamiento en múltiples lotes
+                analisis_completo_ia = self._procesar_en_lotes(comentarios_validos)
+                
+                if not analisis_completo_ia.es_exitoso():
+                    return self._crear_resultado_error("Error en procesamiento por lotes")
             
             # 4. Mapear resultados IA a entidades de dominio
             comentarios_analizados = self._mapear_a_entidades_dominio(
@@ -480,6 +499,149 @@ class AnalizarExcelMaestroCasoUso:
             modelo_ia_utilizado="error_fallback"
         )
     
+    def _procesar_en_lotes(self, comentarios_validos: List[str]) -> AnalisisCompletoIA:
+        """
+        Procesa comentarios en múltiples lotes y agrega los resultados
+        """
+        try:
+            logger.info(f"🔄 Iniciando procesamiento por lotes: {len(comentarios_validos)} comentarios")
+            
+            # Dividir en lotes
+            lotes = [
+                comentarios_validos[i:i + self.max_comments_per_batch]
+                for i in range(0, len(comentarios_validos), self.max_comments_per_batch)
+            ]
+            
+            logger.info(f"📦 Creados {len(lotes)} lotes para procesar")
+            
+            # Procesar cada lote
+            resultados_lotes = []
+            comentarios_analizados_total = []
+            
+            for i, lote in enumerate(lotes):
+                logger.info(f"🔄 Procesando lote {i+1}/{len(lotes)} ({len(lote)} comentarios)")
+                
+                resultado_lote = self.analizador_maestro.analizar_excel_completo(lote)
+                
+                if not resultado_lote.es_exitoso():
+                    logger.error(f"❌ Error en lote {i+1}")
+                    continue
+                
+                resultados_lotes.append(resultado_lote)
+                comentarios_analizados_total.extend(resultado_lote.comentarios_analizados)
+                
+                # Pausa entre lotes para evitar rate limiting
+                import time
+                if i < len(lotes) - 1:  # No pausar después del último lote
+                    time.sleep(2)
+            
+            # Agregar resultados de todos los lotes
+            return self._agregar_resultados_lotes(resultados_lotes, comentarios_analizados_total, len(comentarios_validos))
+            
+        except Exception as e:
+            logger.error(f"❌ Error en procesamiento por lotes: {str(e)}")
+            from ..dtos.analisis_completo_ia import AnalisisCompletoIA
+            from datetime import datetime
+            return AnalisisCompletoIA(
+                total_comentarios=0,
+                tendencia_general='error',
+                resumen_ejecutivo=f'Error en procesamiento: {str(e)}',
+                recomendaciones_principales=[],
+                comentarios_analizados=[],
+                confianza_general=0.0,
+                tiempo_analisis=0.0,
+                tokens_utilizados=0,
+                modelo_utilizado='error',
+                fecha_analisis=datetime.now(),
+                distribucion_sentimientos={},
+                temas_mas_relevantes={},
+                dolores_mas_severos={},
+                emociones_predominantes={}
+            )
+    
+    def _agregar_resultados_lotes(self, resultados_lotes: List[AnalisisCompletoIA], 
+                                 comentarios_analizados_total: List[Dict], 
+                                 total_comentarios: int) -> AnalisisCompletoIA:
+        """
+        Agrega los resultados de múltiples lotes en un resultado consolidado
+        """
+        from ..dtos.analisis_completo_ia import AnalisisCompletoIA
+        from datetime import datetime
+        
+        if not resultados_lotes:
+            logger.error("❌ No hay resultados de lotes para agregar")
+            return AnalisisCompletoIA(
+                total_comentarios=0,
+                tendencia_general='error',
+                resumen_ejecutivo='No se pudieron procesar los lotes',
+                recomendaciones_principales=[],
+                comentarios_analizados=[],
+                confianza_general=0.0,
+                tiempo_analisis=0.0,
+                tokens_utilizados=0,
+                modelo_utilizado='error',
+                fecha_analisis=datetime.now(),
+                distribucion_sentimientos={},
+                temas_mas_relevantes={},
+                dolores_mas_severos={},
+                emociones_predominantes={}
+            )
+        
+        # Calcular estadísticas agregadas
+        total_positivos = sum(r.distribucion_sentimientos.get('positivo', 0) for r in resultados_lotes)
+        total_neutrales = sum(r.distribucion_sentimientos.get('neutral', 0) for r in resultados_lotes)
+        total_negativos = sum(r.distribucion_sentimientos.get('negativo', 0) for r in resultados_lotes)
+        
+        # Determinar tendencia general
+        max_sentimiento = max(total_positivos, total_neutrales, total_negativos)
+        if max_sentimiento == total_positivos:
+            tendencia_general = 'positiva'
+        elif max_sentimiento == total_negativos:
+            tendencia_general = 'negativa'
+        else:
+            tendencia_general = 'neutral'
+        
+        # Combinar temas más relevantes
+        temas_combinados = {}
+        for resultado in resultados_lotes:
+            for tema, relevancia in resultado.temas_mas_relevantes.items():
+                temas_combinados[tema] = temas_combinados.get(tema, 0) + relevancia
+        
+        # Calcular confianza promedio
+        confianza_promedio = sum(r.confianza_general for r in resultados_lotes) / len(resultados_lotes)
+        
+        # Tiempo total
+        tiempo_total = sum(r.tiempo_analisis for r in resultados_lotes)
+        
+        # Tokens totales
+        tokens_totales = sum(r.tokens_utilizados for r in resultados_lotes)
+        
+        # Crear resultado consolidado
+        return AnalisisCompletoIA(
+            total_comentarios=total_comentarios,
+            tendencia_general=tendencia_general,
+            resumen_ejecutivo=f"Análisis consolidado de {total_comentarios} comentarios procesados en {len(resultados_lotes)} lotes. Tendencia general: {tendencia_general}.",
+            recomendaciones_principales=[
+                "Revisar comentarios con mayor impacto negativo",
+                "Implementar mejoras basadas en temas frecuentes",
+                "Monitorear evolución de sentimientos"
+            ],
+            comentarios_analizados=comentarios_analizados_total,
+            confianza_general=confianza_promedio,
+            tiempo_analisis=tiempo_total,
+            tokens_utilizados=tokens_totales,
+            modelo_utilizado=resultados_lotes[0].modelo_utilizado if resultados_lotes else 'unknown',
+            fecha_analisis=datetime.now(),
+            distribucion_sentimientos={
+                'positivo': total_positivos,
+                'neutral': total_neutrales,
+                'negativo': total_negativos
+            },
+            temas_mas_relevantes=temas_combinados,
+            dolores_mas_severos={},  # Simplificado por ahora
+            emociones_predominantes={}  # Simplificado por ahora
+        )
+
     def _crear_resultado_error(self, mensaje: str) -> ResultadoAnalisisMaestro:
         """Crea un resultado de error"""
         return ResultadoAnalisisMaestro(

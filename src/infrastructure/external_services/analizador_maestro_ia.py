@@ -131,10 +131,13 @@ class AnalizadorMaestroIA:
         limite_modelo = limites_por_modelo.get(self.modelo, 16384)
         
         # Calcular máximo de comentarios que caben en el límite del modelo
-        # Formula inversa: (limite - base) / tokens_por_comentario / buffer
+        # IMPORTANTE: Dejar espacio para la respuesta (50% del límite para input, 50% para output)
+        tokens_disponibles_input = limite_modelo // 2  # Solo la mitad para input
         tokens_base = 2000
         tokens_por_comentario = 120
-        max_comentarios_teorico = int((limite_modelo - tokens_base) / tokens_por_comentario / 1.20)
+        max_comentarios_teorico = int((tokens_disponibles_input - tokens_base) / tokens_por_comentario / 1.20)
+        
+        # Para gpt-4o-mini (16,384): input_max = 8,192, comentarios_max = ~42
         
         # Aplicar límite de seguridad
         if len(comentarios_raw) > max_comentarios_teorico:
@@ -188,73 +191,44 @@ class AnalizadorMaestroIA:
         ])
         
         return f"""
-Eres un experto analista de experiencia del cliente en telecomunicaciones. Analiza estos {len(comentarios)} comentarios y proporciona un análisis completo y estructurado.
+Analiza estos {len(comentarios)} comentarios de telecomunicaciones. Responde SOLO con JSON válido, sin texto adicional.
 
-COMENTARIOS A ANALIZAR:
+COMENTARIOS:
 {comentarios_numerados}
 
-RESPUESTA REQUERIDA (JSON estricto):
+FORMATO RESPUESTA:
 {{
   "analisis_general": {{
     "total_comentarios": {len(comentarios)},
     "tendencia_general": "positiva|neutral|negativa",
-    "resumen_ejecutivo": "Tu análisis narrativo completo de las tendencias, patrones y insights principales",
-    "recomendaciones_principales": [
-      "Recomendación específica 1",
-      "Recomendación específica 2", 
-      "Recomendación específica 3"
-    ]
+    "resumen_ejecutivo": "Resumen de máximo 200 caracteres",
+    "recomendaciones": ["Recomendación 1", "Recomendación 2"]
   }},
   "comentarios": [
     {{
       "indice": 0,
-      "sentimiento": {{
-        "categoria": "positivo|neutral|negativo",
-        "confianza": 0.85
-      }},
-      "emociones": [
-        {{
-          "tipo": "satisfaccion|frustracion|enojo|alegria|decepcion|preocupacion|etc",
-          "intensidad": 0.7,
-          "confianza": 0.8,
-          "contexto": "parte específica del comentario donde se detecta"
-        }}
-      ],
-      "temas": [
-        {{
-          "categoria": "velocidad|precio|servicio_cliente|cobertura|etc",
-          "relevancia": 0.9,
-          "confianza": 0.8,
-          "contexto_especifico": "parte del comentario relevante"
-        }}
-      ],
-      "puntos_dolor": [
-        {{
-          "tipo": "velocidad_lenta|cobros_incorrectos|mal_servicio_cliente|etc",
-          "severidad": 0.8,
-          "confianza": 0.9,
-          "nivel_impacto": "critico|alto|moderado|bajo",
-          "contexto_especifico": "descripción específica del problema"
-        }}
-      ],
-      "resumen": "Análisis específico de este comentario individual"
+      "sentimiento": "positivo|neutral|negativo",
+      "confianza": 0.85,
+      "tema_principal": "velocidad|precio|servicio|cobertura|facturacion",
+      "emocion_principal": "satisfaccion|frustracion|enojo|neutral",
+      "urgencia": "baja|media|alta|critica"
     }}
   ],
-  "estadisticas_agregadas": {{
-    "distribucion_sentimientos": {{"positivo": 0, "neutral": 0, "negativo": 0}},
-    "temas_mas_relevantes": {{"velocidad": 0.8, "precio": 0.6}},
-    "dolores_mas_severos": {{"velocidad_lenta": 0.7, "cobros_incorrectos": 0.5}},
-    "emociones_predominantes": {{"frustracion": 0.6, "satisfaccion": 0.4}}
+  "resumen": {{
+    "positivos": 0,
+    "neutrales": 0, 
+    "negativos": 0,
+    "tema_frecuente": "velocidad",
+    "urgentes": 0
   }}
 }}
 
-INSTRUCCIONES CRÍTICAS:
-1. CONSISTENCIA: sentimiento.confianza debe ser consistente para textos similares
-2. VARIABILIDAD CONTROLADA: emociones.intensidad, temas.relevancia, puntos_dolor.severidad PUEDEN variar para expresar matices
-3. NARRATIVA NATURAL: resumen_ejecutivo y recomendaciones deben ser naturales y únicos
-4. JSON VÁLIDO: Respuesta debe ser JSON válido sin texto adicional
-5. TODOS LOS COMENTARIOS: Incluir análisis de todos los {len(comentarios)} comentarios en el array
-6. TELECOMUNICACIONES: Enfocarse en temas específicos del sector (velocidad, cobertura, planes, servicio técnico, etc.)
+REGLAS:
+1. JSON válido obligatorio
+2. Resumen ejecutivo máximo 200 caracteres
+3. Solo incluir campos mostrados
+4. Analizar TODOS los {len(comentarios)} comentarios
+5. Ser conciso para evitar truncamiento
 """
     
     def _hacer_llamada_api_maestra(self, prompt: str, num_comentarios: int) -> Dict[str, Any]:
@@ -316,25 +290,32 @@ INSTRUCCIONES CRÍTICAS:
         try:
             analisis_general = respuesta.get('analisis_general', {})
             comentarios_analizados = respuesta.get('comentarios', [])
-            estadisticas = respuesta.get('estadisticas_agregadas', {})
+            resumen = respuesta.get('resumen', {})
             
             # Validar que tenemos todos los comentarios
             if len(comentarios_analizados) != len(comentarios_originales):
                 logger.warning(f"⚠️ Discrepancia: esperados {len(comentarios_originales)}, recibidos {len(comentarios_analizados)}")
             
-            # Calcular confianza general
+            # Calcular confianza general desde nueva estructura
             confianzas_sentimientos = [
-                c.get('sentimiento', {}).get('confianza', 0.5) 
+                c.get('confianza', 0.5) 
                 for c in comentarios_analizados
             ]
             confianza_general = sum(confianzas_sentimientos) / len(confianzas_sentimientos) if confianzas_sentimientos else 0.5
+            
+            # Adaptar distribución de sentimientos desde resumen
+            distribucion_sentimientos = {
+                'positivo': resumen.get('positivos', 0),
+                'neutral': resumen.get('neutrales', 0), 
+                'negativo': resumen.get('negativos', 0)
+            }
             
             return AnalisisCompletoIA(
                 # Análisis general
                 total_comentarios=analisis_general.get('total_comentarios', len(comentarios_originales)),
                 tendencia_general=analisis_general.get('tendencia_general', 'neutral'),
                 resumen_ejecutivo=analisis_general.get('resumen_ejecutivo', ''),
-                recomendaciones_principales=analisis_general.get('recomendaciones_principales', []),
+                recomendaciones_principales=analisis_general.get('recomendaciones', []),
                 
                 # Análisis individuales
                 comentarios_analizados=comentarios_analizados,
@@ -346,11 +327,11 @@ INSTRUCCIONES CRÍTICAS:
                 modelo_utilizado=respuesta.get('_modelo_utilizado', self.modelo),
                 fecha_analisis=datetime.now(),
                 
-                # Estadísticas agregadas
-                distribucion_sentimientos=estadisticas.get('distribucion_sentimientos', {}),
-                temas_mas_relevantes=estadisticas.get('temas_mas_relevantes', {}),
-                dolores_mas_severos=estadisticas.get('dolores_mas_severos', {}),
-                emociones_predominantes=estadisticas.get('emociones_predominantes', {})
+                # Estadísticas agregadas adaptadas
+                distribucion_sentimientos=distribucion_sentimientos,
+                temas_mas_relevantes={resumen.get('tema_frecuente', 'unknown'): 1.0} if resumen.get('tema_frecuente') else {},
+                dolores_mas_severos={},  # Simplificado - no incluido en nueva estructura
+                emociones_predominantes={}  # Simplificado - no incluido en nueva estructura
             )
             
         except Exception as e:
