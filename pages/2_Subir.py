@@ -22,24 +22,66 @@ try:
     from src.shared.exceptions.archivo_exception import ArchivoException
     from src.shared.exceptions.ia_exception import IAException
     
-    # Import enhanced CSS loader for glassmorphism
+    # HIGH-003 FIX: Centralized CSS loading strategy (no more import redundancy)
     try:
-        from src.presentation.streamlit.enhanced_css_loader import ensure_css_loaded, inject_page_css
-        from src.presentation.streamlit.css_loader import glass_card, metric_card
+        # Primary: Enhanced CSS loader with all features
+        from src.presentation.streamlit.enhanced_css_loader import (
+            ensure_css_loaded, inject_page_css
+        )
         
-        # Ensure CSS is loaded for this page with analysis-specific styles
-        ensure_css_loaded()
-        inject_page_css('upload')    # Upload page styles
-        inject_page_css('analysis')  # Analysis and chart styles
-        
-        CSS_UTILS_AVAILABLE = True
-    except ImportError:
-        # Fallback to basic CSS loader
+        # Try to import utility functions from basic loader
         try:
             from src.presentation.streamlit.css_loader import glass_card, metric_card
             CSS_UTILS_AVAILABLE = True
         except ImportError:
+            # HIGH-003 FIX: Create safe fallback implementations
+            def glass_card(content: str) -> None:
+                """Fallback glass card implementation"""
+                st.markdown(
+                    f'<div class="glass-card" style="'
+                    f'background: rgba(255, 255, 255, 0.08); '
+                    f'backdrop-filter: blur(16px); '
+                    f'border-radius: 16px; '
+                    f'padding: 1rem; '
+                    f'border: 1px solid rgba(255, 255, 255, 0.15);">'
+                    f'{content}</div>', 
+                    unsafe_allow_html=True
+                )
+            
+            def metric_card(title: str, value: str) -> None:
+                """Fallback metric card implementation"""
+                st.metric(title, value)
+            
+            CSS_UTILS_AVAILABLE = True
+            logger.info("⚠️ Using fallback CSS utility functions")
+        
+        # Load CSS with enhanced loader
+        try:
+            ensure_css_loaded()
+            inject_page_css('upload')
+            inject_page_css('analysis')
+            ENHANCED_CSS_LOADED = True
+        except Exception as css_error:
+            logger.error(f"❌ Enhanced CSS loading failed: {str(css_error)}")
+            ENHANCED_CSS_LOADED = False
+        
+    except ImportError as e:
+        # HIGH-003 FIX: Complete fallback to basic CSS system
+        logger.warning("⚠️ Enhanced CSS not available, using basic fallback")
+        try:
+            from src.presentation.streamlit.css_loader import load_css, glass_card, metric_card
+            load_css()
+            CSS_UTILS_AVAILABLE = True
+            ENHANCED_CSS_LOADED = False
+        except ImportError:
+            logger.error("❌ No CSS system available")
+            # Create minimal fallbacks
+            def glass_card(content: str) -> None:
+                st.markdown(content, unsafe_allow_html=True)
+            def metric_card(title: str, value: str) -> None:
+                st.metric(title, value)
             CSS_UTILS_AVAILABLE = False
+            ENHANCED_CSS_LOADED = False
         
 except ImportError as e:
     st.error(f"Error importando Clean Architecture: {str(e)}")

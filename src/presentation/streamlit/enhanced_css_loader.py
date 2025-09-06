@@ -1,11 +1,20 @@
 """
 Enhanced CSS Loader with Glassmorphism Support
 Ensures all CSS files from static folder are properly loaded
+HIGH-001 FIX: Now uses thread-safe session state management
 """
 import streamlit as st
 from pathlib import Path
 from typing import List, Optional, Dict
 import logging
+
+# HIGH-001 FIX: Import thread-safe session state manager
+try:
+    from .session_state_manager import session_manager
+    THREAD_SAFE_SESSION = True
+except ImportError:
+    # Fallback if session manager not available
+    THREAD_SAFE_SESSION = False
 
 logger = logging.getLogger(__name__)
 
@@ -289,19 +298,30 @@ class EnhancedCSSLoader:
         """
         Ensure all necessary styles are loaded
         Called at the start of each page
+        HIGH-001 FIX: Now uses thread-safe session state access
         
         Returns:
             bool: True if styles are ready
         """
-        # Check if already loaded in session
-        if 'css_loaded' in st.session_state and st.session_state.css_loaded:
-            return True
+        # HIGH-001 FIX: Thread-safe session state access
+        if THREAD_SAFE_SESSION:
+            # Check if already loaded in session (thread-safe)
+            if session_manager.safe_get('css_loaded', False):
+                return True
+        else:
+            # Fallback to unsafe access
+            if 'css_loaded' in st.session_state and st.session_state.css_loaded:
+                return True
             
         # Load everything
         success = self.load_all_styles()
         
         if success:
-            st.session_state.css_loaded = True
+            # HIGH-001 FIX: Thread-safe session state update
+            if THREAD_SAFE_SESSION:
+                session_manager.safe_set('css_loaded', True)
+            else:
+                st.session_state.css_loaded = True
             
         return success
     

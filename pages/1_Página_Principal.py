@@ -1,35 +1,50 @@
 """
 Página Principal - Clean Architecture
 Simple landing page usando solo src/
+HIGH-002 FIX: Added proper logging import
 """
 
 import streamlit as st
 import sys
 from pathlib import Path
+import logging
+
+# HIGH-002 FIX: Configure logger for this module
+logger = logging.getLogger(__name__)
 
 # Add src to path
 current_dir = Path(__file__).parent.parent
 if str(current_dir) not in sys.path:
     sys.path.insert(0, str(current_dir))
 
-# Load enhanced CSS with better static/ integration
+# HIGH-002 FIX: Enhanced error handling for CSS loading
 try:
     from src.presentation.streamlit.enhanced_css_loader import ensure_css_loaded, inject_page_css
     
-    # Ensure complete CSS cascade is loaded
-    css_loaded = ensure_css_loaded()
-    
-    # Inject main page specific styles
-    inject_page_css('main')
-    
-    CSS_LOADED = css_loaded
-    if css_loaded:
-        logger.info("✅ Main page CSS loaded successfully")
-    else:
-        logger.warning("⚠️ CSS loading incomplete, using fallbacks")
+    try:
+        # Ensure complete CSS cascade is loaded
+        css_loaded = ensure_css_loaded()
+        
+        # Inject main page specific styles
+        inject_page_css('main')
+        
+        CSS_LOADED = css_loaded
+        if css_loaded:
+            logger.info("✅ Main page CSS loaded successfully")
+        else:
+            logger.warning("⚠️ CSS loading incomplete, using fallbacks")
+            
+    except Exception as css_error:
+        logger.error(f"❌ Error during CSS loading: {str(css_error)}")
+        CSS_LOADED = False
+        # Continue with basic functionality
         
 except ImportError as e:
-    logger.warning(f"CSS loader not available: {str(e)}")
+    logger.warning(f"⚠️ CSS loader not available: {str(e)}")
+    CSS_LOADED = False
+    # Continue with basic functionality
+except Exception as e:
+    logger.error(f"❌ Unexpected error in CSS setup: {str(e)}")
     CSS_LOADED = False
 
 # Page content with styling support

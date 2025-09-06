@@ -11,6 +11,13 @@ import logging
 from ...application.dtos.analisis_completo_ia import AnalisisCompletoIA
 from ...shared.exceptions.ia_exception import IAException
 
+# HIGH-004 FIX: Import retry strategy for error recovery
+try:
+    from .retry_strategy import DEFAULT_RETRY, OpenAIRetryWrapper
+    RETRY_AVAILABLE = True
+except ImportError:
+    RETRY_AVAILABLE = False
+
 
 logger = logging.getLogger(__name__)
 
@@ -50,7 +57,15 @@ class AnalizadorMaestroIA:
         self.temperatura = temperatura    # ← Configurable para consistencia
         self.seed = 12345                 # ← Seed fijo para máxima reproducibilidad
         
-        logger.info(f"🤖 AnalizadorMaestroIA inicializado - Modelo: {modelo}, Cache: {self._cache_max_size if usar_cache else 'disabled'}, TTL: {self._cache_ttl_seconds}s")
+        # HIGH-004 FIX: Initialize retry strategy for error recovery
+        if RETRY_AVAILABLE:
+            self.retry_wrapper = OpenAIRetryWrapper(DEFAULT_RETRY)
+            retry_info = "enabled"
+        else:
+            self.retry_wrapper = None
+            retry_info = "disabled"
+        
+        logger.info(f"🤖 AnalizadorMaestroIA inicializado - Modelo: {modelo}, Cache: {self._cache_max_size if usar_cache else 'disabled'}, TTL: {self._cache_ttl_seconds}s, Retry: {retry_info}")
     
     def _calcular_tokens_dinamicos(self, num_comentarios: int) -> int:
         """
@@ -265,23 +280,45 @@ REGLAS: JSON válido, campos abreviados, analizar TODOS los {len(comentarios)} c
         try:
             logger.debug(f"🚀 Enviando prompt maestro (temp={self.temperatura}, seed={self.seed})")
             
-            response = self.client.chat.completions.create(
-                model=self.modelo,
-                messages=[
-                    {
-                        "role": "system", 
-                        "content": "Eres un experto analista de experiencia del cliente especializado en telecomunicaciones. Responde SOLO con JSON válido, sin texto adicional."
-                    },
-                    {
-                        "role": "user",
-                        "content": prompt
-                    }
-                ],
-                temperature=self.temperatura,  # ← DETERMINISTA
-                seed=self.seed,                # ← REPRODUCIBLE
-                max_tokens=self._calcular_tokens_dinamicos(num_comentarios),
-                response_format={"type": "json_object"}  # ← Forzar JSON válido
-            )
+            # HIGH-004 FIX: Use retry wrapper for robust API calls  
+            if self.retry_wrapper:
+                response = self.retry_wrapper.wrap_chat_completion(
+                    client=self.client,
+                    model=self.modelo,
+                    messages=[
+                        {
+                            "role": "system", 
+                            "content": "Eres un experto analista de experiencia del cliente especializado en telecomunicaciones. Responde SOLO con JSON válido, sin texto adicional."
+                        },
+                        {
+                            "role": "user",
+                            "content": prompt
+                        }
+                    ],
+                    temperature=self.temperatura,  # ← DETERMINISTA
+                    seed=self.seed,                # ← REPRODUCIBLE
+                    max_tokens=self._calcular_tokens_dinamicos(num_comentarios),
+                    response_format={"type": "json_object"}  # ← Forzar JSON válido
+                )
+            else:
+                # Fallback to direct API call without retry (maintains existing behavior)
+                response = self.client.chat.completions.create(
+                    model=self.modelo,
+                    messages=[
+                        {
+                            "role": "system", 
+                            "content": "Eres un experto analista de experiencia del cliente especializado en telecomunicaciones. Responde SOLO con JSON válido, sin texto adicional."
+                        },
+                        {
+                            "role": "user",
+                            "content": prompt
+                        }
+                    ],
+                    temperature=self.temperatura,  # ← DETERMINISTA
+                    seed=self.seed,                # ← REPRODUCIBLE
+                    max_tokens=self._calcular_tokens_dinamicos(num_comentarios),
+                    response_format={"type": "json_object"}  # ← Forzar JSON válido
+                )
             
             content = response.choices[0].message.content
             tokens_utilizados = response.usage.total_tokens if response.usage else 0
