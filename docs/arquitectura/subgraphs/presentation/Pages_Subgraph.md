@@ -111,6 +111,13 @@ graph TD
 #### **📊 NEW: Data Visualization System** *(Sept 2025)*
 ```python
 # Professional interactive chart components
+├── 🎭 _create_comprehensive_emotions_chart() (NEW - PRIMARY DISPLAY)
+│   ├── Horizontal bar chart for all 16 granular emotion types
+│   ├── Dynamic height calculation based on emotion count  
+│   ├── Professional color mapping by emotion psychology
+│   ├── Sorted by intensity (most impactful emotions first)
+│   ├── Enhanced styling with glassmorphism integration
+│   └── First display priority for maximum business impact
 ├── 🥧 _create_sentiment_distribution_chart()
 │   ├── Pie chart with green/gray/red semantic colors
 │   ├── Interactive hover information
@@ -120,7 +127,7 @@ graph TD
 │   ├── Purple-cyan color scheme alignment
 │   └── Responsive design with use_container_width=True
 ├── 🍩 _create_emotions_donut_chart()
-│   ├── Donut chart with emotion-specific colors
+│   ├── Donut chart with emotion-specific colors (legacy support)
 │   ├── Intensity mapping visualization  
 │   └── Professional color psychology integration
 ├── ⚡ _create_token_usage_gauge()
@@ -217,10 +224,11 @@ emotion_colors = {
 # Enhanced data flow: AI → DTO → Visualization
 analysis_result: AnalisisCompletoIA = ai_engine.analizar_excel_completo()
 
-# Chart data extraction
+# Chart data extraction (UPDATED Sept 2025)
+├── emociones_predominantes → NEW: Comprehensive emotions bar chart (PRIMARY)
 ├── distribucion_sentimientos → Pie chart visualization  
 ├── temas_mas_relevantes → Horizontal bar chart
-├── emociones_predominantes → Donut chart with emotion colors
+├── emociones_predominantes → Donut chart with emotion colors (secondary)
 ├── tokens_utilizados → Gauge with safety zones  
 ├── comentarios_analizados → Confidence histogram
 ├── tiempo_analisis → Batch processing timeline
@@ -258,19 +266,21 @@ _get_analysis_page_css()               # Specialized chart CSS
 
 ## 🔍 SUB-COMPONENT BREAKDOWN
 
-### **📊 Sub-Vertex Inventory**
+### **📊 Sub-Vertex Inventory** *(Updated Sept 2025)*
 1. **Page Components** (3 files)
-2. **NEW: Chart Functions** (7 visualization methods) 
+2. **ENHANCED: Chart Functions** (8 visualization methods including NEW comprehensive emotions) 
 3. **CSS Integration** (3 styling systems)
 4. **Navigation System** (2 routing methods)
 5. **Data Processing** (4 preprocessing functions)
+6. **NEW: Constants Integration** (1 configuration system)
 
-### **🎯 Total Pages Sub-Vertices: 19**
+### **🎯 Total Pages Sub-Vertices: 21**
 - Page files: 3
-- NEW: Chart functions: 7  
+- ENHANCED: Chart functions: 8 (including comprehensive emotions chart)
 - CSS methods: 3
 - Navigation: 2
 - Processing: 4
+- NEW: Constants integration: 1
 
 ---
 

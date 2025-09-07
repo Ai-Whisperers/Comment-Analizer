@@ -1,15 +1,52 @@
-# 🤖 AI Engine Sub-Graph - AnalizadorMaestroIA
+# 🤖 AI Engine Sub-Graph - Complete External Services Infrastructure
 
 **Parent Vertex:** [🤖 AI Engine](../../Pipeline_Flow_Diagram.md#ai-processing-core)  
-**Location:** `src/infrastructure/external_services/analizador_maestro_ia.py`  
+**Location:** `src/infrastructure/external_services/`  
 **Type:** Infrastructure Component  
-**Complexity:** High (8 main methods + cache system)  
+**Complexity:** Very High (5 files, 12+ classes, 50+ methods + enterprise enhancements)  
 
 ---
 
 ## 🎯 COMPONENT OVERVIEW
 
-The **AnalizadorMaestroIA** is the core AI processing engine that handles OpenAI integration, token management, caching, and batch processing coordination.
+The **AI Engine Sub-Graph** is a comprehensive **external services infrastructure** comprising **5 interconnected modules** that handle OpenAI integration, intelligent error recovery, configuration management, token optimization, and enterprise-grade reliability features.
+
+### **📁 Complete File Structure** *(Updated Sept 2025)*
+```python
+src/infrastructure/external_services/
+├── analizador_maestro_ia.py      # Core AI processing engine (26KB)
+├── ai_engine_constants.py        # NEW: Centralized configuration (7KB)  
+├── retry_strategy.py             # NEW: Intelligent error recovery (8KB)
+├── analizador_openai.py          # Legacy AI analyzer (9KB)
+└── __init__.py                   # Module initialization
+```
+
+### **🔗 Component Integration**
+```mermaid
+graph TD
+    subgraph "🤖 AI ENGINE COMPLETE INFRASTRUCTURE"
+        CONSTANTS[AIEngineConstants - Configuration]
+        RETRY[RetryStrategy - Error Recovery]
+        MAESTRO[AnalizadorMaestroIA - Core Engine]
+        LEGACY[AnalizadorOpenAI - Legacy Support]
+        
+        CONSTANTS --> MAESTRO
+        RETRY --> MAESTRO
+        MAESTRO --> LEGACY
+        
+        subgraph "🔧 Enterprise Features (Sept 2025)"
+            MEMORY[Memory Leak Prevention]
+            THREAD[Thread Safety]
+            ERROR[Error Recovery]
+            POLISH[Production Polish]
+        end
+        
+        MAESTRO --> MEMORY
+        MAESTRO --> THREAD
+        RETRY --> ERROR
+        CONSTANTS --> POLISH
+    end
+```
 
 ### **📊 Internal Architecture**
 ```mermaid
@@ -319,6 +356,93 @@ graph TD
 
 ---
 
+## 🆕 NEW COMPONENTS *(Sept 2025 Enterprise Enhancements)*
+
+### **🔧 AIEngineConstants** - `ai_engine_constants.py`
+**Purpose:** Centralized configuration management eliminating magic numbers
+**Size:** 7KB, 150+ lines
+**Type:** Configuration Infrastructure
+
+#### **📊 Constants Categories**
+```python
+# Token Management Constants
+├── BASE_TOKENS_JSON_STRUCTURE = 1200
+├── TOKENS_PER_COMMENT = 80
+├── TOKEN_BUFFER_PERCENTAGE = 1.10
+└── SAFETY_COMMENT_LIMIT = 20
+
+# Cache Configuration Constants  
+├── DEFAULT_CACHE_SIZE = 50
+├── DEFAULT_CACHE_TTL = 3600
+└── CACHE_CLEANUP_THRESHOLD_RATIO = 1.5
+
+# AI Behavior Constants
+├── FIXED_SEED = 12345 
+├── DEFAULT_TEMPERATURE = 0.0
+└── DEFAULT_MODEL = "gpt-4o-mini"
+
+# Model Token Limits (6 models)
+├── gpt-4o-mini: 16384
+├── gpt-4o: 16384
+├── gpt-4: 128000
+└── gpt-4-turbo: 128000
+
+# Visualization Constants
+├── CHART_DEFAULT_HEIGHT = 400
+├── EMOTION_COLORS = {16 emotion mappings}
+└── EMOTION_INTENSITY_THRESHOLDS = {5 levels}
+```
+
+#### **🎯 Helper Methods** 
+- `get_model_token_limit(model)` - Safe model limit retrieval
+- `get_emotion_color(emotion)` - Consistent color mapping
+- `classify_emotion_intensity(intensity)` - Standard classification
+- `calculate_dynamic_chart_height(items)` - Responsive sizing
+- `validate_configuration()` - Configuration integrity check
+
+### **🔄 RetryStrategy** - `retry_strategy.py`
+**Purpose:** Intelligent error recovery with exponential backoff
+**Size:** 8KB, 200+ lines  
+**Type:** Reliability Infrastructure
+
+#### **📊 Retry Components**
+```python
+# Core Retry Logic
+├── RetryStrategy class
+│   ├── Exponential backoff calculation
+│   ├── Jitter randomization (thundering herd prevention)
+│   ├── Error type categorization
+│   └── Configurable retry limits
+
+# OpenAI Specialized Wrapper
+├── OpenAIRetryWrapper class
+│   ├── Chat completion retry handling
+│   ├── Generic API call wrapping
+│   ├── Error type classification
+│   └── Intelligent recovery strategies
+
+# Pre-configured Strategies
+├── DEFAULT_RETRY (3 retries, 1s base)
+├── AGGRESSIVE_RETRY (5 retries, 0.5s base)
+└── CONSERVATIVE_RETRY (2 retries, 2s base)
+```
+
+#### **🎯 Error Recovery Logic**
+- **Rate Limits:** Always retry with exponential backoff
+- **Connection Errors:** Retry with reduced delay
+- **Server Errors:** Retry with standard backoff
+- **Auth Errors:** Immediate fail (no retry)
+- **Bad Requests:** Immediate fail (no retry)
+- **Unknown Errors:** Single retry then fail
+
+### **🔧 AnalizadorOpenAI** - `analizador_openai.py` *(Legacy Support)*
+**Purpose:** Legacy AI analyzer for backward compatibility
+**Size:** 9KB, 300+ lines
+**Type:** Legacy Infrastructure
+**Status:** Maintained for compatibility, not actively used
+
+---
+
 ## 🔄 RETURN TO NAVIGATION
 
 ← **[Master Graph](../00_Master_Graph_Navigation.md)** - Return to 78-vertex overview  
@@ -327,16 +451,43 @@ graph TD
 
 ---
 
-## 🎯 SUB-VERTEX COUNT
+## 🎯 SUB-VERTEX COUNT *(Updated Sept 2025)*
 
-**Total AI Engine Sub-Vertices:** 15
-- Main methods: 5
-- Cache methods: 5  
-- Configuration: 4
-- Error handling: 1
+### **📊 Complete Component Inventory**
 
-**Granularity Level:** Component methods and properties  
-**Next Level:** Individual function implementations (Level 2)
+#### **📁 AnalizadorMaestroIA** - `analizador_maestro_ia.py`
+- **Core Methods:** 5 (analizar_excel_completo, _generar_prompt_maestro, etc.)
+- **Cache Methods:** 6 (including NEW _cleanup_expired_cache)
+- **Configuration:** 4 properties  
+- **NEW Enterprise Features:** 3 (memory leak prevention, thread safety, retry integration)
+**Subtotal:** 18 sub-vertices
+
+#### **🔧 AIEngineConstants** - `ai_engine_constants.py` *(NEW)*
+- **Constant Categories:** 8 (tokens, cache, AI behavior, models, visualization, etc.)
+- **Helper Methods:** 5 (get_model_token_limit, get_emotion_color, etc.)
+- **Validation:** 1 (validate_configuration)
+**Subtotal:** 14 sub-vertices
+
+#### **🔄 RetryStrategy** - `retry_strategy.py` *(NEW)*
+- **Core Classes:** 2 (RetryStrategy, OpenAIRetryWrapper)
+- **Configuration Presets:** 3 (DEFAULT, AGGRESSIVE, CONSERVATIVE)
+- **Error Recovery Methods:** 4 (exponential backoff, error classification, etc.)
+**Subtotal:** 9 sub-vertices
+
+#### **🔧 Legacy Components**
+- **AnalizadorOpenAI:** 8 sub-vertices (legacy support)
+- **Module Init:** 1 sub-vertex
+**Subtotal:** 9 sub-vertices
+
+### **📈 TOTAL AI ENGINE SUB-VERTICES: 50**
+```
+Original (Early 2025):    15 sub-vertices
+Post-Enhancements:        50 sub-vertices  
+Growth Factor:            +233% expansion
+```
+
+**Granularity Level:** Component methods, classes, and configuration objects  
+**Next Level:** Individual function implementations and constants (Level 2)
 
 ---
 
