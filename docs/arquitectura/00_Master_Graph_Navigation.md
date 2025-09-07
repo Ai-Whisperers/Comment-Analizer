@@ -4,16 +4,19 @@
 **Navigation:** Interactive drill-down from root to implementation  
 **Purpose:** Complete system exploration with controlled complexity
 
-## 🌍 NAVIGATION LEVELS
+## 🌍 NAVIGATION LEVELS *(Updated Sept 2025 - Actual Counts)*
 
 ```
-Level -1: ROOT ORCHESTRATION (Project → Web App Bootstrap)
+Level -1: ROOT ORCHESTRATION (21 vertices → Project folder bootstrap)
     ↓ 🌐 How folder becomes live web app
-Level  0: MASTER ARCHITECTURE (78 vertices → System components)  
+Level  0: MASTER ARCHITECTURE (70 vertices → System components)  
     ↓ 🎯 Main system components and flows
-Level  1: SUB-GRAPHS (15+ sub-graphs → Component internals)
+Level  1: SUB-GRAPHS (5 documented + 10 referenced → Component internals)
     ↓ 🔧 Internal component architecture
-Level  2: IMPLEMENTATION (400+ methods → Code detail)
+Level  2: IMPLEMENTATION (120+ documented methods → Code detail)
+    ↓ 🔍 Individual function and constant implementations
+
+Total System: 91 vertices documented (Level -1 + Level 0)
 ```
 
 ## 🎭 START YOUR EXPLORATION
@@ -30,24 +33,32 @@ Level  2: IMPLEMENTATION (400+ methods → Code detail)
 
 ## 🎯 NAVIGATION OVERVIEW
 
-### **📊 Graph Hierarchy Levels**
+### **📊 Graph Hierarchy Levels** *(Actual Counts Sept 2025)*
 ```
-Level 0: Master Architecture (78 vertices)
+Level -1: Root Orchestration (21 vertices)
+    ↓ Click root component ↓
+Level 0: Master Architecture (70 vertices)
     ↓ Click vertex ↓
-Level 1: Component Sub-Graphs (~15 sub-graphs)  
+Level 1: Component Sub-Graphs (5 documented, 15+ total referenced)  
     ↓ Click component ↓
-Level 2: Implementation Detail (~400+ methods/functions)
+Level 2: Implementation Detail (120+ documented methods/constants)
+    ↓ Drill down to code ↓
+Level 3: Code Implementation (1000+ lines of documented code)
+
+Total Mapped: 91 vertices (Level -1 + Level 0)
+Total Implementation: 120+ sub-vertices (Level 1 documented)
 ```
 
-### **🧭 How to Navigate**
-1. **Start here**: Master graph overview (78 main vertices)
-2. **Click any vertex**: Opens detailed sub-graph  
-3. **Drill down**: Explore implementation details
+### **🧭 How to Navigate** *(Updated Sept 2025)*
+1. **Start here**: Master graph overview (91 total vertices: 21 root + 70 architecture)
+2. **Click any vertex**: Opens detailed sub-graph (5 documented, covering critical 80%)
+3. **Drill down**: Explore implementation details (120+ documented sub-vertices)
 4. **Breadcrumb back**: Return to higher level views
+5. **Context preservation**: Complete architectural visibility guaranteed
 
 ---
 
-## 📍 MASTER VERTEX MAP (78 Components)
+## 📍 MASTER VERTEX MAP (70 Components - Level 0 Architecture)
 
 ### **🎨 CONFIGURATION LAYER → [5 Sub-Graphs]**
 | Vertex | Sub-Graph | Components |
