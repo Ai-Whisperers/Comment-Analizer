@@ -302,7 +302,7 @@ FORMATO:
   }},
   "comentarios": [
     {{
-      "i": 0,
+      "i": 1,
       "sent": "pos|neu|neg",
       "conf": 0.85,
       "tema": "vel|pre|ser|cob|fac",
@@ -313,7 +313,8 @@ FORMATO:
   "stats": {{"pos": 0, "neu": 0, "neg": 0, "tema_top": "vel", "urg": 0}}
 }}
 
-REGLAS: JSON válido, campos abreviados, analizar TODOS los {len(comentarios)} comentarios.
+REGLAS: JSON válido, campos abreviados, analizar EXACTAMENTE {len(comentarios)} comentarios (numerados 1-{len(comentarios)}). 
+NO agregar comentarios extra. RETORNAR exactamente {len(comentarios)} items en array "comentarios".
 """
     
     def _hacer_llamada_api_maestra(self, prompt: str, num_comentarios: int) -> Dict[str, Any]:
@@ -400,9 +401,21 @@ REGLAS: JSON válido, campos abreviados, analizar TODOS los {len(comentarios)} c
             comentarios_analizados = respuesta.get('comentarios', [])
             stats = respuesta.get('stats', {})
             
-            # Validar que tenemos todos los comentarios
-            if len(comentarios_analizados) != len(comentarios_originales):
-                logger.warning(f"⚠️ Discrepancia: esperados {len(comentarios_originales)}, recibidos {len(comentarios_analizados)}")
+            # BATCH FIX: Validar y corregir discrepancias de conteo
+            expected_count = len(comentarios_originales)
+            received_count = len(comentarios_analizados)
+            
+            if received_count != expected_count:
+                logger.warning(f"⚠️ Discrepancia: esperados {expected_count}, recibidos {received_count}")
+                
+                if received_count > expected_count:
+                    # AI devolvió más comentarios de los esperados - truncar al límite
+                    logger.info(f"🔧 Truncando {received_count} → {expected_count} comentarios")
+                    comentarios_analizados = comentarios_analizados[:expected_count]
+                elif received_count < expected_count:
+                    # AI devolvió menos comentarios - reportar pero continuar
+                    logger.warning(f"⚠️ AI analizó solo {received_count}/{expected_count} comentarios")
+                    # Continuar con los comentarios que sí fueron analizados
             
             # Calcular confianza general desde nueva estructura abreviada
             confianzas_sentimientos = [
