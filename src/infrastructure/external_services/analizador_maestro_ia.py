@@ -48,18 +48,22 @@ class AnalizadorMaestroIA:
         self.usar_cache = usar_cache
         self.max_tokens_limit = max_tokens
         
+        # FUNCTIONAL FIX: Initialize _cache_ttl_seconds for all cases (logging needs it)
+        if CONSTANTS_AVAILABLE:
+            self._cache_ttl_seconds = cache_ttl or AIEngineConstants.DEFAULT_CACHE_TTL
+        else:
+            self._cache_ttl_seconds = cache_ttl or 3600
+        
         # Cache con límites para prevenir memory leaks
         if usar_cache:
             from collections import OrderedDict
             self._cache = OrderedDict()
             
-            # POLISH-002 FIX: Use constants instead of magic numbers
+            # POLISH-002 FIX: Use constants for cache size (TTL already initialized above)
             if CONSTANTS_AVAILABLE:
                 self._cache_max_size = AIEngineConstants.DEFAULT_CACHE_SIZE
-                self._cache_ttl_seconds = cache_ttl or AIEngineConstants.DEFAULT_CACHE_TTL
             else:
                 self._cache_max_size = 50  # Fallback
-                self._cache_ttl_seconds = cache_ttl or 3600
                 
             self._cache_timestamps = {}  # Track cuando se creó cada entry
         else:
