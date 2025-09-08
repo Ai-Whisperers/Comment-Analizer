@@ -25,6 +25,13 @@ try:
 except ImportError:
     CONSTANTS_AVAILABLE = False
 
+# PROGRESS TRACKING: Import real-time progress tracker
+try:
+    from .ai_progress_tracker import create_progress_tracker, track_step, reset_progress_tracker
+    PROGRESS_TRACKING_AVAILABLE = True
+except ImportError:
+    PROGRESS_TRACKING_AVAILABLE = False
+
 
 logger = logging.getLogger(__name__)
 
@@ -226,30 +233,39 @@ class AnalizadorMaestroIA:
             comentarios_raw = comentarios_raw[:20]
         
         inicio_tiempo = time.time()
+        
+        # PROGRESS TRACKING: Initialize real-time progress tracker
+        if PROGRESS_TRACKING_AVAILABLE:
+            tracker = create_progress_tracker(len(comentarios_raw))
+        
         logger.info(f"🔍 Iniciando análisis maestro de {len(comentarios_raw)} comentarios (limitado para {self.modelo})")
         
         try:
-            # Generar hash para cache (determinista por contenido)
-            cache_key = self._generar_cache_key(comentarios_raw)
+            # STEP 1: Cache operations (3% of total time)
+            with track_step('cache_check') if PROGRESS_TRACKING_AVAILABLE else track_step('cache_check'):
+                cache_key = self._generar_cache_key(comentarios_raw)
+                
+                # Verificar cache (con TTL y LRU)
+                if self.usar_cache and self._verificar_cache_valido(cache_key):
+                    logger.info("💾 Resultado obtenido desde cache")
+                    # Move to end (LRU)
+                    self._cache.move_to_end(cache_key)
+                    return self._cache[cache_key]
             
-            # Verificar cache (con TTL y LRU)
-            if self.usar_cache and self._verificar_cache_valido(cache_key):
-                logger.info("💾 Resultado obtenido desde cache")
-                # Move to end (LRU)
-                self._cache.move_to_end(cache_key)
-                return self._cache[cache_key]
+            # STEP 2: Prompt generation (10% of total time)
+            with track_step('prompt_generation') if PROGRESS_TRACKING_AVAILABLE else track_step('prompt_generation'):
+                prompt_completo = self._generar_prompt_maestro(comentarios_raw)
             
-            # Generar prompt maestro
-            prompt_completo = self._generar_prompt_maestro(comentarios_raw)
+            # STEP 3: OpenAI API call (75% of total time - LONGEST STEP)
+            with track_step('openai_api_call') if PROGRESS_TRACKING_AVAILABLE else track_step('openai_api_call'):
+                respuesta_raw = self._hacer_llamada_api_maestra(prompt_completo, len(comentarios_raw))
             
-            # Hacer llamada única a OpenAI
-            respuesta_raw = self._hacer_llamada_api_maestra(prompt_completo, len(comentarios_raw))
-            
-            # Procesar respuesta y crear DTO
-            tiempo_transcurrido = time.time() - inicio_tiempo
-            analisis_completo = self._procesar_respuesta_maestra(
-                respuesta_raw, comentarios_raw, tiempo_transcurrido
-            )
+            # STEP 4: Response processing and emotion extraction (10% of total time)  
+            with track_step('response_processing') if PROGRESS_TRACKING_AVAILABLE else track_step('response_processing'):
+                tiempo_transcurrido = time.time() - inicio_tiempo
+                analisis_completo = self._procesar_respuesta_maestra(
+                    respuesta_raw, comentarios_raw, tiempo_transcurrido
+                )
             
             # Guardar en cache con límites
             if self.usar_cache:

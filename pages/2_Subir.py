@@ -96,8 +96,66 @@ except ImportError as e:
 
 
 def _run_analysis(uploaded_file, analysis_type):
-    """Run pure IA analysis using maestro system only"""
-    with st.spinner("Procesando con Inteligencia Artificial..."):
+    """Run pure IA analysis using maestro system only with real-time progress tracking"""
+    
+    # PROGRESS LOADER: Import real-time progress tracking
+    try:
+        from src.infrastructure.external_services.ai_progress_tracker import get_current_progress, reset_progress_tracker
+        PROGRESS_AVAILABLE = True
+    except ImportError:
+        PROGRESS_AVAILABLE = False
+    
+    # Create dynamic progress display using real AI pipeline metrics
+    if PROGRESS_AVAILABLE:
+        # Create real-time progress container
+        progress_container = st.empty()
+        status_container = st.empty()
+        
+        def update_progress_display():
+            """Update progress display with real pipeline metrics"""
+            progress_data = get_current_progress()
+            if progress_data:
+                progress_pct = progress_data['progress_percentage']
+                current_step = progress_data.get('current_step', {})
+                elapsed = progress_data['elapsed_time']
+                eta = progress_data['estimated_remaining']
+                stage = progress_data['pipeline_stage']
+                
+                # Update progress bar with real percentage
+                progress_container.progress(progress_pct / 100, text=f"Progreso: {progress_pct:.1f}%")
+                
+                # Update status with real pipeline stage and metrics
+                status_text = f"""
+                **{stage}**
+                
+                📊 **Progreso:** {progress_pct:.1f}% completado  
+                ⏱️ **Tiempo transcurrido:** {elapsed:.1f}s  
+                🔮 **Tiempo estimado restante:** {eta:.1f}s  
+                📈 **Etapa actual:** {current_step.get('description', 'Procesando...')}
+                """
+                
+                status_container.info(status_text)
+        
+        # Start progress monitoring
+        import threading
+        import time
+        
+        def progress_monitor():
+            """Background thread to monitor and update progress"""
+            while True:
+                try:
+                    update_progress_display()
+                    progress_data = get_current_progress()
+                    if not progress_data or progress_data['progress_percentage'] >= 100:
+                        break
+                    time.sleep(0.5)  # Update every 500ms for smooth progress
+                except Exception:
+                    break
+        
+        # Start progress monitoring thread
+        progress_thread = threading.Thread(target=progress_monitor, daemon=True)
+        progress_thread.start()
+        
         try:
             # Import session validator for robust checking
             from src.presentation.streamlit.session_validator import get_caso_uso_maestro, is_ia_system_ready
@@ -126,22 +184,59 @@ def _run_analysis(uploaded_file, analysis_type):
                 # Memory management: cleanup previous analysis before storing new one
                 _cleanup_previous_analysis()
                 
+                # PROGRESS TRACKING: Cleanup progress tracker on success
+                if PROGRESS_AVAILABLE:
+                    reset_progress_tracker()
+                    progress_container.empty()  # Clear progress display
+                    status_container.empty()    # Clear status display
+                
                 st.session_state.analysis_results = resultado
                 st.session_state.analysis_type = "maestro_ia"
                 st.success("Análisis IA completado!")
                 st.balloons()
                 st.rerun()
             else:
+                # PROGRESS TRACKING: Cleanup on failure too
+                if PROGRESS_AVAILABLE:
+                    reset_progress_tracker()
+                    progress_container.empty()
+                    status_container.empty()
+                
                 st.error(f"Error en análisis IA: {resultado.mensaje}")
                 
         except ArchivoException as e:
+            # PROGRESS TRACKING: Cleanup on file processing error
+            if PROGRESS_AVAILABLE:
+                reset_progress_tracker()
+                progress_container.empty()
+                status_container.empty()
             st.error(f"Error procesando archivo: {str(e)}")
         except IAException as e:
+            # PROGRESS TRACKING: Cleanup on IA service error  
+            if PROGRESS_AVAILABLE:
+                reset_progress_tracker()
+                progress_container.empty()
+                status_container.empty()
             st.error(f"Error de servicio IA: {str(e)}")
             st.info("Verifica que tu OpenAI API key esté configurada correctamente.")
         except Exception as e:
+            # PROGRESS TRACKING: Cleanup on unexpected error
+            if PROGRESS_AVAILABLE:
+                reset_progress_tracker()
+                progress_container.empty()  
+                status_container.empty()
             st.error(f"Error inesperado: {str(e)}")
             st.error("Este es un error no manejado. Por favor contacta soporte técnico.")
+        finally:
+            # PROGRESS TRACKING: Final cleanup guarantee
+            if PROGRESS_AVAILABLE:
+                reset_progress_tracker()
+            else:
+                # Cleanup fallback spinner
+                try:
+                    spinner_context.__exit__(None, None, None)
+                except:
+                    pass  # Spinner cleanup error is not critical
 
 
 def _create_comprehensive_emotions_chart(emociones_predominantes):
