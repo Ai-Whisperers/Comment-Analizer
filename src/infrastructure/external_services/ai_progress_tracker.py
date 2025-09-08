@@ -127,7 +127,16 @@ class AIProgressTracker:
                 step = self.steps[step_name]
                 logger.debug(f"📍 Step started: {step_name} - {step.description}")
                 
-                # Trigger progress callback if registered
+                # STREAMLIT DEPLOYMENT FIX: Update session state instead of callbacks
+                if STREAMLIT_AVAILABLE:
+                    try:
+                        # Store progress in session state for UI polling
+                        st.session_state._ai_progress_data = self.get_current_progress()
+                        st.session_state._ai_progress_update_time = datetime.now().isoformat()
+                    except Exception as e:
+                        logger.warning(f"Session state progress update error: {e}")
+                
+                # Trigger progress callback if registered (for non-Streamlit usage)
                 if step_name in self.progress_callbacks:
                     try:
                         self.progress_callbacks[step_name](self.get_current_progress())
@@ -143,6 +152,14 @@ class AIProgressTracker:
                 step = self.steps[step_name]
                 actual_time = step.actual_duration
                 logger.debug(f"✅ Step completed: {step_name} in {actual_time:.2f}s (estimated: {step.estimated_duration:.2f}s)")
+                
+                # STREAMLIT DEPLOYMENT FIX: Update session state on completion
+                if STREAMLIT_AVAILABLE:
+                    try:
+                        st.session_state._ai_progress_data = self.get_current_progress()
+                        st.session_state._ai_progress_update_time = datetime.now().isoformat()
+                    except Exception as e:
+                        logger.warning(f"Session state progress completion error: {e}")
     
     def get_current_progress(self) -> Dict[str, Any]:
         """Get current progress information for UI display"""
@@ -255,26 +272,52 @@ class ProgressContext:
             logger.error(f"❌ Step {self.step_name} failed with {exc_type.__name__}: {exc_val}")
 
 
+# STREAMLIT DEPLOYMENT FIX: Session state based tracking (no background threads)
+try:
+    import streamlit as st
+    STREAMLIT_AVAILABLE = True
+except ImportError:
+    STREAMLIT_AVAILABLE = False
+
 # Global tracker instance (will be set when analysis starts)
 _current_tracker: Optional[AIProgressTracker] = None
 _tracker_lock = threading.RLock()
 
-
 def create_progress_tracker(comment_count: int) -> AIProgressTracker:
-    """Create and set global progress tracker"""
+    """Create and set progress tracker (session state compatible)"""
     global _current_tracker
     with _tracker_lock:
         _current_tracker = AIProgressTracker(comment_count)
+        
+        # STREAMLIT DEPLOYMENT FIX: Store in session state instead of global thread
+        if STREAMLIT_AVAILABLE:
+            try:
+                st.session_state._ai_progress_tracker = _current_tracker
+            except Exception:
+                pass  # Fallback to global if session state unavailable
+        
         return _current_tracker
 
-
 def get_current_progress() -> Optional[Dict[str, Any]]:
-    """Get current progress information (thread-safe)"""
-    global _current_tracker
-    with _tracker_lock:
-        if _current_tracker:
-            return _current_tracker.get_current_progress()
-        return None
+    """Get current progress information (Streamlit deployment compatible)"""
+    tracker = None
+    
+    # STREAMLIT DEPLOYMENT FIX: Get from session state first
+    if STREAMLIT_AVAILABLE:
+        try:
+            tracker = getattr(st.session_state, '_ai_progress_tracker', None)
+        except Exception:
+            pass
+    
+    # Fallback to global tracker
+    if not tracker:
+        global _current_tracker
+        with _tracker_lock:
+            tracker = _current_tracker
+    
+    if tracker:
+        return tracker.get_current_progress()
+    return None
 
 
 def track_step(step_name: str) -> ProgressContext:

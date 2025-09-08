@@ -105,14 +105,14 @@ def _run_analysis(uploaded_file, analysis_type):
     except ImportError:
         PROGRESS_AVAILABLE = False
     
-    # Create dynamic progress display using real AI pipeline metrics
+    # STREAMLIT DEPLOYMENT FIX: Session state based progress (no background threads)
     if PROGRESS_AVAILABLE:
-        # Create real-time progress container
+        # Create progress display containers
         progress_container = st.empty()
         status_container = st.empty()
         
         def update_progress_display():
-            """Update progress display with real pipeline metrics"""
+            """Update progress display with real pipeline metrics (session state based)"""
             progress_data = get_current_progress()
             if progress_data:
                 progress_pct = progress_data['progress_percentage']
@@ -135,26 +135,16 @@ def _run_analysis(uploaded_file, analysis_type):
                 """
                 
                 status_container.info(status_text)
+            else:
+                # Show initial progress
+                progress_container.progress(0.0, text="Iniciando análisis IA...")
+                status_container.info("**Preparando análisis...** \n\n📊 Inicializando sistema de Inteligencia Artificial")
         
-        # Start progress monitoring
-        import threading
-        import time
+        # Initial progress display
+        update_progress_display()
         
-        def progress_monitor():
-            """Background thread to monitor and update progress"""
-            while True:
-                try:
-                    update_progress_display()
-                    progress_data = get_current_progress()
-                    if not progress_data or progress_data['progress_percentage'] >= 100:
-                        break
-                    time.sleep(0.5)  # Update every 500ms for smooth progress
-                except Exception:
-                    break
-        
-        # Start progress monitoring thread
-        progress_thread = threading.Thread(target=progress_monitor, daemon=True)
-        progress_thread.start()
+        # Mark analysis as in progress
+        st.session_state.ai_analysis_in_progress = True
         
         try:
             # Import session validator for robust checking
@@ -187,8 +177,11 @@ def _run_analysis(uploaded_file, analysis_type):
                 # PROGRESS TRACKING: Cleanup progress tracker on success
                 if PROGRESS_AVAILABLE:
                     reset_progress_tracker()
-                    progress_container.empty()  # Clear progress display
-                    status_container.empty()    # Clear status display
+                    try:
+                        progress_container.empty()  # Clear progress display
+                        status_container.empty()    # Clear status display
+                    except:
+                        pass  # Containers may not exist in fallback mode
                 
                 st.session_state.analysis_results = resultado
                 st.session_state.analysis_type = "maestro_ia"
@@ -199,8 +192,11 @@ def _run_analysis(uploaded_file, analysis_type):
                 # PROGRESS TRACKING: Cleanup on failure too
                 if PROGRESS_AVAILABLE:
                     reset_progress_tracker()
-                    progress_container.empty()
-                    status_container.empty()
+                    try:
+                        progress_container.empty()
+                        status_container.empty()
+                    except:
+                        pass
                 
                 st.error(f"Error en análisis IA: {resultado.mensaje}")
                 
@@ -208,23 +204,32 @@ def _run_analysis(uploaded_file, analysis_type):
             # PROGRESS TRACKING: Cleanup on file processing error
             if PROGRESS_AVAILABLE:
                 reset_progress_tracker()
-                progress_container.empty()
-                status_container.empty()
+                try:
+                    progress_container.empty()
+                    status_container.empty()
+                except:
+                    pass
             st.error(f"Error procesando archivo: {str(e)}")
         except IAException as e:
             # PROGRESS TRACKING: Cleanup on IA service error  
             if PROGRESS_AVAILABLE:
                 reset_progress_tracker()
-                progress_container.empty()
-                status_container.empty()
+                try:
+                    progress_container.empty()
+                    status_container.empty()
+                except:
+                    pass
             st.error(f"Error de servicio IA: {str(e)}")
             st.info("Verifica que tu OpenAI API key esté configurada correctamente.")
         except Exception as e:
             # PROGRESS TRACKING: Cleanup on unexpected error
             if PROGRESS_AVAILABLE:
                 reset_progress_tracker()
-                progress_container.empty()  
-                status_container.empty()
+                try:
+                    progress_container.empty()  
+                    status_container.empty()
+                except:
+                    pass
             st.error(f"Error inesperado: {str(e)}")
             st.error("Este es un error no manejado. Por favor contacta soporte técnico.")
         finally:
