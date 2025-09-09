@@ -5,6 +5,15 @@ from typing import List, Dict, Any
 from dataclasses import dataclass
 from datetime import datetime
 import logging
+import time
+import gc
+
+# Optional imports for enhanced functionality
+try:
+    import psutil
+    PSUTIL_AVAILABLE = True
+except ImportError:
+    PSUTIL_AVAILABLE = False
 
 from ...domain.entities.analisis_comentario import AnalisisComentario
 from ...domain.repositories.repositorio_comentarios import IRepositorioComentarios
@@ -531,19 +540,91 @@ class AnalizarExcelMaestroCasoUso:
             for i, lote in enumerate(lotes):
                 logger.info(f"🔄 Procesando lote {i+1}/{len(lotes)} ({len(lote)} comentarios)")
                 
-                resultado_lote = self.analizador_maestro.analizar_excel_completo(lote)
+                # DEBUG: Log first comment preview for debugging
+                if len(lote) > 0:
+                    preview = lote[0][:100] + "..." if len(lote[0]) > 100 else lote[0]
+                    logger.debug(f"🔍 Lote {i+1} contenido: {preview}")
                 
-                if not resultado_lote.es_exitoso():
-                    logger.error(f"❌ Error en lote {i+1}")
-                    continue
+                # CRITICAL FIX: Exception handling around AI processing
+                batch_retry_count = 0
+                max_retries = 2
+                resultado_lote = None
                 
-                resultados_lotes.append(resultado_lote)
-                comentarios_analizados_total.extend(resultado_lote.comentarios_analizados)
+                while batch_retry_count <= max_retries:
+                    try:
+                        # Memory management: Clean cache every 5 batches
+                        if (i + 1) % 5 == 0:
+                            logger.info(f"🧹 Limpieza de memoria después de {i+1} lotes")
+                            try:
+                                self.analizador_maestro.limpiar_cache()
+                                gc.collect()
+                            except Exception as cleanup_error:
+                                logger.warning(f"⚠️ Error en limpieza de memoria: {cleanup_error}")
+                        
+                        # AI processing with exception handling
+                        resultado_lote = self.analizador_maestro.analizar_excel_completo(lote)
+                        
+                        # Enhanced success validation
+                        if resultado_lote.es_exitoso():
+                            logger.info(f"✅ Lote {i+1} exitoso: confianza={resultado_lote.confianza_general:.2f}, "
+                                      f"analizados={len(resultado_lote.comentarios_analizados)}/{len(lote)}")
+                            break  # Success, exit retry loop
+                        else:
+                            # Enhanced failure logging
+                            logger.error(f"❌ Lote {i+1} FALLÓ en validación:")
+                            logger.error(f"  - Confianza: {resultado_lote.confianza_general:.2f}")
+                            logger.error(f"  - Analizados: {len(resultado_lote.comentarios_analizados)}/{len(lote)}")
+                            logger.error(f"  - Resumen: {resultado_lote.resumen_ejecutivo}")
+                            
+                            if batch_retry_count < max_retries:
+                                batch_retry_count += 1
+                                delay = 2 + batch_retry_count  # Progressive delay: 3s, 4s
+                                logger.warning(f"⚠️ Lote {i+1} reintento {batch_retry_count}/{max_retries} en {delay}s")
+                                time.sleep(delay)
+                            else:
+                                logger.error(f"❌ Lote {i+1} ABANDONADO después de {max_retries} intentos")
+                                break
+                                
+                    except Exception as e:
+                        # CRITICAL FIX: Catch all exceptions during AI processing
+                        logger.error(f"❌ Excepción en lote {i+1} (intento {batch_retry_count + 1}): {str(e)}")
+                        logger.error(f"❌ Tipo de error: {type(e).__name__}")
+                        
+                        if batch_retry_count < max_retries:
+                            batch_retry_count += 1
+                            delay = 3 + batch_retry_count * 2  # Progressive delay: 5s, 7s
+                            logger.warning(f"⚠️ Lote {i+1} excepción reintento {batch_retry_count}/{max_retries} en {delay}s")
+                            time.sleep(delay)
+                        else:
+                            logger.error(f"❌ Lote {i+1} ABANDONADO por excepciones después de {max_retries} intentos")
+                            resultado_lote = None
+                            break
                 
-                # Pausa entre lotes para evitar rate limiting
-                import time
-                if i < len(lotes) - 1:  # No pausar después del último lote
-                    time.sleep(2)
+                # Process successful result
+                if resultado_lote and resultado_lote.es_exitoso():
+                    resultados_lotes.append(resultado_lote)
+                    comentarios_analizados_total.extend(resultado_lote.comentarios_analizados)
+                    
+                    # Memory monitoring
+                    if PSUTIL_AVAILABLE:
+                        try:
+                            process = psutil.Process()
+                            memory_mb = process.memory_info().rss / 1024 / 1024
+                            logger.info(f"💾 Memoria utilizada: {memory_mb:.1f}MB después del lote {i+1}")
+                            
+                            if memory_mb > 400:  # Alert on high memory usage
+                                logger.warning(f"⚠️ Uso alto de memoria: {memory_mb:.1f}MB")
+                        except Exception as mem_error:
+                            logger.debug(f"Error en monitoreo de memoria: {mem_error}")
+                else:
+                    logger.error(f"❌ Lote {i+1} SALTADO - No se pudo procesar exitosamente")
+                
+                # Rate limiting pause between batches (only if not the last batch)
+                if i < len(lotes) - 1:
+                    # Longer pause after failed batches to recover
+                    pause_time = 3 if (resultado_lote and resultado_lote.es_exitoso()) else 5
+                    logger.debug(f"⏸️ Pausa de {pause_time}s antes del siguiente lote")
+                    time.sleep(pause_time)
             
             # Agregar resultados de todos los lotes
             return self._agregar_resultados_lotes(resultados_lotes, comentarios_analizados_total, len(comentarios_validos))
