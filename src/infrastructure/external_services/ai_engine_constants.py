@@ -9,11 +9,11 @@ class AIEngineConstants:
     Eliminates magic numbers and provides single source of truth for configuration
     """
     
-    # Token Calculation Constants
+    # Token Calculation Constants - OPTIMIZED per FASE 1-5
     BASE_TOKENS_JSON_STRUCTURE = 1200      # Base tokens for JSON response structure
     TOKENS_PER_COMMENT = 80                # Estimated tokens per comment analysis
     TOKEN_BUFFER_PERCENTAGE = 1.10         # 10% buffer for variability
-    SAFETY_COMMENT_LIMIT = 20              # Ultimate safety limit for comment count
+    SAFETY_COMMENT_LIMIT = 40              # OPTIMIZED: Updated from 20 to match FASE 1 optimizations
     
     # Cache Management Constants  
     DEFAULT_CACHE_SIZE = 50                # Maximum cache entries
@@ -37,10 +37,10 @@ class AIEngineConstants:
     DEFAULT_MODEL = "gpt-4o-mini"
     FALLBACK_TOKEN_LIMIT = 16384           # Conservative fallback for unknown models
     
-    # Processing Constants
+    # Processing Constants - OPTIMIZED per configuration updates
     MAX_FILE_SIZE_MB = 5                   # Maximum upload file size
     MAX_COMMENT_LENGTH = 500               # Maximum comment length for processing
-    MIN_CONFIDENCE_THRESHOLD = 0.5        # Minimum confidence for analysis success
+    MIN_CONFIDENCE_THRESHOLD = 0.45        # OPTIMIZED: Reduced from 0.5 for better success rate
     
     # Excel Export Constants
     EXCEL_MAX_EMOTIONS_DISPLAY = 16       # Maximum emotions to show in Excel

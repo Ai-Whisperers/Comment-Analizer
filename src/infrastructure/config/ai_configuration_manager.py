@@ -27,11 +27,11 @@ class AIConfiguration:
     api_key: str
     model: str = "gpt-4o-mini"
     temperature: float = 0.0
-    max_tokens: int = 8000
+    max_tokens: int = 12000  # FASE 3: Increased from 8K to 12K to support larger batches
     seed: Optional[int] = 12345
     
-    # Batch Processing Configuration
-    max_comments_per_batch: int = 20
+    # Batch Processing Configuration - OPTIMIZED for better performance
+    max_comments_per_batch: int = 40  # FASE 1: Doubled from 20 to reduce API calls by 50%
     batch_retry_count: int = 2
     batch_retry_base_delay: float = 0.5
     
@@ -198,12 +198,12 @@ class AIConfigurationManager:
         
         max_tokens = int(get_config_value(
             "max_tokens", "OPENAI_MAX_TOKENS", "OPENAI_MAX_TOKENS",
-            default_value="8000"
+            default_value="12000"  # FASE 3: Increased default to match AIConfiguration
         ))
         
         max_comments = int(get_config_value(
             "max_comments_per_batch", "MAX_COMMENTS_PER_BATCH", "MAX_COMMENTS_PER_BATCH",
-            default_value="20"
+            default_value="40"  # FASE 1: Updated to match optimized batch size
         ))
         
         cache_ttl = int(get_config_value(

@@ -87,20 +87,35 @@ class ContenedorDependencias:
         return self._obtener_singleton('analizador_maestro_ia',
                                      lambda: self._crear_analizador_maestro_ia())
     
-    def obtener_caso_uso_maestro(self):
+    def obtener_caso_uso_maestro(self, progress_callback=None):
         """
         Obtiene el caso de uso maestro IA
+        PROGRESS INTEGRATION: Added progress_callback parameter for real-time updates
         """
         try:
             from ...application.use_cases.analizar_excel_maestro_caso_uso import AnalizarExcelMaestroCasoUso
-            return self._obtener_singleton('caso_uso_maestro',
-                                         lambda: AnalizarExcelMaestroCasoUso(
-                                             repositorio_comentarios=self.obtener_repositorio_comentarios(),
-                                             lector_archivos=self.obtener_lector_archivos(),
-                                             analizador_maestro=self.obtener_analizador_maestro_ia(),
-                                             max_comments_per_batch=self.configuracion.get('max_comments', 20),
-                                             ai_configuration=self.ai_configuration  # PHASE 5: Pass AI configuration
-                                         ))
+            
+            # If progress_callback is provided, create a new instance (not singleton)
+            # to ensure callback is properly attached
+            if progress_callback:
+                return AnalizarExcelMaestroCasoUso(
+                    repositorio_comentarios=self.obtener_repositorio_comentarios(),
+                    lector_archivos=self.obtener_lector_archivos(),
+                    analizador_maestro=self.obtener_analizador_maestro_ia(),
+                    max_comments_per_batch=self.configuracion.get('max_comments', 20),
+                    ai_configuration=self.ai_configuration,
+                    progress_callback=progress_callback
+                )
+            else:
+                # Use singleton when no callback is needed
+                return self._obtener_singleton('caso_uso_maestro',
+                                             lambda: AnalizarExcelMaestroCasoUso(
+                                                 repositorio_comentarios=self.obtener_repositorio_comentarios(),
+                                                 lector_archivos=self.obtener_lector_archivos(),
+                                                 analizador_maestro=self.obtener_analizador_maestro_ia(),
+                                                 max_comments_per_batch=self.configuracion.get('max_comments', 20),
+                                                 ai_configuration=self.ai_configuration
+                                             ))
         except ImportError as e:
             logger.error(f"Error importando caso de uso maestro: {str(e)}")
             return None

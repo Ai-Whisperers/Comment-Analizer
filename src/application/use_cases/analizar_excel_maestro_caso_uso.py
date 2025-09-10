@@ -95,23 +95,24 @@ class AnalizarExcelMaestroCasoUso:
         repositorio_comentarios: IRepositorioComentarios,
         lector_archivos: ILectorArchivos,
         analizador_maestro: AnalizadorMaestroIA,
-        max_comments_per_batch: int = 50,
-        ai_configuration=None
+        max_comments_per_batch: int = 40,  # FASE 1: Updated to match AIConfiguration default
+        ai_configuration=None,
+        progress_callback=None
     ):
         self.repositorio_comentarios = repositorio_comentarios
         self.lector_archivos = lector_archivos
         self.analizador_maestro = analizador_maestro
         
-        # STREAMLIT OPTIMIZATION: Larger batch sizes for better performance  
+        # FASE 1 OPTIMIZATION: Optimized batch sizes for better performance  
         if max_comments_per_batch > 80:
-            logger.error(f"❌ SAFETY: Batch size too large: {max_comments_per_batch}, forcing to 50")
-            max_comments_per_batch = 50
+            logger.error(f"❌ SAFETY: Batch size too large: {max_comments_per_batch}, forcing to 40")
+            max_comments_per_batch = 40
         elif max_comments_per_batch < 1:
-            logger.warning(f"⚠️ SAFETY: Batch size too small: {max_comments_per_batch}, setting to 50")
-            max_comments_per_batch = 50
-        elif max_comments_per_batch < 30:
-            logger.info(f"📈 PERFORMANCE: Increasing batch size from {max_comments_per_batch} to 50 for better performance")
-            max_comments_per_batch = 50
+            logger.warning(f"⚠️ SAFETY: Batch size too small: {max_comments_per_batch}, setting to 40")
+            max_comments_per_batch = 40
+        elif max_comments_per_batch < 20:
+            logger.info(f"📈 PERFORMANCE: Increasing batch size from {max_comments_per_batch} to 40 for better performance")
+            max_comments_per_batch = 40
             
         self.max_comments_per_batch = max_comments_per_batch
         
@@ -123,6 +124,11 @@ class AnalizarExcelMaestroCasoUso:
         else:
             self.retry_strategy = None
             logger.info(f"⚠️ Intelligent retry strategy not available - using fallback")
+        
+        # PROGRESS INTEGRATION: Store progress callback for real-time updates
+        self.progress_callback = progress_callback
+        if progress_callback:
+            logger.info(f"📊 Real-time progress tracking enabled")
         
         logger.info(f"📦 Batch processor initialized: {self.max_comments_per_batch} comentarios/lote")
         
@@ -558,45 +564,55 @@ class AnalizarExcelMaestroCasoUso:
             
             logger.info(f"📦 Creados {len(lotes)} lotes para procesar")
             
+            # PROGRESS INTEGRATION: Initialize batch progress tracking
+            total_lotes = len(lotes)
+            self._notify_progress_start(total_lotes, len(comentarios_validos))
+            
             # Procesar cada lote
             resultados_lotes = []
             comentarios_analizados_total = []
             
             for i, lote in enumerate(lotes):
-                logger.info(f"🔄 Procesando lote {i+1}/{len(lotes)} ({len(lote)} comentarios)")
+                batch_number = i + 1
+                logger.info(f"🔄 Procesando lote {batch_number}/{len(lotes)} ({len(lote)} comentarios)")
+                
+                # PROGRESS INTEGRATION: Notify batch start
+                self._notify_batch_start(batch_number, total_lotes, len(lote))
                 
                 # DEBUG: Log first comment preview for debugging
                 if len(lote) > 0:
                     preview = lote[0][:100] + "..." if len(lote[0]) > 100 else lote[0]
-                    logger.debug(f"🔍 Lote {i+1} contenido: {preview}")
+                    logger.debug(f"🔍 Lote {batch_number} contenido: {preview}")
                 
                 # PHASE 3: Intelligent retry processing with smart decisions
-                resultado_lote = self._process_batch_with_intelligent_retry(i + 1, lote)
+                resultado_lote = self._process_batch_with_intelligent_retry(batch_number, lote)
                 
-                # Process successful result
+                # PROGRESS INTEGRATION: Notify batch completion
                 if resultado_lote and resultado_lote.es_exitoso():
+                    self._notify_batch_success(batch_number, total_lotes, resultado_lote.confianza_general)
                     resultados_lotes.append(resultado_lote)
                     comentarios_analizados_total.extend(resultado_lote.comentarios_analizados)
-                    
-                    # Memory monitoring
-                    if PSUTIL_AVAILABLE:
-                        try:
-                            process = psutil.Process()
-                            memory_mb = process.memory_info().rss / 1024 / 1024
-                            logger.info(f"💾 Memoria utilizada: {memory_mb:.1f}MB después del lote {i+1}")
-                            
-                            if memory_mb > 400:  # Alert on high memory usage
-                                logger.warning(f"⚠️ Uso alto de memoria: {memory_mb:.1f}MB")
-                        except Exception as mem_error:
-                            logger.debug(f"Error en monitoreo de memoria: {mem_error}")
                 else:
+                    self._notify_batch_failure(batch_number, total_lotes, "Validation failed")
                     logger.error(f"❌ Lote {i+1} SALTADO - No se pudo procesar exitosamente")
+                    
+                # Memory monitoring (always check after processing each batch)
+                if PSUTIL_AVAILABLE:
+                    try:
+                        process = psutil.Process()
+                        memory_mb = process.memory_info().rss / 1024 / 1024
+                        logger.info(f"💾 Memoria utilizada: {memory_mb:.1f}MB después del lote {i+1}")
+                        
+                        if memory_mb > 400:  # Alert on high memory usage
+                            logger.warning(f"⚠️ Uso alto de memoria: {memory_mb:.1f}MB")
+                    except Exception as mem_error:
+                        logger.debug(f"Error en monitoreo de memoria: {mem_error}")
                 
                 # Rate limiting pause between batches (only if not the last batch)
                 if i < len(lotes) - 1:
-                    # STREAMLIT OPTIMIZATION: Minimal pause for API respect (was 3-5s)
-                    pause_time = 0.2 if (resultado_lote and resultado_lote.es_exitoso()) else 0.5
-                    logger.debug(f"⏸️ Pausa optimizada de {pause_time}s antes del siguiente lote")
+                    # FASE 2 OPTIMIZATION: Ultra-minimal pause for maximum throughput (was 0.2-0.5s)
+                    pause_time = 0.05 if (resultado_lote and resultado_lote.es_exitoso()) else 0.15
+                    logger.debug(f"⏸️ Pausa ultra-optimizada de {pause_time}s antes del siguiente lote")
                     time.sleep(pause_time)
             
             # Agregar resultados de todos los lotes
@@ -770,6 +786,11 @@ class AnalizarExcelMaestroCasoUso:
                         logger.error(f"  - Analizados: {analyzed_count}/{len(lote)}")
                         logger.error(f"  - Resumen: {resumen}")
                         
+                        # FASE 4 OPTIMIZATION: Skip retries immediately for deterministic config
+                        if is_deterministic and abs(original_temperature) < 0.001:
+                            logger.warning(f"🧠 FASE 4: Saltando reintentos para configuración determinista - resultado será idéntico")
+                            break
+                        
                         # Use intelligent retry strategy
                         if self.retry_strategy and batch_retry_count < max_retries:
                             context = create_retry_context(
@@ -820,6 +841,11 @@ class AnalizarExcelMaestroCasoUso:
                     logger.error(f"❌ Excepción en lote {batch_number} (intento {batch_retry_count + 1}): {str(e)}")
                     logger.error(f"❌ Tipo de error: {type(e).__name__}")
                     last_error = e
+                    
+                    # FASE 4 OPTIMIZATION: Skip retries for exceptions in deterministic config
+                    if is_deterministic and abs(original_temperature) < 0.001:
+                        logger.warning(f"🧠 FASE 4: Saltando reintentos de excepción para configuración determinista")
+                        break
                     
                     # Use intelligent retry strategy for exceptions too
                     if self.retry_strategy and batch_retry_count < max_retries:
@@ -874,6 +900,56 @@ class AnalizarExcelMaestroCasoUso:
         except Exception as e:
             logger.error(f"❌ Error crítico en procesamiento de lote {batch_number}: {str(e)}")
             return None
+
+    def _notify_progress_start(self, total_lotes: int, total_comentarios: int):
+        """Notify progress start with batch info"""
+        if self.progress_callback:
+            self.progress_callback({
+                'action': 'start',
+                'total_batches': total_lotes,
+                'total_comments': total_comentarios,
+                'current_batch': 0,
+                'progress_percentage': 0.0
+            })
+
+    def _notify_batch_start(self, batch_number: int, total_lotes: int, batch_size: int):
+        """Notify batch processing start"""
+        if self.progress_callback:
+            progress_pct = ((batch_number - 1) / total_lotes) * 100
+            self.progress_callback({
+                'action': 'batch_start',
+                'current_batch': batch_number,
+                'total_batches': total_lotes,
+                'batch_size': batch_size,
+                'progress_percentage': progress_pct,
+                'status': f'Procesando lote {batch_number}/{total_lotes}'
+            })
+
+    def _notify_batch_success(self, batch_number: int, total_lotes: int, confidence: float):
+        """Notify batch completed successfully"""
+        if self.progress_callback:
+            progress_pct = (batch_number / total_lotes) * 100
+            self.progress_callback({
+                'action': 'batch_success',
+                'current_batch': batch_number,
+                'total_batches': total_lotes,
+                'confidence': confidence,
+                'progress_percentage': progress_pct,
+                'status': f'✅ Lote {batch_number}/{total_lotes} completado'
+            })
+
+    def _notify_batch_failure(self, batch_number: int, total_lotes: int, reason: str):
+        """Notify batch failed"""
+        if self.progress_callback:
+            progress_pct = (batch_number / total_lotes) * 100
+            self.progress_callback({
+                'action': 'batch_failure',
+                'current_batch': batch_number,
+                'total_batches': total_lotes,
+                'reason': reason,
+                'progress_percentage': progress_pct,
+                'status': f'❌ Lote {batch_number}/{total_lotes} falló'
+            })
 
     def _crear_resultado_error(self, mensaje: str) -> ResultadoAnalisisMaestro:
         """Crea un resultado de error"""

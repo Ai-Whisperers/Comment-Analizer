@@ -96,152 +96,149 @@ except ImportError as e:
 
 
 def _run_analysis(uploaded_file, analysis_type):
-    """Run pure IA analysis using maestro system only with real-time progress tracking"""
+    """Run pure IA analysis using maestro system only with real-time batch progress tracking"""
     
-    # PROGRESS LOADER: Import real-time progress tracking
+    # NEW BATCH PROGRESS TRACKING: Create progress display containers
+    progress_container = st.empty()
+    status_container = st.empty()
+    
+    # Create progress callback for real-time updates
+    def create_progress_callback():
+        """Create callback for real-time batch progress updates"""
+        def update_progress(progress_data):
+            # Update Streamlit progress display in real-time
+            action = progress_data.get('action', 'unknown')
+            
+            if action == 'start':
+                total_batches = progress_data.get('total_batches', 0)
+                total_comments = progress_data.get('total_comments', 0)
+                progress_container.progress(0.0, text=f"Iniciando análisis: {total_comments} comentarios en {total_batches} lotes")
+                status_container.info(f"**🚀 Iniciando Análisis IA**\n\n📊 **Total comentarios:** {total_comments}\n📦 **Lotes a procesar:** {total_batches}")
+                
+            elif action == 'batch_start':
+                current_batch = progress_data.get('current_batch', 0)
+                total_batches = progress_data.get('total_batches', 0)
+                batch_size = progress_data.get('batch_size', 0)
+                progress_pct = progress_data.get('progress_percentage', 0.0)
+                
+                progress_container.progress(progress_pct / 100, text=f"Procesando lote {current_batch}/{total_batches} ({batch_size} comentarios)")
+                status_container.info(f"**🔄 Procesando Lote {current_batch}/{total_batches}**\n\n📊 **Progreso:** {progress_pct:.1f}%\n📦 **Comentarios en lote:** {batch_size}\n⏱️ **Estado:** Analizando con IA...")
+                
+            elif action == 'batch_success':
+                current_batch = progress_data.get('current_batch', 0)
+                total_batches = progress_data.get('total_batches', 0)
+                confidence = progress_data.get('confidence', 0.0)
+                progress_pct = progress_data.get('progress_percentage', 0.0)
+                
+                progress_container.progress(progress_pct / 100, text=f"✅ Lote {current_batch}/{total_batches} completado")
+                status_container.success(f"**✅ Lote {current_batch}/{total_batches} Completado**\n\n📊 **Progreso:** {progress_pct:.1f}%\n🎯 **Confianza:** {confidence:.2f}\n⏱️ **Estado:** Éxito")
+                
+            elif action == 'batch_failure':
+                current_batch = progress_data.get('current_batch', 0)
+                total_batches = progress_data.get('total_batches', 0)
+                reason = progress_data.get('reason', 'Error desconocido')
+                progress_pct = progress_data.get('progress_percentage', 0.0)
+                
+                progress_container.progress(progress_pct / 100, text=f"❌ Error en lote {current_batch}/{total_batches}")
+                status_container.error(f"**❌ Error en Lote {current_batch}/{total_batches}**\n\n📊 **Progreso:** {progress_pct:.1f}%\n⚠️ **Razón:** {reason}")
+        
+        return update_progress
+    
+    # Create the progress callback
+    progress_callback = create_progress_callback()
+    
+    # Show initial progress state
+    progress_container.progress(0.0, text="Inicializando análisis IA...")
+    status_container.info("**Preparando análisis...** \n\n📊 Inicializando sistema de Inteligencia Artificial")
+    
+    # Mark analysis as in progress
+    st.session_state.ai_analysis_in_progress = True
+        
     try:
-        from src.infrastructure.external_services.ai_progress_tracker import get_current_progress, reset_progress_tracker
-        PROGRESS_AVAILABLE = True
-    except ImportError:
-        PROGRESS_AVAILABLE = False
-    
-    # STREAMLIT DEPLOYMENT FIX: Session state based progress (no background threads)
-    if PROGRESS_AVAILABLE:
-        # Create progress display containers
-        progress_container = st.empty()
-        status_container = st.empty()
+        # Import session validator for robust checking
+        from src.presentation.streamlit.session_validator import is_ia_system_ready
         
-        def update_progress_display():
-            """Update progress display with real pipeline metrics (session state based)"""
-            progress_data = get_current_progress()
-            if progress_data:
-                progress_pct = progress_data['progress_percentage']
-                current_step = progress_data.get('current_step', {})
-                elapsed = progress_data['elapsed_time']
-                eta = progress_data['estimated_remaining']
-                stage = progress_data['pipeline_stage']
-                
-                # Update progress bar with real percentage
-                progress_container.progress(progress_pct / 100, text=f"Progreso: {progress_pct:.1f}%")
-                
-                # Update status with real pipeline stage and metrics
-                status_text = f"""
-                **{stage}**
-                
-                📊 **Progreso:** {progress_pct:.1f}% completado  
-                ⏱️ **Tiempo transcurrido:** {elapsed:.1f}s  
-                🔮 **Tiempo estimado restante:** {eta:.1f}s  
-                📈 **Etapa actual:** {current_step.get('description', 'Procesando...')}
-                """
-                
-                status_container.info(status_text)
-            else:
-                # Show initial progress
-                progress_container.progress(0.0, text="Iniciando análisis IA...")
-                status_container.info("**Preparando análisis...** \n\n📊 Inicializando sistema de Inteligencia Artificial")
+        # Pure IA analysis - validate system is ready
+        if not is_ia_system_ready():
+            st.error("Sistema IA no está disponible. Verifica configuración de OpenAI API key.")
+            return
         
-        # Initial progress display
-        update_progress_display()
+        # Get caso uso maestro with progress callback
+        if 'contenedor' in st.session_state and st.session_state.contenedor:
+            caso_uso_maestro = st.session_state.contenedor.obtener_caso_uso_maestro(progress_callback)
+        else:
+            st.error("Contenedor de dependencias no disponible")
+            return
+            
+        if not caso_uso_maestro:
+            st.error("No se pudo obtener el sistema de análisis IA")
+            return
+                
+        from src.application.use_cases.analizar_excel_maestro_caso_uso import ComandoAnalisisExcelMaestro
         
-        # Mark analysis as in progress
-        st.session_state.ai_analysis_in_progress = True
+        comando = ComandoAnalisisExcelMaestro(
+            archivo_cargado=uploaded_file,
+            nombre_archivo=uploaded_file.name,
+            limpiar_repositorio=True
+        )
         
+        resultado = caso_uso_maestro.ejecutar(comando)
+        
+        if resultado.es_exitoso():
+            # Memory management: cleanup previous analysis before storing new one
+            _cleanup_previous_analysis()
+            
+            # PROGRESS TRACKING: Clear progress display on success
+            try:
+                progress_container.empty()  # Clear progress display
+                status_container.empty()    # Clear status display
+            except:
+                pass  # Containers may not exist in fallback mode
+            
+            st.session_state.analysis_results = resultado
+            st.session_state.analysis_type = "maestro_ia"
+            st.success("Análisis IA completado!")
+            st.balloons()
+            st.rerun()
+        else:
+            # PROGRESS TRACKING: Clear progress on failure
+            try:
+                progress_container.empty()
+                status_container.empty()
+            except:
+                pass
+            
+            st.error(f"Error en análisis IA: {resultado.mensaje}")
+            
+    except ArchivoException as e:
+        # PROGRESS TRACKING: Clear progress on file processing error
         try:
-            # Import session validator for robust checking
-            from src.presentation.streamlit.session_validator import get_caso_uso_maestro, is_ia_system_ready
-            
-            # Pure IA analysis - validate system is ready
-            if not is_ia_system_ready():
-                st.error("Sistema IA no está disponible. Verifica configuración de OpenAI API key.")
-                return
-            
-            caso_uso_maestro = get_caso_uso_maestro()
-            if not caso_uso_maestro:
-                st.error("No se pudo obtener el sistema de análisis IA")
-                return
-                
-            from src.application.use_cases.analizar_excel_maestro_caso_uso import ComandoAnalisisExcelMaestro
-            
-            comando = ComandoAnalisisExcelMaestro(
-                archivo_cargado=uploaded_file,
-                nombre_archivo=uploaded_file.name,
-                limpiar_repositorio=True
-            )
-            
-            resultado = caso_uso_maestro.ejecutar(comando)
-            
-            if resultado.es_exitoso():
-                # Memory management: cleanup previous analysis before storing new one
-                _cleanup_previous_analysis()
-                
-                # PROGRESS TRACKING: Cleanup progress tracker on success
-                if PROGRESS_AVAILABLE:
-                    reset_progress_tracker()
-                    try:
-                        progress_container.empty()  # Clear progress display
-                        status_container.empty()    # Clear status display
-                    except:
-                        pass  # Containers may not exist in fallback mode
-                
-                st.session_state.analysis_results = resultado
-                st.session_state.analysis_type = "maestro_ia"
-                st.success("Análisis IA completado!")
-                st.balloons()
-                st.rerun()
-            else:
-                # PROGRESS TRACKING: Cleanup on failure too
-                if PROGRESS_AVAILABLE:
-                    reset_progress_tracker()
-                    try:
-                        progress_container.empty()
-                        status_container.empty()
-                    except:
-                        pass
-                
-                st.error(f"Error en análisis IA: {resultado.mensaje}")
-                
-        except ArchivoException as e:
-            # PROGRESS TRACKING: Cleanup on file processing error
-            if PROGRESS_AVAILABLE:
-                reset_progress_tracker()
-                try:
-                    progress_container.empty()
-                    status_container.empty()
-                except:
-                    pass
-            st.error(f"Error procesando archivo: {str(e)}")
-        except IAException as e:
-            # PROGRESS TRACKING: Cleanup on IA service error  
-            if PROGRESS_AVAILABLE:
-                reset_progress_tracker()
-                try:
-                    progress_container.empty()
-                    status_container.empty()
-                except:
-                    pass
-            st.error(f"Error de servicio IA: {str(e)}")
-            st.info("Verifica que tu OpenAI API key esté configurada correctamente.")
-        except Exception as e:
-            # PROGRESS TRACKING: Cleanup on unexpected error
-            if PROGRESS_AVAILABLE:
-                reset_progress_tracker()
-                try:
-                    progress_container.empty()  
-                    status_container.empty()
-                except:
-                    pass
-            st.error(f"Error inesperado: {str(e)}")
-            st.error("Este es un error no manejado. Por favor contacta soporte técnico.")
-        finally:
-            # PROGRESS TRACKING: Final cleanup guarantee
-            if PROGRESS_AVAILABLE:
-                reset_progress_tracker()
-            else:
-                # Cleanup fallback spinner
-                try:
-                    spinner_context.__exit__(None, None, None)
-                except:
-                    pass  # Spinner cleanup error is not critical
+            progress_container.empty()
+            status_container.empty()
+        except:
+            pass
+        st.error(f"Error procesando archivo: {str(e)}")
+    except IAException as e:
+        # PROGRESS TRACKING: Clear progress on IA service error  
+        try:
+            progress_container.empty()
+            status_container.empty()
+        except:
+            pass
+        st.error(f"Error de servicio IA: {str(e)}")
+        st.info("Verifica que tu OpenAI API key esté configurada correctamente.")
+    except Exception as e:
+        # PROGRESS TRACKING: Clear progress on unexpected error
+        try:
+            progress_container.empty()  
+            status_container.empty()
+        except:
+            pass
+        st.error(f"Error inesperado: {str(e)}")
+        st.error("Este es un error no manejado. Por favor contacta soporte técnico.")
+    finally:
+        # PROGRESS TRACKING: Final cleanup guarantee
+        st.session_state.ai_analysis_in_progress = False
 
 
 def _create_comprehensive_emotions_chart(emociones_predominantes):

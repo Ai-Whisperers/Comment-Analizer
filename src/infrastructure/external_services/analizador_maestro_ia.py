@@ -178,8 +178,8 @@ class AnalizadorMaestroIA:
             logger.error(f"🚨 CONFIG SAFETY: Forzando tokens de {tokens_finales:,} a límite config {self.max_tokens_limit:,}")
             tokens_finales = self.max_tokens_limit
             
-        # Safety check 3: Ultra-conservative 8K limit for production
-        PRODUCTION_SAFE_LIMIT = 8000
+        # Safety check 3: FASE 3 OPTIMIZED - Increased production limit for better performance
+        PRODUCTION_SAFE_LIMIT = 12000  # FASE 3: Increased from 8K to 12K for larger batches
         if tokens_finales > PRODUCTION_SAFE_LIMIT:
             logger.error(f"🚨 PRODUCTION SAFETY: Forzando tokens de {tokens_finales:,} a límite producción {PRODUCTION_SAFE_LIMIT:,}")
             tokens_finales = PRODUCTION_SAFE_LIMIT
@@ -261,23 +261,24 @@ class AnalizadorMaestroIA:
         
         # Con 8,000 tokens configurados: comentarios_max = ~77, usamos 60 para seguridad
         
-        # MULTIPLE SAFETY NETS: Force safe limits regardless of configuration
+        # FASE 5 OPTIMIZATION: Adaptive safety nets based on file size and configuration
         
-        # SAFETY NET 1: Absolute maximum for any model (ultra-conservative)
-        ABSOLUTE_MAX_COMMENTS = 25
-        if len(comentarios_raw) > ABSOLUTE_MAX_COMMENTS:
-            logger.error(f"🚨 ABSOLUTE SAFETY: {len(comentarios_raw)} comentarios > {ABSOLUTE_MAX_COMMENTS}, forcing to {ABSOLUTE_MAX_COMMENTS}")
-            comentarios_raw = comentarios_raw[:ABSOLUTE_MAX_COMMENTS]
+        # SAFETY NET 1: Adaptive maximum based on file size and token limits
+        if tokens_disponibles >= 12000:  # 12K+ tokens available
+            ADAPTIVE_MAX_COMMENTS = min(60, max_comentarios_teorico)  # Up to 60 for large token limits
+        elif tokens_disponibles >= 8000:   # 8K+ tokens available  
+            ADAPTIVE_MAX_COMMENTS = min(40, max_comentarios_teorico)  # Up to 40 for medium token limits
+        else:  # Limited tokens
+            ADAPTIVE_MAX_COMMENTS = min(25, max_comentarios_teorico)  # Conservative for small token limits
             
-        # SAFETY NET 2: Model-specific limits
+        if len(comentarios_raw) > ADAPTIVE_MAX_COMMENTS:
+            logger.warning(f"🚨 ADAPTIVE SAFETY: {len(comentarios_raw)} comentarios > {ADAPTIVE_MAX_COMMENTS} (tokens={tokens_disponibles:,}), limitando")
+            comentarios_raw = comentarios_raw[:ADAPTIVE_MAX_COMMENTS]
+            
+        # SAFETY NET 2: Model-specific limits (unchanged but more permissive due to FASE 3)
         if len(comentarios_raw) > max_comentarios_teorico:
             logger.warning(f"🚨 MODEL LIMIT: {len(comentarios_raw)} comentarios > {max_comentarios_teorico}, limitando para {self.modelo}")
             comentarios_raw = comentarios_raw[:max_comentarios_teorico]
-            
-        # SAFETY NET 3: Ultra-conservative for 8K token limit
-        if len(comentarios_raw) > 20:
-            logger.warning(f"🚨 TOKEN SAFETY: {len(comentarios_raw)} comentarios > 20, forzando a 20 para garantizar <8K tokens")
-            comentarios_raw = comentarios_raw[:20]
         
         inicio_tiempo = time.time()
         
