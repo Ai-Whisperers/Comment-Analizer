@@ -31,12 +31,14 @@ class ContenedorDependencias:
     e inyección de todas las dependencias del sistema
     """
     
-    def __init__(self, configuracion: Dict[str, Any]):
+    def __init__(self, configuracion: Dict[str, Any], ai_configuration=None):
         """
         Inicializa el contenedor con la configuración del sistema
         CRITICAL FIX: Added thread safety for multi-user Streamlit environment
+        PHASE 5: Added AI configuration for centralized configuration management
         """
         self.configuracion = configuracion
+        self.ai_configuration = ai_configuration  # PHASE 5: Store AI configuration
         self._servicios_registrados = {}
         self._instancias_singleton = {}
         
@@ -96,7 +98,8 @@ class ContenedorDependencias:
                                              repositorio_comentarios=self.obtener_repositorio_comentarios(),
                                              lector_archivos=self.obtener_lector_archivos(),
                                              analizador_maestro=self.obtener_analizador_maestro_ia(),
-                                             max_comments_per_batch=self.configuracion.get('max_comments', 20)
+                                             max_comments_per_batch=self.configuracion.get('max_comments', 20),
+                                             ai_configuration=self.ai_configuration  # PHASE 5: Pass AI configuration
                                          ))
         except ImportError as e:
             logger.error(f"Error importando caso de uso maestro: {str(e)}")
@@ -158,7 +161,8 @@ class ContenedorDependencias:
                 usar_cache=True,
                 temperatura=self.configuracion.get('openai_temperatura', 0.0),
                 cache_ttl=self.configuracion.get('cache_ttl', 3600),
-                max_tokens=self.configuracion.get('openai_max_tokens', 8000)
+                max_tokens=self.configuracion.get('openai_max_tokens', 8000),
+                ai_configuration=self.ai_configuration  # PHASE 5: Pass AI configuration
             )
             
             if analizador.disponible:

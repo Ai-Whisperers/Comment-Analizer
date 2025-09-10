@@ -141,39 +141,45 @@ try:
     
     # Initialize app in session state
     if 'analizador_app' not in st.session_state:
-        # Load OpenAI key from environment/secrets
+        # PHASE 2: Use centralized AI configuration system
         import os
         from dotenv import load_dotenv
         load_dotenv()
         
-        openai_key = os.getenv('OPENAI_API_KEY') or st.secrets.get('OPENAI_API_KEY', None)
-        
-        # Pure IA maestro system initialization
-        if not openai_key:
-            st.error("OpenAI API key es requerida para esta aplicación IA.")
-            st.info("Configura OPENAI_API_KEY en las variables de entorno o Streamlit secrets.")
-            st.stop()
-            
         try:
+            from src.infrastructure.config import get_ai_configuration_manager, get_ai_configuration
             from src.infrastructure.dependency_injection.contenedor_dependencias import ContenedorDependencias
             
-            # Create IA-pure system with environment variables
+            # Initialize centralized AI configuration
+            ai_config_manager = get_ai_configuration_manager(st.secrets)
+            ai_config = ai_config_manager.get_configuration()
+            
+            # Validate configuration
+            if not ai_config_manager.validate_configuration():
+                st.error("❌ Invalid AI configuration detected")
+                st.stop()
+            
+            # Create legacy config format for backwards compatibility
             config = {
-                'openai_api_key': openai_key,
-                'openai_modelo': os.getenv('OPENAI_MODEL') or st.secrets.get('OPENAI_MODEL', 'gpt-4'),
-                'openai_temperatura': float(os.getenv('OPENAI_TEMPERATURE', '0.0') or st.secrets.get('OPENAI_TEMPERATURE', '0.0')),
-                'openai_max_tokens': int(os.getenv('OPENAI_MAX_TOKENS', '8000') or st.secrets.get('OPENAI_MAX_TOKENS', '8000')),
-                'max_comments': int(os.getenv('MAX_COMMENTS_PER_BATCH', '20') or st.secrets.get('MAX_COMMENTS_PER_BATCH', '20')),
-                'cache_ttl': int(os.getenv('CACHE_TTL_SECONDS', '3600') or st.secrets.get('CACHE_TTL_SECONDS', '3600'))
+                'openai_api_key': ai_config.api_key,
+                'openai_modelo': ai_config.model,
+                'openai_temperatura': ai_config.temperature,
+                'openai_max_tokens': ai_config.max_tokens,
+                'max_comments': ai_config.max_comments_per_batch,
+                'cache_ttl': ai_config.cache_ttl_seconds
             }
             
             # CONFIGURATION VALIDATION AND DEPLOYMENT INFO
             if not _validate_and_log_deployment_config(config):
                 st.stop()
             
-            contenedor = ContenedorDependencias(config)
+            contenedor = ContenedorDependencias(config, ai_config)
             st.session_state.contenedor = contenedor
             st.session_state.caso_uso_maestro = contenedor.obtener_caso_uso_maestro()
+            
+            # Store AI configuration manager for access throughout the app
+            st.session_state.ai_config_manager = ai_config_manager
+            st.session_state.ai_configuration = ai_config
             
             if not st.session_state.caso_uso_maestro:
                 raise ValueError("No se pudo inicializar sistema IA maestro")

@@ -27,6 +27,17 @@ from ...infrastructure.external_services.analizador_maestro_ia import Analizador
 from ...shared.exceptions.archivo_exception import ArchivoException
 from ...shared.exceptions.ia_exception import IAException
 
+# PHASE 3: Import intelligent retry strategy
+try:
+    from ...infrastructure.external_services.intelligent_retry_strategy import (
+        create_intelligent_retry_strategy, 
+        create_retry_context,
+        RetryDecision
+    )
+    INTELLIGENT_RETRY_AVAILABLE = True
+except ImportError:
+    INTELLIGENT_RETRY_AVAILABLE = False
+
 
 logger = logging.getLogger(__name__)
 
@@ -84,7 +95,8 @@ class AnalizarExcelMaestroCasoUso:
         repositorio_comentarios: IRepositorioComentarios,
         lector_archivos: ILectorArchivos,
         analizador_maestro: AnalizadorMaestroIA,
-        max_comments_per_batch: int = 50
+        max_comments_per_batch: int = 50,
+        ai_configuration=None
     ):
         self.repositorio_comentarios = repositorio_comentarios
         self.lector_archivos = lector_archivos
@@ -102,6 +114,16 @@ class AnalizarExcelMaestroCasoUso:
             max_comments_per_batch = 50
             
         self.max_comments_per_batch = max_comments_per_batch
+        
+        # PHASE 3: Initialize intelligent retry strategy
+        self.ai_configuration = ai_configuration
+        if INTELLIGENT_RETRY_AVAILABLE and ai_configuration:
+            self.retry_strategy = create_intelligent_retry_strategy(ai_configuration)
+            logger.info(f"🧠 Intelligent retry strategy enabled")
+        else:
+            self.retry_strategy = None
+            logger.info(f"⚠️ Intelligent retry strategy not available - using fallback")
+        
         logger.info(f"📦 Batch processor initialized: {self.max_comments_per_batch} comentarios/lote")
         
     def ejecutar(self, comando: ComandoAnalisisExcelMaestro) -> ResultadoAnalisisMaestro:
@@ -548,60 +570,8 @@ class AnalizarExcelMaestroCasoUso:
                     preview = lote[0][:100] + "..." if len(lote[0]) > 100 else lote[0]
                     logger.debug(f"🔍 Lote {i+1} contenido: {preview}")
                 
-                # CRITICAL FIX: Exception handling around AI processing
-                batch_retry_count = 0
-                max_retries = 2
-                resultado_lote = None
-                
-                while batch_retry_count <= max_retries:
-                    try:
-                        # Memory management: Clean cache every 5 batches
-                        if (i + 1) % 5 == 0:
-                            logger.info(f"🧹 Limpieza de memoria después de {i+1} lotes")
-                            try:
-                                self.analizador_maestro.limpiar_cache()
-                                gc.collect()
-                            except Exception as cleanup_error:
-                                logger.warning(f"⚠️ Error en limpieza de memoria: {cleanup_error}")
-                        
-                        # AI processing with exception handling
-                        resultado_lote = self.analizador_maestro.analizar_excel_completo(lote)
-                        
-                        # Enhanced success validation
-                        if resultado_lote.es_exitoso():
-                            logger.info(f"✅ Lote {i+1} exitoso: confianza={resultado_lote.confianza_general:.2f}, "
-                                      f"analizados={len(resultado_lote.comentarios_analizados)}/{len(lote)}")
-                            break  # Success, exit retry loop
-                        else:
-                            # Enhanced failure logging
-                            logger.error(f"❌ Lote {i+1} FALLÓ en validación:")
-                            logger.error(f"  - Confianza: {resultado_lote.confianza_general:.2f}")
-                            logger.error(f"  - Analizados: {len(resultado_lote.comentarios_analizados)}/{len(lote)}")
-                            logger.error(f"  - Resumen: {resultado_lote.resumen_ejecutivo}")
-                            
-                            if batch_retry_count < max_retries:
-                                batch_retry_count += 1
-                                delay = 0.5 + batch_retry_count * 0.3  # STREAMLIT OPTIMIZATION: 0.8s, 1.1s
-                                logger.warning(f"⚠️ Lote {i+1} reintento {batch_retry_count}/{max_retries} en {delay}s")
-                                time.sleep(delay)
-                            else:
-                                logger.error(f"❌ Lote {i+1} ABANDONADO después de {max_retries} intentos")
-                                break
-                                
-                    except Exception as e:
-                        # CRITICAL FIX: Catch all exceptions during AI processing
-                        logger.error(f"❌ Excepción en lote {i+1} (intento {batch_retry_count + 1}): {str(e)}")
-                        logger.error(f"❌ Tipo de error: {type(e).__name__}")
-                        
-                        if batch_retry_count < max_retries:
-                            batch_retry_count += 1
-                            delay = 0.8 + batch_retry_count * 0.4  # STREAMLIT OPTIMIZATION: 1.2s, 1.6s
-                            logger.warning(f"⚠️ Lote {i+1} excepción reintento {batch_retry_count}/{max_retries} en {delay}s")
-                            time.sleep(delay)
-                        else:
-                            logger.error(f"❌ Lote {i+1} ABANDONADO por excepciones después de {max_retries} intentos")
-                            resultado_lote = None
-                            break
+                # PHASE 3: Intelligent retry processing with smart decisions
+                resultado_lote = self._process_batch_with_intelligent_retry(i + 1, lote)
                 
                 # Process successful result
                 if resultado_lote and resultado_lote.es_exitoso():
@@ -735,6 +705,175 @@ class AnalizarExcelMaestroCasoUso:
             dolores_mas_severos={},  # Simplificado por ahora
             emociones_predominantes={}  # Simplificado por ahora
         )
+    
+    def _process_batch_with_intelligent_retry(self, batch_number: int, lote: List[str]):
+        """
+        PHASE 3: Process batch with intelligent retry strategy
+        
+        Args:
+            batch_number: Number of the batch being processed
+            lote: List of comments to analyze
+            
+        Returns:
+            AnalisisCompletoIA or None if failed after all retries
+        """
+        try:
+            # Memory management: Clean cache every 5 batches
+            if batch_number % 5 == 0:
+                logger.info(f"🧹 Limpieza de memoria después de {batch_number} lotes")
+                try:
+                    self.analizador_maestro.limpiar_cache()
+                    gc.collect()
+                except Exception as cleanup_error:
+                    logger.warning(f"⚠️ Error en limpieza de memoria: {cleanup_error}")
+            
+            # Get configuration for retry decisions
+            max_retries = 2  # Default
+            if self.ai_configuration:
+                max_retries = self.ai_configuration.batch_retry_count
+            
+            # Initialize tracking variables
+            batch_retry_count = 0
+            resultado_lote = None
+            last_error = None
+            original_temperature = getattr(self.analizador_maestro, 'temperatura', 0.0)
+            is_deterministic = getattr(self.analizador_maestro, '_is_deterministic', True)
+            
+            while batch_retry_count <= max_retries:
+                try:
+                    # AI processing with exception handling
+                    resultado_lote = self.analizador_maestro.analizar_excel_completo(lote)
+                    
+                    # Enhanced success validation
+                    if resultado_lote and resultado_lote.es_exitoso():
+                        logger.info(f"✅ Lote {batch_number} exitoso: confianza={resultado_lote.confianza_general:.2f}, "
+                                  f"analizados={len(resultado_lote.comentarios_analizados)}/{len(lote)}")
+                        
+                        # Record successful attempt
+                        if self.retry_strategy:
+                            context = create_retry_context(
+                                batch_retry_count, resultado_lote, None,
+                                is_deterministic, original_temperature,
+                                self.analizador_maestro.modelo, len(lote)
+                            )
+                            self.retry_strategy.record_attempt(context, resultado_lote)
+                        
+                        return resultado_lote  # Success, return result
+                    else:
+                        # Enhanced failure logging
+                        confidence = resultado_lote.confianza_general if resultado_lote else 0.0
+                        analyzed_count = len(resultado_lote.comentarios_analizados) if resultado_lote else 0
+                        resumen = resultado_lote.resumen_ejecutivo if resultado_lote else "No result"
+                        
+                        logger.error(f"❌ Lote {batch_number} FALLÓ en validación:")
+                        logger.error(f"  - Confianza: {confidence:.2f}")
+                        logger.error(f"  - Analizados: {analyzed_count}/{len(lote)}")
+                        logger.error(f"  - Resumen: {resumen}")
+                        
+                        # Use intelligent retry strategy
+                        if self.retry_strategy and batch_retry_count < max_retries:
+                            context = create_retry_context(
+                                batch_retry_count, resultado_lote, None,
+                                is_deterministic, original_temperature,
+                                self.analizador_maestro.modelo, len(lote)
+                            )
+                            
+                            retry_result = self.retry_strategy.should_retry(context)
+                            
+                            if retry_result.decision == RetryDecision.SKIP_RETRY:
+                                logger.warning(f"🧠 Skip inteligente: {retry_result.reason}")
+                                break
+                            elif retry_result.decision == RetryDecision.ABORT_RETRIES:
+                                logger.error(f"🧠 Abortar reintentos: {retry_result.reason}")
+                                break
+                            else:
+                                batch_retry_count += 1
+                                
+                                # Apply temperature variation if recommended
+                                if retry_result.new_temperature is not None:
+                                    logger.info(f"🌡️ Aplicando variación de temperatura: {original_temperature:.3f} → {retry_result.new_temperature:.3f}")
+                                    self.analizador_maestro.temperatura = retry_result.new_temperature
+                                
+                                logger.warning(f"⚠️ Lote {batch_number} reintento {batch_retry_count}/{max_retries} en {retry_result.delay_seconds:.1f}s")
+                                logger.info(f"🧠 Estrategia: {retry_result.reason}")
+                                time.sleep(retry_result.delay_seconds)
+                                
+                                # Record retry attempt
+                                self.retry_strategy.record_attempt(context, resultado_lote)
+                        else:
+                            # Fallback to standard retry logic
+                            if batch_retry_count < max_retries:
+                                batch_retry_count += 1
+                                delay = 0.5 + batch_retry_count * 0.3
+                                logger.warning(f"⚠️ Lote {batch_number} reintento estándar {batch_retry_count}/{max_retries} en {delay:.1f}s")
+                                time.sleep(delay)
+                            else:
+                                logger.error(f"❌ Lote {batch_number} ABANDONADO después de {max_retries} intentos")
+                                break
+                        
+                        # Reset temperature if it was changed
+                        if self.retry_strategy and batch_retry_count > max_retries:
+                            self.analizador_maestro.temperatura = original_temperature
+                                
+                except Exception as e:
+                    # CRITICAL FIX: Catch all exceptions during AI processing
+                    logger.error(f"❌ Excepción en lote {batch_number} (intento {batch_retry_count + 1}): {str(e)}")
+                    logger.error(f"❌ Tipo de error: {type(e).__name__}")
+                    last_error = e
+                    
+                    # Use intelligent retry strategy for exceptions too
+                    if self.retry_strategy and batch_retry_count < max_retries:
+                        context = create_retry_context(
+                            batch_retry_count, None, e,
+                            is_deterministic, original_temperature,
+                            self.analizador_maestro.modelo, len(lote)
+                        )
+                        
+                        retry_result = self.retry_strategy.should_retry(context)
+                        
+                        if retry_result.decision == RetryDecision.SKIP_RETRY:
+                            logger.warning(f"🧠 Skip inteligente para excepción: {retry_result.reason}")
+                            break
+                        elif retry_result.decision == RetryDecision.ABORT_RETRIES:
+                            logger.error(f"🧠 Abortar reintentos para excepción: {retry_result.reason}")
+                            break
+                        else:
+                            batch_retry_count += 1
+                            logger.warning(f"⚠️ Lote {batch_number} excepción reintento {batch_retry_count}/{max_retries} en {retry_result.delay_seconds:.1f}s")
+                            logger.info(f"🧠 Estrategia de excepción: {retry_result.reason}")
+                            time.sleep(retry_result.delay_seconds)
+                            
+                            # Record exception attempt
+                            self.retry_strategy.record_attempt(context, None)
+                    else:
+                        # Fallback exception retry
+                        if batch_retry_count < max_retries:
+                            batch_retry_count += 1
+                            delay = 0.8 + batch_retry_count * 0.4
+                            logger.warning(f"⚠️ Lote {batch_number} excepción reintento estándar {batch_retry_count}/{max_retries} en {delay:.1f}s")
+                            time.sleep(delay)
+                        else:
+                            logger.error(f"❌ Lote {batch_number} ABANDONADO por excepciones después de {max_retries} intentos")
+                            break
+            
+            # Reset temperature after all retries
+            if hasattr(self.analizador_maestro, 'temperatura'):
+                self.analizador_maestro.temperatura = original_temperature
+            
+            # Final failure handling
+            if not resultado_lote or not resultado_lote.es_exitoso():
+                logger.error(f"❌ Lote {batch_number} SALTADO - No se pudo procesar exitosamente")
+                
+                # Log retry statistics if available
+                if self.retry_strategy:
+                    stats = self.retry_strategy.get_retry_statistics()
+                    logger.info(f"📊 Estadísticas de reintentos: {stats}")
+            
+            return resultado_lote
+            
+        except Exception as e:
+            logger.error(f"❌ Error crítico en procesamiento de lote {batch_number}: {str(e)}")
+            return None
 
     def _crear_resultado_error(self, mensaje: str) -> ResultadoAnalisisMaestro:
         """Crea un resultado de error"""

@@ -49,14 +49,20 @@ class AnalizadorMaestroIA:
     """
     
     def __init__(self, api_key: str, modelo: str = "gpt-4", usar_cache: bool = True, 
-                 temperatura: float = 0.0, cache_ttl: int = 3600, max_tokens: int = 8000):
+                 temperatura: float = 0.0, cache_ttl: int = 3600, max_tokens: int = 8000,
+                 ai_configuration=None):
         self.client = openai.OpenAI(api_key=api_key)
         self.modelo = modelo
         self.usar_cache = usar_cache
         self.max_tokens_limit = max_tokens
         
+        # PHASE 2: Store centralized AI configuration if provided
+        self.ai_configuration = ai_configuration
+        
         # FUNCTIONAL FIX: Initialize _cache_ttl_seconds for all cases (logging needs it)
-        if CONSTANTS_AVAILABLE:
+        if ai_configuration:
+            self._cache_ttl_seconds = ai_configuration.cache_ttl_seconds
+        elif CONSTANTS_AVAILABLE:
             self._cache_ttl_seconds = cache_ttl or AIEngineConstants.DEFAULT_CACHE_TTL
         else:
             self._cache_ttl_seconds = cache_ttl or 3600
@@ -66,8 +72,10 @@ class AnalizadorMaestroIA:
             from collections import OrderedDict
             self._cache = OrderedDict()
             
-            # POLISH-002 FIX: Use constants for cache size (TTL already initialized above)
-            if CONSTANTS_AVAILABLE:
+            # PHASE 2: Use centralized configuration for cache size
+            if ai_configuration:
+                self._cache_max_size = ai_configuration.cache_max_size
+            elif CONSTANTS_AVAILABLE:
                 self._cache_max_size = AIEngineConstants.DEFAULT_CACHE_SIZE
             else:
                 self._cache_max_size = 50  # Fallback
@@ -78,12 +86,17 @@ class AnalizadorMaestroIA:
             
         self.disponible = self._verificar_disponibilidad()
         
-        # POLISH-002 FIX: Use constants for deterministic configuration
-        self.temperatura = temperatura    # ← Configurable para consistencia
-        if CONSTANTS_AVAILABLE:
-            self.seed = AIEngineConstants.FIXED_SEED
+        # PHASE 2: Use centralized configuration for deterministic settings
+        if ai_configuration:
+            self.temperatura = ai_configuration.temperature
+            self.seed = ai_configuration.seed
         else:
-            self.seed = 12345  # Fallback
+            # Fallback to parameter and constants
+            self.temperatura = temperatura
+            if CONSTANTS_AVAILABLE:
+                self.seed = AIEngineConstants.FIXED_SEED
+            else:
+                self.seed = 12345  # Fallback
         
         # HIGH-004 FIX: Initialize retry strategy for error recovery
         if RETRY_AVAILABLE:
@@ -93,7 +106,10 @@ class AnalizadorMaestroIA:
             self.retry_wrapper = None
             retry_info = "disabled"
         
-        logger.info(f"🤖 AnalizadorMaestroIA inicializado - Modelo: {modelo}, Cache: {self._cache_max_size if usar_cache else 'disabled'}, TTL: {self._cache_ttl_seconds}s, Retry: {retry_info}")
+        # PHASE 1 FIX: Validate deterministic configuration for intelligent retry decisions
+        self._is_deterministic = self._validate_deterministic_config()
+        
+        logger.info(f"🤖 AnalizadorMaestroIA inicializado - Modelo: {modelo}, Cache: {self._cache_max_size if usar_cache else 'disabled'}, TTL: {self._cache_ttl_seconds}s, Retry: {retry_info}, Determinista: {self._is_deterministic}")
     
     def _calcular_tokens_dinamicos(self, num_comentarios: int) -> int:
         """
@@ -175,6 +191,37 @@ class AnalizadorMaestroIA:
             logger.warning(f"⚠️ Archivo muy grande: {num_comentarios} comentarios requieren tokens máximos ({tokens_maximos:,}) para modelo {self.modelo}")
         
         return tokens_finales
+    
+    def _validate_deterministic_config(self) -> bool:
+        """
+        PHASE 1 FIX: Validate if current configuration is deterministic
+        
+        Returns:
+            bool: True if configuration is deterministic (temperature=0.0 and fixed seed)
+        """
+        try:
+            is_temp_deterministic = abs(self.temperatura) < 0.001  # Temperature near 0.0
+            has_fixed_seed = self.seed is not None and self.seed > 0
+            
+            deterministic = is_temp_deterministic and has_fixed_seed
+            
+            if deterministic:
+                logger.info(f"🔒 Configuración determinista detectada: temp={self.temperatura}, seed={self.seed}")
+                logger.info("⚠️ Reintentos producirán resultados idénticos - se aplicará skip inteligente")
+            else:
+                logger.info(f"🎲 Configuración no-determinista: temp={self.temperatura}, seed={self.seed}")
+                
+            return deterministic
+            
+        except Exception as e:
+            logger.warning(f"⚠️ Error validando configuración determinista: {e}")
+            return False
+    
+    def is_deterministic(self) -> bool:
+        """
+        Returns True if the analyzer is configured for deterministic results
+        """
+        return getattr(self, '_is_deterministic', False)
     
     def analizar_excel_completo(self, comentarios_raw: List[str]) -> AnalisisCompletoIA:
         """

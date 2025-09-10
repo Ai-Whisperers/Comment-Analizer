@@ -38,9 +38,18 @@ class AnalisisCompletoIA:
     
     def es_exitoso(self) -> bool:
         """Verifica si el análisis fue exitoso"""
+        # CRITICAL FIX: Import constants to eliminate hardcoding
+        try:
+            from ...infrastructure.external_services.ai_engine_constants import AIEngineConstants
+            umbral_confianza = AIEngineConstants.MIN_CONFIDENCE_THRESHOLD
+        except ImportError:
+            # Fallback for backwards compatibility
+            umbral_confianza = 0.5
+        
+        # CRITICAL FIX: Use >= instead of > for correct threshold validation
         return (self.comentarios_analizados and 
                 len(self.comentarios_analizados) == self.total_comentarios and
-                self.confianza_general > 0.5)
+                self.confianza_general >= umbral_confianza)
     
     def obtener_comentario_analizado(self, indice: int) -> Optional[Dict[str, Any]]:
         """Obtiene el análisis de un comentario específico por índice"""
