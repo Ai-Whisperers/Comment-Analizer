@@ -8,6 +8,7 @@ import pandas as pd
 import hashlib
 from typing import List, Dict, Tuple, Any, Optional
 from datetime import datetime
+from io import BytesIO
 import logging
 
 logger = logging.getLogger(__name__)
@@ -265,3 +266,152 @@ def calculate_processing_estimate(num_comments: int, batch_size: int = 50) -> Di
         'batch_size': batch_size,
         'processing_per_batch': processing_per_batch
     }
+
+
+# STREAMLIT-NATIVE COMPATIBLE FUNCTIONS FOR EXISTING SYSTEM INTEGRATION
+
+@st.cache_data(ttl=3600, show_spinner="Procesando archivo...")
+def process_file_ilector_compatible(file_content: bytes, file_name: str) -> List[Dict[str, Any]]:
+    """
+    Process file with Streamlit caching - 100% compatible with ILectorArchivos interface
+    
+    This function provides the EXACT same output format as LectorArchivosExcel.leer_comentarios()
+    but with Streamlit native caching for instant file reprocessing.
+    
+    Cache Strategy:
+    - TTL: 1 hour (perfect for file reprocessing scenarios)
+    - Key: Automatic based on file content + name hash
+    - Benefit: Same files load instantly vs full reprocessing
+    
+    Returns:
+        List[Dict[str, Any]] with format:
+        [
+            {
+                'comentario': str,           # Main comment text
+                'indice_original': int,      # Row index from file
+                'nps': int,                  # NPS score (optional)
+                'nota': float                # Rating (optional)
+            },
+            ...
+        ]
+    """
+    try:
+        logger.info(f"🔄 Processing file with Streamlit caching: {file_name}")
+        
+        # Read DataFrame based on file type
+        df = _read_dataframe_cached(file_content, file_name)
+        
+        if df.empty:
+            logger.warning(f"⚠️ Empty file: {file_name}")
+            return []
+        
+        # Find comment column using same logic as LectorArchivosExcel
+        comment_column = _find_comment_column_compatible(df)
+        
+        if not comment_column:
+            logger.error(f"❌ No comment column found in {file_name}")
+            return []
+        
+        # Extract comments in exact same format as existing system
+        comments = _extract_comments_compatible(df, comment_column)
+        
+        logger.info(f"✅ Extracted {len(comments)} comments from {file_name} (cached)")
+        return comments
+        
+    except Exception as e:
+        logger.error(f"❌ Error processing file {file_name}: {str(e)}")
+        return []
+
+
+def _read_dataframe_cached(file_content: bytes, file_name: str) -> pd.DataFrame:
+    """Read DataFrame with same logic as LectorArchivosExcel but with caching context"""
+    try:
+        if file_name.lower().endswith('.csv'):
+            return _read_csv_compatible(file_content)
+        else:
+            return _read_excel_compatible(file_content)
+    except Exception as e:
+        logger.error(f"❌ Error reading dataframe: {str(e)}")
+        return pd.DataFrame()
+
+
+def _read_csv_compatible(file_content: bytes) -> pd.DataFrame:
+    """Read CSV with same encoding detection as LectorArchivosExcel"""
+    try:
+        # Try UTF-8 first (most common)
+        return pd.read_csv(BytesIO(file_content), encoding='utf-8')
+    except UnicodeDecodeError:
+        try:
+            # Fallback to latin-1 (common in Paraguay legacy systems)
+            return pd.read_csv(BytesIO(file_content), encoding='latin-1')
+        except Exception:
+            # Ultimate fallback
+            return pd.read_csv(BytesIO(file_content), encoding='utf-8', errors='replace')
+
+
+def _read_excel_compatible(file_content: bytes) -> pd.DataFrame:
+    """Read Excel with same method as LectorArchivosExcel"""
+    return pd.read_excel(BytesIO(file_content), engine='openpyxl')
+
+
+def _find_comment_column_compatible(df: pd.DataFrame) -> Optional[str]:
+    """Find comment column using EXACT same logic as LectorArchivosExcel"""
+    # Same column names as existing system
+    comment_columns = [
+        'comentario final', 'comment', 'comments', 'feedback', 
+        'review', 'texto', 'comentario', 'comentarios', 
+        'respuesta', 'opinion', 'observacion'
+    ]
+    
+    # Search by exact names or containing keywords
+    for col in df.columns:
+        col_lower = str(col).lower()
+        if any(name in col_lower for name in comment_columns):
+            return col
+    
+    # Fallback: first text column with data
+    for col in df.columns:
+        if df[col].dtype == 'object' and not df[col].dropna().empty:
+            return col
+    
+    return None
+
+
+def _extract_comments_compatible(df: pd.DataFrame, comment_column: str) -> List[Dict[str, Any]]:
+    """Extract comments using EXACT same logic as LectorArchivosExcel"""
+    comments = []
+    
+    for index, row in df.iterrows():
+        comment_text = str(row[comment_column]).strip()
+        
+        # Filter invalid comments (same logic as existing system)
+        if not comment_text or comment_text.lower() in ['nan', 'none', '']:
+            continue
+        
+        # Create comment data dict with exact same structure
+        comment_data = {
+            'comentario': comment_text,
+            'indice_original': index
+        }
+        
+        # Add NPS if exists (same logic as existing system)
+        if 'NPS' in df.columns:
+            nps_value = row.get('NPS')
+            if pd.notna(nps_value):
+                try:
+                    comment_data['nps'] = int(float(nps_value))
+                except (ValueError, TypeError):
+                    pass
+        
+        # Add Nota if exists (same logic as existing system)
+        if 'Nota' in df.columns:
+            nota_value = row.get('Nota')
+            if pd.notna(nota_value):
+                try:
+                    comment_data['nota'] = float(nota_value)
+                except (ValueError, TypeError):
+                    pass
+        
+        comments.append(comment_data)
+    
+    return comments
