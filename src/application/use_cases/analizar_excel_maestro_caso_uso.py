@@ -515,7 +515,7 @@ class AnalizarExcelMaestroCasoUso:
             id=f"analisis_error_{indice}_{hash(texto)}",
             indice_original=indice,
             texto_original=texto,
-            sentimiento=Sentimiento.crear_neutral(0.3, "error"),
+            sentimiento=Sentimiento.crear_neutral(0.3, "manual"),
             confianza_general=0.3,
             resumen_ia="Error en el análisis - análisis básico generado",
             modelo_ia_utilizado="error_fallback"
