@@ -1,0 +1,236 @@
+/* 
+Streamlit-Optimized Components CSS
+Styling for new modular components with performance focus
+*/
+
+/* Fragment-based progress indicators */
+.stProgress > div > div {
+    background: linear-gradient(135deg, var(--primary-purple), var(--secondary-cyan)) !important;
+    border-radius: 8px !important;
+    animation: pulse-glow 2s infinite ease-in-out;
+}
+
+@keyframes pulse-glow {
+    0%, 100% { 
+        box-shadow: 0 0 5px rgba(139, 92, 246, 0.3);
+    }
+    50% { 
+        box-shadow: 0 0 20px rgba(139, 92, 246, 0.6);
+    }
+}
+
+/* Cached component indicators */
+.cached-component {
+    border-left: 4px solid #10B981 !important;
+    background: rgba(16, 185, 129, 0.05) !important;
+    padding: 0.5rem !important;
+    margin: 0.25rem 0 !important;
+    border-radius: 0 8px 8px 0 !important;
+}
+
+.cached-component::before {
+    content: "⚡ Cached";
+    font-size: 0.7rem;
+    color: #10B981;
+    font-weight: bold;
+    position: absolute;
+    top: 0.25rem;
+    right: 0.5rem;
+}
+
+/* Performance metrics styling */
+.performance-metrics {
+    background: rgba(139, 92, 246, 0.08) !important;
+    border: 1px solid rgba(139, 92, 246, 0.15) !important;
+    border-radius: 12px !important;
+    padding: 1rem !important;
+    margin: 1rem 0 !important;
+}
+
+.performance-improvement {
+    background: linear-gradient(135deg, rgba(16, 185, 129, 0.1), rgba(6, 182, 212, 0.1)) !important;
+    border-left: 4px solid #10B981 !important;
+    padding: 1rem !important;
+    border-radius: 0 8px 8px 0 !important;
+    margin: 0.5rem 0 !important;
+}
+
+/* Optimized chart containers */
+.plotly-chart-container {
+    background: var(--glass-bg) !important;
+    backdrop-filter: blur(12px) !important;
+    border: 1px solid var(--glass-border) !important;
+    border-radius: 16px !important;
+    padding: 1rem !important;
+    margin: 0.5rem 0 !important;
+    transition: transform 0.2s ease !important;
+}
+
+.plotly-chart-container:hover {
+    transform: translateY(-2px) !important;
+    box-shadow: 0 8px 25px rgba(139, 92, 246, 0.15) !important;
+}
+
+/* Fragment update indicators */
+.fragment-updating {
+    position: relative;
+    opacity: 0.8;
+}
+
+.fragment-updating::after {
+    content: "🔄";
+    position: absolute;
+    top: 0.5rem;
+    right: 0.5rem;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+}
+
+/* File upload enhancements for new components */
+.upload-section {
+    background: var(--glass-bg) !important;
+    backdrop-filter: blur(16px) !important;
+    border: 2px dashed var(--glass-border) !important;
+    border-radius: 16px !important;
+    padding: 2rem !important;
+    text-align: center !important;
+    margin: 1rem 0 !important;
+    transition: all 0.3s ease !important;
+}
+
+.upload-section:hover {
+    border-color: var(--primary-purple) !important;
+    background: rgba(139, 92, 246, 0.05) !important;
+    transform: translateY(-2px) !important;
+}
+
+/* Analysis controls styling */
+.analysis-controls {
+    background: linear-gradient(135deg, 
+        rgba(139, 92, 246, 0.1), 
+        rgba(6, 182, 212, 0.1)) !important;
+    border-radius: 16px !important;
+    padding: 1.5rem !important;
+    margin: 1rem 0 !important;
+    border: 1px solid rgba(139, 92, 246, 0.2) !important;
+}
+
+/* Results section with glassmorphism */
+.results-section {
+    background: var(--glass-bg) !important;
+    backdrop-filter: blur(20px) !important;
+    border: 1px solid var(--glass-border) !important;
+    border-radius: 20px !important;
+    padding: 2rem !important;
+    margin: 2rem 0 !important;
+    box-shadow: 0 4px 15px rgba(139, 92, 246, 0.1) !important;
+}
+
+/* Metric cards for components */
+.component-metric {
+    background: rgba(255, 255, 255, 0.06) !important;
+    backdrop-filter: blur(10px) !important;
+    border: 1px solid rgba(255, 255, 255, 0.1) !important;
+    border-radius: 12px !important;
+    padding: 1rem !important;
+    margin: 0.5rem !important;
+    transition: all 0.3s ease !important;
+}
+
+.component-metric:hover {
+    background: rgba(255, 255, 255, 0.08) !important;
+    transform: translateY(-1px) !important;
+    box-shadow: 0 4px 12px rgba(139, 92, 246, 0.12) !important;
+}
+
+/* Success indicators for optimizations */
+.optimization-success {
+    background: linear-gradient(135deg, 
+        rgba(16, 185, 129, 0.1), 
+        rgba(52, 211, 153, 0.1)) !important;
+    border-left: 4px solid #10B981 !important;
+    padding: 1rem !important;
+    border-radius: 0 12px 12px 0 !important;
+    margin: 1rem 0 !important;
+}
+
+/* Error handling styles for new components */
+.component-error {
+    background: rgba(239, 68, 68, 0.08) !important;
+    border: 1px solid rgba(239, 68, 68, 0.2) !important;
+    border-radius: 12px !important;
+    padding: 1rem !important;
+    margin: 0.5rem 0 !important;
+}
+
+/* Loading states for cached operations */
+.cache-loading {
+    background: rgba(139, 92, 246, 0.05) !important;
+    border: 1px solid rgba(139, 92, 246, 0.1) !important;
+    border-radius: 12px !important;
+    padding: 1rem !important;
+    position: relative !important;
+    overflow: hidden !important;
+}
+
+.cache-loading::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(
+        90deg,
+        transparent,
+        rgba(139, 92, 246, 0.2),
+        transparent
+    );
+    animation: cache-shimmer 2s infinite;
+}
+
+@keyframes cache-shimmer {
+    0% { left: -100%; }
+    100% { left: 100%; }
+}
+
+/* Mobile responsiveness for components */
+@media (max-width: 768px) {
+    .component-metric {
+        margin: 0.25rem !important;
+        padding: 0.75rem !important;
+    }
+    
+    .results-section {
+        padding: 1rem !important;
+        margin: 1rem 0 !important;
+    }
+    
+    .performance-metrics {
+        padding: 0.75rem !important;
+    }
+    
+    .optimization-success {
+        padding: 0.75rem !important;
+    }
+}
+
+/* Dark mode adjustments for components */
+@media (prefers-color-scheme: dark) {
+    .cached-component {
+        border-left-color: #34D399 !important;
+        background: rgba(52, 211, 153, 0.08) !important;
+    }
+    
+    .performance-improvement {
+        background: linear-gradient(135deg, rgba(52, 211, 153, 0.12), rgba(34, 197, 94, 0.12)) !important;
+    }
+    
+    .optimization-success {
+        background: linear-gradient(135deg, rgba(52, 211, 153, 0.12), rgba(16, 185, 129, 0.12)) !important;
+    }
+}

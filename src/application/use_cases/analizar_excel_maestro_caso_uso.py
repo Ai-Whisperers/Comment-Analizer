@@ -90,13 +90,16 @@ class AnalizarExcelMaestroCasoUso:
         self.lector_archivos = lector_archivos
         self.analizador_maestro = analizador_maestro
         
-        # SAFETY NET: Force safe batch size regardless of configuration
-        if max_comments_per_batch > 25:
-            logger.error(f"❌ SAFETY: Batch size too large: {max_comments_per_batch}, forcing to 20")
-            max_comments_per_batch = 20
+        # STREAMLIT OPTIMIZATION: Larger batch sizes for better performance  
+        if max_comments_per_batch > 80:
+            logger.error(f"❌ SAFETY: Batch size too large: {max_comments_per_batch}, forcing to 50")
+            max_comments_per_batch = 50
         elif max_comments_per_batch < 1:
-            logger.warning(f"⚠️ SAFETY: Batch size too small: {max_comments_per_batch}, setting to 20")
-            max_comments_per_batch = 20
+            logger.warning(f"⚠️ SAFETY: Batch size too small: {max_comments_per_batch}, setting to 50")
+            max_comments_per_batch = 50
+        elif max_comments_per_batch < 30:
+            logger.info(f"📈 PERFORMANCE: Increasing batch size from {max_comments_per_batch} to 50 for better performance")
+            max_comments_per_batch = 50
             
         self.max_comments_per_batch = max_comments_per_batch
         logger.info(f"📦 Batch processor initialized: {self.max_comments_per_batch} comentarios/lote")
@@ -578,7 +581,7 @@ class AnalizarExcelMaestroCasoUso:
                             
                             if batch_retry_count < max_retries:
                                 batch_retry_count += 1
-                                delay = 2 + batch_retry_count  # Progressive delay: 3s, 4s
+                                delay = 0.5 + batch_retry_count * 0.3  # STREAMLIT OPTIMIZATION: 0.8s, 1.1s
                                 logger.warning(f"⚠️ Lote {i+1} reintento {batch_retry_count}/{max_retries} en {delay}s")
                                 time.sleep(delay)
                             else:
@@ -592,7 +595,7 @@ class AnalizarExcelMaestroCasoUso:
                         
                         if batch_retry_count < max_retries:
                             batch_retry_count += 1
-                            delay = 3 + batch_retry_count * 2  # Progressive delay: 5s, 7s
+                            delay = 0.8 + batch_retry_count * 0.4  # STREAMLIT OPTIMIZATION: 1.2s, 1.6s
                             logger.warning(f"⚠️ Lote {i+1} excepción reintento {batch_retry_count}/{max_retries} en {delay}s")
                             time.sleep(delay)
                         else:
@@ -621,9 +624,9 @@ class AnalizarExcelMaestroCasoUso:
                 
                 # Rate limiting pause between batches (only if not the last batch)
                 if i < len(lotes) - 1:
-                    # Longer pause after failed batches to recover
-                    pause_time = 3 if (resultado_lote and resultado_lote.es_exitoso()) else 5
-                    logger.debug(f"⏸️ Pausa de {pause_time}s antes del siguiente lote")
+                    # STREAMLIT OPTIMIZATION: Minimal pause for API respect (was 3-5s)
+                    pause_time = 0.2 if (resultado_lote and resultado_lote.es_exitoso()) else 0.5
+                    logger.debug(f"⏸️ Pausa optimizada de {pause_time}s antes del siguiente lote")
                     time.sleep(pause_time)
             
             # Agregar resultados de todos los lotes

@@ -5,6 +5,7 @@
 
 /* Import the actual core components */
 @import url('./components/streamlit-core.css');
+@import url('./components/streamlit-optimized.css'); /* New: Streamlit-native component styling */
 
 /* Additional core styles if needed */
 .core-container {
