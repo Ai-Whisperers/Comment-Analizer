@@ -34,35 +34,88 @@ except ImportError:
 # Initialize New Architecture (Direct DI Container - no aplicacion_principal.py)
 if 'contenedor' not in st.session_state:
     try:
+        logger.info("🔄 Inicializando nueva arquitectura unificada...")
+        
         from src.infrastructure.dependency_injection.contenedor_dependencias import ContenedorDependencias
         from src.infrastructure.config.ai_configuration_manager import AIConfiguration
         
-        # Create AI configuration
-        ai_config = AIConfiguration(
-            api_key=config.get('openai_api_key', ''),
-            model=config.get('openai_modelo', 'gpt-4o-mini'),
-            max_tokens=config.get('openai_max_tokens', 12000),
-            temperature=config.get('openai_temperatura', 0.0),
-            max_comments_per_batch=config.get('max_comments', 100)
-        )
+        logger.info(f"📊 Configuración disponible: {len(config)} variables")
+        
+        # Create AI configuration with detailed logging
+        try:
+            ai_config = AIConfiguration(
+                api_key=config.get('openai_api_key', ''),
+                model=config.get('openai_modelo', 'gpt-4o-mini'),
+                max_tokens=config.get('openai_max_tokens', 12000),
+                temperature=config.get('openai_temperatura', 0.0),
+                max_comments_per_batch=config.get('max_comments', 100)
+            )
+            logger.info(f"✅ AI Config creada: {ai_config.model}, {ai_config.max_tokens} tokens")
+        except Exception as e:
+            logger.error(f"❌ Error creando AI config: {str(e)}")
+            raise
         
         # Initialize dependency container directly with new architecture
-        st.session_state.contenedor = ContenedorDependencias(config, ai_config)
+        try:
+            st.session_state.contenedor = ContenedorDependencias(config, ai_config)
+            logger.info("✅ ContenedorDependencias creado exitosamente")
+        except Exception as e:
+            logger.error(f"❌ Error creando contenedor: {str(e)}")
+            raise
         
         # Initialize caso_uso_maestro for session validation (without progress callback)
         try:
             st.session_state.caso_uso_maestro = st.session_state.contenedor.obtener_caso_uso_maestro()
             maestro_status = 'Disponible' if st.session_state.caso_uso_maestro else 'No disponible (modo degradado)'
+            logger.info(f"✅ Caso de uso maestro: {maestro_status}")
         except Exception as e:
             st.session_state.caso_uso_maestro = None
             maestro_status = f'Error: {str(e)}'
+            logger.warning(f"⚠️ Caso de uso maestro error: {str(e)}")
             
         logger.info("✅ Nueva arquitectura inicializada directamente")
-        logger.info(f"✅ Caso de uso maestro: {maestro_status}")
-        logger.info(f"📊 Configuración cargada: {len(config)} variables")
+        logger.info(f"📊 Session state keys: {list(st.session_state.keys())}")
+        
+        # Final verification that contenedor is properly initialized
+        if 'contenedor' not in st.session_state or st.session_state.contenedor is None:
+            raise Exception("Contenedor no se inicializó correctamente en session_state")
+        
     except Exception as e:
-        st.error(f"❌ Error inicializando nueva arquitectura: {str(e)}")
+        error_msg = f"Error inicializando nueva arquitectura: {str(e)}"
+        logger.error(f"❌ {error_msg}")
+        st.error(f"❌ {error_msg}")
+        st.error("🔧 Posibles soluciones:")
+        st.error("- Verificar que todas las dependencias estén instaladas")
+        st.error("- Verificar configuración en variables de entorno")
+        st.error("- Revisar logs para más detalles")
+        
+        # Show debug info
+        with st.expander("🔍 Información de Debug"):
+            st.json({
+                'config_keys': list(config.keys()) if config else [],
+                'config_sample': {k: str(v)[:50] + '...' if len(str(v)) > 50 else str(v) 
+                                 for k, v in list(config.items())[:5]} if config else {},
+                'session_state_keys': list(st.session_state.keys()),
+                'error_type': type(e).__name__,
+                'error_message': str(e),
+                'environment': 'Streamlit Cloud' if is_streamlit_cloud() else 'Local'
+            })
+        
+        # Force re-initialization button
+        if st.button("🔄 Forzar Re-inicialización", type="primary"):
+            # Clear all session state
+            for key in list(st.session_state.keys()):
+                del st.session_state[key]
+            st.rerun()
+            
         st.stop()
+
+# Additional safety check after initialization
+if 'contenedor' not in st.session_state:
+    st.error("🚨 Contenedor no disponible después de inicialización")
+    st.error("Esto indica un problema serio en el proceso de inicialización")
+    st.info("Intenta recargar la página completamente (F5)")
+    st.stop()
 
 # Simple page configuration
 st.set_page_config(
