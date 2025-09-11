@@ -52,6 +52,7 @@ class AnalizadorMaestroIA:
     def __init__(self, api_key: str, modelo: str = "gpt-4", usar_cache: bool = True, 
                  temperatura: float = 0.0, cache_ttl: int = 3600, max_tokens: int = 8000,
                  ai_configuration=None):
+        self.api_key = api_key  # CRITICAL FIX: Store API key for AsyncClient
         self.client = openai.OpenAI(api_key=api_key)
         self.modelo = modelo
         self.usar_cache = usar_cache

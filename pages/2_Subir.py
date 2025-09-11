@@ -550,7 +550,7 @@ def _create_batch_processing_timeline(analisis):
     
     # Estimate batch information
     total_comments = analisis.total_comentarios
-    batch_size = 20
+    batch_size = 50  # CONSISTENCY: Updated to match optimized batch size
     num_batches = max(1, (total_comments + batch_size - 1) // batch_size)  # Ceiling division
     time_per_batch = analisis.tiempo_analisis / num_batches if num_batches > 0 else 0
     
