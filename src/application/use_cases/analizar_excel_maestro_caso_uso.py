@@ -7,10 +7,8 @@ from datetime import datetime
 import logging
 import time
 import gc
-import asyncio
-import threading
-from concurrent.futures import ThreadPoolExecutor, as_completed
-import queue
+# ROLLBACK: Threading removed - incompatible with Streamlit Cloud
+# import asyncio, threading, concurrent.futures - REMOVED
 
 # OPTIMIZATION: Import Streamlit caching for smart result caching
 try:
@@ -627,13 +625,9 @@ class AnalizarExcelMaestroCasoUso:
             total_lotes = len(lotes)
             self._notify_progress_start(total_lotes, len(comentarios_validos))
             
-            # OPTIMIZATION: Choose processing strategy based on batch count
-            if len(lotes) <= 2:
-                # Small files - use sequential processing (no overhead)
-                return self._procesar_lotes_secuencial(lotes, total_lotes)
-            else:
-                # Large files - use parallel processing for speed
-                return self._procesar_lotes_paralelo(lotes, total_lotes)
+            # ROLLBACK: Parallel processing incompatible with Streamlit Cloud
+            # Use only optimized sequential processing for all files
+            return self._procesar_lotes_secuencial(lotes, total_lotes)
                 
         except Exception as e:
             logger.error(f"❌ Error en procesamiento por lotes: {str(e)}")
@@ -713,96 +707,8 @@ class AnalizarExcelMaestroCasoUso:
         # Agregar resultados de todos los lotes
         return self._agregar_resultados_lotes(resultados_lotes, comentarios_analizados_total, len(lotes) * self.max_comments_per_batch)
     
-    def _procesar_lotes_paralelo(self, lotes: List[List[str]], total_lotes: int) -> AnalisisCompletoIA:
-        """
-        OPTIMIZATION: Parallel processing for large files (>2 batches)
-        Processes 2-3 batches concurrently for maximum throughput
-        """
-        logger.info(f"⚡ Using PARALLEL processing for {len(lotes)} lotes")
-        
-        max_workers = min(3, len(lotes))  # Max 3 concurrent batches
-        resultados_lotes = []
-        comentarios_analizados_total = []
-        
-        # Thread-safe progress tracking
-        progress_lock = threading.Lock()
-        completed_batches = 0
-        
-        def process_single_batch(batch_data):
-            """Process a single batch - thread-safe function"""
-            i, lote = batch_data
-            batch_number = i + 1
-            
-            logger.info(f"🔄 [Thread-{threading.current_thread().ident}] Procesando lote {batch_number}/{total_lotes}")
-            
-            # Progress notification (thread-safe)
-            with progress_lock:
-                self._notify_batch_start(batch_number, total_lotes, len(lote))
-            
-            try:
-                # Process batch with retry logic
-                resultado_lote = self._process_batch_with_intelligent_retry(batch_number, lote)
-                
-                # Thread-safe progress update
-                with progress_lock:
-                    nonlocal completed_batches
-                    completed_batches += 1
-                    
-                    if resultado_lote and resultado_lote.es_exitoso():
-                        self._notify_batch_success(batch_number, total_lotes, resultado_lote.confianza_general)
-                        logger.info(f"✅ [Thread] Lote {batch_number} exitoso: confianza={resultado_lote.confianza_general:.2f}")
-                        return ('success', batch_number, resultado_lote)
-                    else:
-                        self._notify_batch_failure(batch_number, total_lotes, "Validation failed")
-                        logger.error(f"❌ [Thread] Lote {batch_number} falló")
-                        return ('failure', batch_number, None)
-                        
-            except Exception as e:
-                with progress_lock:
-                    self._notify_batch_failure(batch_number, total_lotes, f"Exception: {str(e)}")
-                    logger.error(f"❌ [Thread] Lote {batch_number} excepción: {str(e)}")
-                    return ('error', batch_number, None)
-        
-        # Execute parallel processing
-        with ThreadPoolExecutor(max_workers=max_workers) as executor:
-            # Submit all batches for parallel processing
-            future_to_batch = {
-                executor.submit(process_single_batch, (i, lote)): i 
-                for i, lote in enumerate(lotes)
-            }
-            
-            logger.info(f"⚡ Submitted {len(future_to_batch)} lotes for parallel processing (max_workers={max_workers})")
-            
-            # Collect results as they complete
-            for future in as_completed(future_to_batch):
-                batch_index = future_to_batch[future]
-                try:
-                    status, batch_number, resultado_lote = future.result()
-                    
-                    if status == 'success' and resultado_lote:
-                        resultados_lotes.append(resultado_lote)
-                        comentarios_analizados_total.extend(resultado_lote.comentarios_analizados)
-                        
-                    logger.info(f"📊 Parallel: Lote {batch_number} completed with status: {status}")
-                    
-                except Exception as e:
-                    logger.error(f"❌ Parallel: Future failed for batch {batch_index + 1}: {str(e)}")
-        
-        # Memory cleanup after parallel processing
-        if PSUTIL_AVAILABLE:
-            try:
-                process = psutil.Process()
-                memory_mb = process.memory_info().rss / 1024 / 1024
-                logger.info(f"💾 Memoria después de procesamiento paralelo: {memory_mb:.1f}MB")
-            except:
-                pass
-        
-        # Force garbage collection after parallel processing
-        gc.collect()
-        
-        # Agregar resultados de todos los lotes
-        total_comments_processed = sum(len(resultado.comentarios_analizados) for resultado in resultados_lotes)
-        return self._agregar_resultados_lotes(resultados_lotes, comentarios_analizados_total, total_comments_processed)
+    # ROLLBACK: _procesar_lotes_paralelo removed - incompatible with Streamlit Cloud deployment
+    # ThreadPoolExecutor causes "missing ScriptRunContext" errors in Streamlit Cloud
     
     def _agregar_resultados_lotes(self, resultados_lotes: List[AnalisisCompletoIA], 
                                  comentarios_analizados_total: List[Dict], 
