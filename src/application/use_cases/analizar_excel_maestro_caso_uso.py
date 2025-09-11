@@ -164,10 +164,10 @@ class AnalizarExcelMaestroCasoUso:
                 return self._crear_resultado_error("No se encontraron comentarios válidos después del filtrado")
             
             # Validar límites de procesamiento 
-            if len(comentarios_validos) > 1200:
-                logger.warning(f"🚨 ARCHIVO MUY GRANDE: {len(comentarios_validos)} comentarios, limitando a 1200")
-                comentarios_validos = comentarios_validos[:1200]
-                comentarios_raw_data = comentarios_raw_data[:1200]
+            if len(comentarios_validos) > 2000:
+                logger.warning(f"🚨 ARCHIVO MUY GRANDE: {len(comentarios_validos)} comentarios, limitando a 2000")
+                comentarios_validos = comentarios_validos[:2000]
+                comentarios_raw_data = comentarios_raw_data[:2000]
             elif len(comentarios_validos) < 100:
                 logger.info(f"📊 Archivo pequeño: {len(comentarios_validos)} comentarios")
             

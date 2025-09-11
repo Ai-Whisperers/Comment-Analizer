@@ -47,7 +47,7 @@ def _load_config() -> Dict[str, Any]:
         'openai_modelo': get_value('OPENAI_MODEL', 'gpt-4o-mini'),
         'openai_max_tokens': int(get_value('OPENAI_MAX_TOKENS', '12000')),  # OPTIMIZED
         'openai_temperatura': float(get_value('OPENAI_TEMPERATURE', '0.0')),
-        'max_comments': int(get_value('MAX_COMMENTS_PER_BATCH', '60')),  # OPTIMIZED & UNIFIED
+        'max_comments': int(get_value('MAX_COMMENTS_PER_BATCH', '100')),  # UNIFIED: Match working pipeline
         'cache_ttl': int(get_value('CACHE_TTL_SECONDS', '3600')),
         'log_level': get_value('LOG_LEVEL', 'INFO')
     }

@@ -486,6 +486,57 @@ def _create_emotions_donut_chart(emociones_predominantes):
     return fig
 
 
+def _create_nps_gauge(nps_score):
+    """Create NPS gauge chart"""
+    # Ensure valid NPS score (-100 to 100)
+    nps = max(-100, min(100, nps_score if nps_score else 0))
+    
+    # NPS interpretation
+    if nps >= 50:
+        status = "Excelente"
+        color = "#10B981"  # Green
+    elif nps >= 0:
+        status = "Bueno"
+        color = "#F59E0B"  # Yellow
+    elif nps >= -50:
+        status = "Malo"
+        color = "#F97316"  # Orange
+    else:
+        status = "Crítico"
+        color = "#EF4444"  # Red
+    
+    fig = go.Figure(go.Indicator(
+        mode="gauge+number+delta",
+        value=nps,
+        title={'text': f"NPS Score ({status})"},
+        delta={'reference': 0},
+        gauge={
+            'axis': {'range': [-100, 100]},
+            'bar': {'color': color},
+            'steps': [
+                {'range': [-100, -50], 'color': "rgba(239, 68, 68, 0.2)"},   # Red zone (Critical)
+                {'range': [-50, 0], 'color': "rgba(249, 115, 22, 0.2)"},    # Orange zone (Bad)
+                {'range': [0, 50], 'color': "rgba(245, 158, 11, 0.2)"},     # Yellow zone (Good)
+                {'range': [50, 100], 'color': "rgba(16, 185, 129, 0.2)"}    # Green zone (Excellent)
+            ],
+            'threshold': {
+                'line': {'color': "white", 'width': 4},
+                'thickness': 0.75,
+                'value': nps
+            }
+        },
+        number={'suffix': ''}
+    ))
+    
+    fig.update_layout(
+        font=dict(color='white'),
+        paper_bgcolor='rgba(0,0,0,0)',
+        height=300
+    )
+    
+    return fig
+
+
 def _create_token_usage_gauge(tokens_utilizados, max_tokens=8000):
     """Create gauge chart for token usage"""
     # Validate input data
@@ -698,26 +749,70 @@ def _create_professional_excel(resultado):
         ws['A6'] = f"Total comentarios analizados: {analisis.total_comentarios}"
         ws['A7'] = f"Tendencia general: {analisis.tendencia_general}"
         ws['A8'] = f"Confianza del análisis: {analisis.confianza_general:.1f}%"
-        ws['A9'] = f"Modelo IA utilizado: {analisis.modelo_utilizado}"
-        ws['A10'] = f"Tiempo de procesamiento: {analisis.tiempo_analisis:.1f}s"
-        ws['A11'] = f"Tokens consumidos: {analisis.tokens_utilizados:,}"
+        nps_score = analisis.calcular_nps_estimado()
+        ws['A9'] = f"NPS Score estimado: {nps_score}"
+        ws['A10'] = f"Modelo IA utilizado: {analisis.modelo_utilizado}"
+        ws['A11'] = f"Tiempo de procesamiento: {analisis.tiempo_analisis:.1f}s"
+        ws['A12'] = f"Tokens consumidos: {analisis.tokens_utilizados:,}"
         
         # IA Narrative Summary
-        ws['A13'] = "ANÁLISIS NARRATIVO IA"
-        ws['A13'].font = section_font
-        ws.merge_cells('A14:E14')
-        ws['A14'] = analisis.resumen_ejecutivo
-        ws['A14'].alignment = Alignment(wrap_text=True)
+        ws['A14'] = "ANÁLISIS NARRATIVO IA"
+        ws['A14'].font = section_font
+        ws.merge_cells('A15:E15')
+        ws['A15'] = analisis.resumen_ejecutivo
+        ws['A15'].alignment = Alignment(wrap_text=True)
         
         # Sentiment distribution
-        ws['A16'] = "DISTRIBUCIÓN DE SENTIMIENTOS"
-        ws['A16'].font = section_font
-        row = 17
+        ws['A17'] = "DISTRIBUCIÓN DE SENTIMIENTOS"
+        ws['A17'].font = section_font
+        row = 18
         for sentimiento, cantidad in analisis.distribucion_sentimientos.items():
             ws[f'A{row}'] = sentimiento
             ws[f'B{row}'] = cantidad
             ws[f'C{row}'] = f"{(cantidad/analisis.total_comentarios)*100:.1f}%"
             row += 1
+        
+        # NPS Analysis Section
+        ws[f'A{row + 1}'] = "ANÁLISIS NPS DETALLADO"
+        ws[f'A{row + 1}'].font = section_font
+        row += 2
+        
+        # Calculate NPS breakdown
+        nps_score = analisis.calcular_nps_estimado()
+        total_comments = analisis.total_comentarios
+        positivos = analisis.distribucion_sentimientos.get('positivo', analisis.distribucion_sentimientos.get('pos', 0))
+        neutrales = analisis.distribucion_sentimientos.get('neutral', analisis.distribucion_sentimientos.get('neu', 0))
+        negativos = analisis.distribucion_sentimientos.get('negativo', analisis.distribucion_sentimientos.get('neg', 0))
+        
+        # NPS interpretation
+        if nps_score >= 50:
+            nps_categoria = "Excelente (Líderes del mercado)"
+        elif nps_score >= 0:
+            nps_categoria = "Bueno (Zona de mejora)"
+        elif nps_score >= -50:
+            nps_categoria = "Malo (Necesita atención urgente)"
+        else:
+            nps_categoria = "Crítico (Crisis de satisfacción)"
+        
+        ws[f'A{row}'] = "NPS Score"
+        ws[f'B{row}'] = nps_score
+        ws[f'C{row}'] = nps_categoria
+        row += 1
+        
+        ws[f'A{row}'] = "Promotores (Positivos)"
+        ws[f'B{row}'] = positivos
+        ws[f'C{row}'] = f"{(positivos/total_comments)*100:.1f}%" if total_comments > 0 else "0%"
+        row += 1
+        
+        ws[f'A{row}'] = "Pasivos (Neutrales)"
+        ws[f'B{row}'] = neutrales
+        ws[f'C{row}'] = f"{(neutrales/total_comments)*100:.1f}%" if total_comments > 0 else "0%"
+        row += 1
+        
+        ws[f'A{row}'] = "Detractores (Negativos)"
+        ws[f'B{row}'] = negativos
+        ws[f'C{row}'] = f"{(negativos/total_comments)*100:.1f}%" if total_comments > 0 else "0%"
+        row += 1
         
         # Top themes with relevance
         ws[f'A{row + 1}'] = "TEMAS MÁS RELEVANTES"
@@ -986,8 +1081,8 @@ if 'analysis_results' in st.session_state:
             
             st.markdown("---")  # Visual separator
             
-            # Key Metrics Row
-            col1, col2, col3, col4 = st.columns(4)
+            # Key Metrics Row  
+            col1, col2, col3, col4, col5 = st.columns(5)
             with col1:
                 st.metric("Total Comentarios", analisis.total_comentarios)
             with col2:
@@ -1001,6 +1096,11 @@ if 'analysis_results' in st.session_state:
                 # Handle multiple format possibilities: 'negativo', 'neg', 'NEGATIVO'  
                 negativos = sentiments.get('negativo', sentiments.get('neg', sentiments.get('NEGATIVO', 0)))
                 st.metric("Negativos", negativos)
+            with col5:
+                # Calculate and display NPS Score
+                nps_score = analisis.calcular_nps_estimado()
+                delta_color = "normal" if nps_score >= 0 else "inverse"
+                st.metric("NPS Score", nps_score, delta=f"{'+' if nps_score >= 0 else ''}{nps_score - 0}", delta_color=delta_color)
             
             # AI Metrics Summary Gauges
             ai_metrics_chart = _create_ai_metrics_summary(analisis)
@@ -1065,30 +1165,30 @@ if 'analysis_results' in st.session_state:
             col_chart1, col_chart2 = st.columns(2)
             
             with col_chart1:
+                # NPS Score Gauge (Main KPI)
+                nps_score = analisis.calcular_nps_estimado()
+                nps_chart = _create_nps_gauge(nps_score)
+                if nps_chart:
+                    st.plotly_chart(nps_chart, use_container_width=True)
+                
                 # Sentiment Distribution Chart
                 if analisis.distribucion_sentimientos:
                     sentiment_chart = _create_sentiment_distribution_chart(analisis.distribucion_sentimientos)
                     if sentiment_chart:
                         st.plotly_chart(sentiment_chart, use_container_width=True)
-                
+            
+            with col_chart2:
                 # Token Usage Gauge
                 if analisis.tokens_utilizados:
                     token_chart = _create_token_usage_gauge(analisis.tokens_utilizados)
                     if token_chart:
                         st.plotly_chart(token_chart, use_container_width=True)
-            
-            with col_chart2:
+                
                 # Themes Chart
                 if analisis.temas_mas_relevantes:
                     themes_chart = _create_themes_chart(analisis.temas_mas_relevantes)
                     if themes_chart:
                         st.plotly_chart(themes_chart, use_container_width=True)
-                
-                # Emotions Chart  
-                if analisis.emociones_predominantes:
-                    emotions_chart = _create_emotions_donut_chart(analisis.emociones_predominantes)
-                    if emotions_chart:
-                        st.plotly_chart(emotions_chart, use_container_width=True)
             
             # Additional Insights Charts
             col_insight1, col_insight2 = st.columns(2) 
