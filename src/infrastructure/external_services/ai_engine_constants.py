@@ -13,7 +13,7 @@ class AIEngineConstants:
     BASE_TOKENS_JSON_STRUCTURE = 1200      # Base tokens for JSON response structure
     TOKENS_PER_COMMENT = 80                # Estimated tokens per comment analysis
     TOKEN_BUFFER_PERCENTAGE = 1.10         # 10% buffer for variability
-    SAFETY_COMMENT_LIMIT = 40              # OPTIMIZED: Updated from 20 to match FASE 1 optimizations
+    SAFETY_COMMENT_LIMIT = 60              # OPTIMIZED: Increased from 40 to 60 for better file processing
     
     # Cache Management Constants  
     DEFAULT_CACHE_SIZE = 50                # Maximum cache entries
