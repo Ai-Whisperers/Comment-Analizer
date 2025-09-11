@@ -1,7 +1,8 @@
 """
 Análisis Optimizada - Streamlit Native Performance
-Main analysis workflow using optimized components with native caching
-Replaces monolithic 2_Subir.py with modular, high-performance design
+Experimental analysis workflow using optimized components with native caching
+Parallel implementation to test performance improvements vs 2_Subir.py
+Note: Some dependencies in lib/ and components/ may need verification
 """
 
 import streamlit as st
