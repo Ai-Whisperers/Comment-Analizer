@@ -15,13 +15,14 @@ def ensure_session_initialized(required_keys: Optional[List[str]] = None) -> boo
     
     Args:
         required_keys: Lista opcional de claves requeridas. 
-                      Por defecto usa las claves críticas del sistema
+                      Por defecto usa las claves críticas del nuevo sistema
     
     Returns:
         bool: True si está inicializado, False si no
     """
     if required_keys is None:
-        required_keys = ['caso_uso_maestro', 'contenedor']
+        # Nueva arquitectura: solo requiere contenedor, caso_uso_maestro se crea dinámicamente
+        required_keys = ['contenedor']
     
     missing_keys = []
     for key in required_keys:
@@ -30,12 +31,23 @@ def ensure_session_initialized(required_keys: Optional[List[str]] = None) -> boo
             logger.error(f"Session state missing required key: {key}")
     
     if missing_keys:
-        st.error(f"⚠️ Sistema no inicializado correctamente")
+        st.error(f"⚠️ Nueva arquitectura no inicializada")
         st.error(f"Componentes faltantes: {', '.join(missing_keys)}")
-        st.info("🔄 Por favor, recarga la aplicación desde la página principal")
+        st.info("🔄 Recarga la aplicación desde la página principal")
+        
+        # Mostrar información de debug si es necesario
+        if st.checkbox("Mostrar información de debug"):
+            st.json({
+                'available_keys': list(st.session_state.keys()),
+                'missing_keys': missing_keys,
+                'required_keys': required_keys
+            })
         
         # Mostrar botón de recarga
-        if st.button("Recargar aplicación", type="primary"):
+        if st.button("🔄 Recargar aplicación", type="primary"):
+            # Clear session state to force re-initialization
+            for key in list(st.session_state.keys()):
+                del st.session_state[key]
             st.rerun()
         
         st.stop()
@@ -100,24 +112,34 @@ def clear_analysis_results():
 
 def is_ia_system_ready() -> bool:
     """
-    Verifica si el sistema IA está listo para usar
+    Verifica si el sistema IA está listo para usar (Nueva Arquitectura)
     
     Returns:
         bool: True si el sistema IA está listo
     """
     try:
-        caso_uso = get_caso_uso_maestro(validate=False)
-        
-        if caso_uso is None:
-            logger.warning("IA system not ready: caso_uso_maestro is None")
+        # Check if contenedor is available
+        if 'contenedor' not in st.session_state or st.session_state.contenedor is None:
+            logger.warning("IA system not ready: contenedor not available")
             return False
         
-        # Verificar si el caso de uso tiene los métodos necesarios
-        if not hasattr(caso_uso, 'ejecutar'):
-            logger.error("IA system not ready: caso_uso_maestro lacks 'ejecutar' method")
+        # Try to get caso_uso_maestro dynamically
+        try:
+            caso_uso = st.session_state.contenedor.obtener_caso_uso_maestro()
+            if caso_uso is None:
+                logger.warning("IA system not ready: caso_uso_maestro is None")
+                return False
+                
+            # Verificar si el caso de uso tiene los métodos necesarios
+            if not hasattr(caso_uso, 'ejecutar'):
+                logger.error("IA system not ready: caso_uso_maestro lacks 'ejecutar' method")
+                return False
+                
+            return True
+            
+        except Exception as e:
+            logger.warning(f"IA system not ready: error getting caso_uso_maestro: {str(e)}")
             return False
-        
-        return True
         
     except Exception as e:
         logger.error(f"Error checking IA system readiness: {str(e)}")

@@ -74,8 +74,8 @@ class AIConfiguration:
         if not (0.0 <= self.min_confidence_threshold <= 1.0):
             raise ValueError("Confidence threshold must be between 0.0 and 1.0")
         
-        if self.max_comments_per_batch > 50:
-            raise ValueError("Max comments per batch cannot exceed 50 (safety limit)")
+        if self.max_comments_per_batch > 120:  # Use configurable absolute limit
+            raise ValueError("Max comments per batch cannot exceed 120 (configurable safety limit)")
         
         if self.max_comments_per_batch < 1:
             raise ValueError("Max comments per batch must be at least 1")

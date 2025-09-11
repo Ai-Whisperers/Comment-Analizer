@@ -155,23 +155,14 @@ def _run_analysis(uploaded_file, analysis_type):
     st.session_state.ai_analysis_in_progress = True
         
     try:
-        # Import session validator for robust checking
-        from src.presentation.streamlit.session_validator import is_ia_system_ready
+        # Use session validator for architecture validation
+        from src.presentation.streamlit.session_validator import ensure_session_initialized
         
-        # Pure IA analysis - validate system is ready
-        if not is_ia_system_ready():
-            st.error("Sistema IA no está disponible. Verifica configuración de OpenAI API key.")
-            return
+        # Ensure core session components are available
+        if not ensure_session_initialized(['contenedor']):
+            return  # ensure_session_initialized handles error display
         
-        # Get caso uso maestro with progress callback
-        # Verificar disponibilidad del contenedor de dependencias
-        if not ('contenedor' in st.session_state and st.session_state.contenedor):
-            st.error("❌ Contenedor de dependencias no está disponible")
-            st.info("💡 La aplicación no se inicializó correctamente")
-            st.info("🔄 Recargar la página o verificar configuración")
-            return
-        
-        # Obtener caso de uso maestro WITH progress callback
+        # Get caso uso maestro WITH progress callback for this analysis
         try:
             caso_uso_maestro = st.session_state.contenedor.obtener_caso_uso_maestro(progress_callback)
         except Exception as e:

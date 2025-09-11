@@ -31,15 +31,37 @@ except ImportError:
     # Minimal fallback only
     st.markdown('<style>.stButton > button { border-radius: 8px; }</style>', unsafe_allow_html=True)
 
-# Initialize Clean Architecture App (simplified)
-if 'app' not in st.session_state:
+# Initialize New Architecture (Direct DI Container - no aplicacion_principal.py)
+if 'contenedor' not in st.session_state:
     try:
-        from src.aplicacion_principal import crear_aplicacion
-        st.session_state.app = crear_aplicacion(config)
-        st.session_state.contenedor = st.session_state.app.contenedor
-        logger.info("✅ Aplicación inicializada")
+        from src.infrastructure.dependency_injection.contenedor_dependencias import ContenedorDependencias
+        from src.infrastructure.config.ai_configuration_manager import AIConfiguration
+        
+        # Create AI configuration
+        ai_config = AIConfiguration(
+            api_key=config.get('openai_api_key', ''),
+            model=config.get('openai_modelo', 'gpt-4o-mini'),
+            max_tokens=config.get('openai_max_tokens', 12000),
+            temperature=config.get('openai_temperatura', 0.0),
+            max_comments_per_batch=config.get('max_comments', 100)
+        )
+        
+        # Initialize dependency container directly with new architecture
+        st.session_state.contenedor = ContenedorDependencias(config, ai_config)
+        
+        # Initialize caso_uso_maestro for session validation (without progress callback)
+        try:
+            st.session_state.caso_uso_maestro = st.session_state.contenedor.obtener_caso_uso_maestro()
+            maestro_status = 'Disponible' if st.session_state.caso_uso_maestro else 'No disponible (modo degradado)'
+        except Exception as e:
+            st.session_state.caso_uso_maestro = None
+            maestro_status = f'Error: {str(e)}'
+            
+        logger.info("✅ Nueva arquitectura inicializada directamente")
+        logger.info(f"✅ Caso de uso maestro: {maestro_status}")
+        logger.info(f"📊 Configuración cargada: {len(config)} variables")
     except Exception as e:
-        st.error(f"❌ Error inicializando aplicación: {str(e)}")
+        st.error(f"❌ Error inicializando nueva arquitectura: {str(e)}")
         st.stop()
 
 # Simple page configuration
@@ -69,11 +91,16 @@ with col1:
 
 with col2:
     if st.button("Limpiar Cache", help="Limpiar cache y memoria"):
-        # Simple cleanup
+        # Clean up all except core architecture components
         for key in list(st.session_state.keys()):
-            if key not in ['app', 'contenedor']:
+            if key not in ['contenedor', 'caso_uso_maestro']:
                 del st.session_state[key]
-        st.success("✅ Cache limpiado")
+        
+        # Clean internal caches in dependency container
+        if 'contenedor' in st.session_state:
+            st.session_state.contenedor.cleanup_singletons()
+            
+        st.success("✅ Cache limpiado - Arquitectura mantenida")
         st.rerun()
 
 # Instructions
