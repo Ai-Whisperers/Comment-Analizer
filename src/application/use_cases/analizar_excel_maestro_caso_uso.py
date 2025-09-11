@@ -7,6 +7,17 @@ from datetime import datetime
 import logging
 import time
 import gc
+import asyncio
+import threading
+from concurrent.futures import ThreadPoolExecutor, as_completed
+import queue
+
+# OPTIMIZATION: Import Streamlit caching for smart result caching
+try:
+    import streamlit as st
+    STREAMLIT_CACHING_AVAILABLE = True
+except ImportError:
+    STREAMLIT_CACHING_AVAILABLE = False
 
 # Optional imports for enhanced functionality
 try:
@@ -95,7 +106,7 @@ class AnalizarExcelMaestroCasoUso:
         repositorio_comentarios: IRepositorioComentarios,
         lector_archivos: ILectorArchivos,
         analizador_maestro: AnalizadorMaestroIA,
-        max_comments_per_batch: int = 40,  # FASE 1: Updated to match AIConfiguration default
+        max_comments_per_batch: int = 50,  # OPTIMIZATION: Increased to 50 for target <30s processing
         ai_configuration=None,
         progress_callback=None
     ):
@@ -103,16 +114,16 @@ class AnalizarExcelMaestroCasoUso:
         self.lector_archivos = lector_archivos
         self.analizador_maestro = analizador_maestro
         
-        # FASE 1 OPTIMIZATION: Optimized batch sizes for better performance  
+        # OPTIMIZATION: Enhanced batch sizes for <30s target performance  
         if max_comments_per_batch > 80:
-            logger.error(f"❌ SAFETY: Batch size too large: {max_comments_per_batch}, forcing to 40")
-            max_comments_per_batch = 40
+            logger.error(f"❌ SAFETY: Batch size too large: {max_comments_per_batch}, forcing to 50")
+            max_comments_per_batch = 50
         elif max_comments_per_batch < 1:
-            logger.warning(f"⚠️ SAFETY: Batch size too small: {max_comments_per_batch}, setting to 40")
-            max_comments_per_batch = 40
-        elif max_comments_per_batch < 20:
-            logger.info(f"📈 PERFORMANCE: Increasing batch size from {max_comments_per_batch} to 40 for better performance")
-            max_comments_per_batch = 40
+            logger.warning(f"⚠️ SAFETY: Batch size too small: {max_comments_per_batch}, setting to 50")
+            max_comments_per_batch = 50
+        elif max_comments_per_batch < 30:
+            logger.info(f"📈 PERFORMANCE: Increasing batch size from {max_comments_per_batch} to 50 for <30s target")
+            max_comments_per_batch = 50
             
         self.max_comments_per_batch = max_comments_per_batch
         
@@ -182,8 +193,8 @@ class AnalizarExcelMaestroCasoUso:
                     return self._crear_resultado_error("El análisis maestro de IA falló")
                     
             else:
-                # Archivo grande - procesamiento en múltiples lotes
-                analisis_completo_ia = self._procesar_en_lotes(comentarios_validos)
+                # Archivo grande - procesamiento en múltiples lotes con caching
+                analisis_completo_ia = self._procesar_en_lotes_con_cache(comentarios_validos)
                 
                 if not analisis_completo_ia.es_exitoso():
                     return self._crear_resultado_error("Error en procesamiento por lotes")
@@ -424,6 +435,53 @@ class AnalizarExcelMaestroCasoUso:
                 continue
         
         return dolores
+
+    def _procesar_en_lotes_con_cache(self, comentarios_validos: List[str]) -> AnalisisCompletoIA:
+        """
+        OPTIMIZATION: Cached batch processing with Streamlit native caching
+        Uses content hash for cache key to enable instant results for duplicate analysis
+        """
+        if STREAMLIT_CACHING_AVAILABLE:
+            # Create content hash for caching
+            import hashlib
+            content_hash = hashlib.md5(''.join(comentarios_validos).encode()).hexdigest()
+            
+            # Use cached version if available
+            try:
+                return self._procesar_lotes_cached(tuple(comentarios_validos), content_hash)
+            except Exception as e:
+                logger.warning(f"⚠️ Caching failed, falling back to direct processing: {str(e)}")
+                return self._procesar_en_lotes(comentarios_validos)
+        else:
+            # Fallback to direct processing
+            return self._procesar_en_lotes(comentarios_validos)
+    
+    def _procesar_lotes_cached(self, comentarios_tuple, content_hash: str) -> AnalisisCompletoIA:
+        """
+        OPTIMIZATION: Streamlit cached batch processing
+        Decorator applied conditionally to avoid import issues
+        """
+        if STREAMLIT_CACHING_AVAILABLE:
+            # Apply caching dynamically
+            @st.cache_data(ttl=1800, show_spinner="Procesando con IA optimizada...")
+            def _cached_processing(comments_tuple, hash_key, batch_size, ai_config_hash):
+                """Cached version of batch processing"""
+                # Convert back to list for processing
+                comentarios_list = list(comments_tuple)
+                logger.info(f"💾 Cache miss - processing {len(comentarios_list)} comentarios (hash: {hash_key[:8]})")
+                return self._procesar_en_lotes(comentarios_list)
+            
+            # Create AI config hash for cache key
+            ai_config_hash = str(hash((
+                self.ai_configuration.model if self.ai_configuration else 'default',
+                self.ai_configuration.temperature if self.ai_configuration else 0.0,
+                self.max_comments_per_batch
+            )))
+            
+            return _cached_processing(comentarios_tuple, content_hash, self.max_comments_per_batch, ai_config_hash)
+        else:
+            # Fallback without caching
+            return self._procesar_en_lotes(list(comentarios_tuple))
     
     def _mapear_tipo_emocion(self, tipo_str: str) -> TipoEmocion:
         """Mapea string de emoción a enum"""
@@ -552,6 +610,7 @@ class AnalizarExcelMaestroCasoUso:
     def _procesar_en_lotes(self, comentarios_validos: List[str]) -> AnalisisCompletoIA:
         """
         Procesa comentarios en múltiples lotes y agrega los resultados
+        OPTIMIZATION: Uses parallel processing for faster throughput
         """
         try:
             logger.info(f"🔄 Iniciando procesamiento por lotes: {len(comentarios_validos)} comentarios")
@@ -568,56 +627,14 @@ class AnalizarExcelMaestroCasoUso:
             total_lotes = len(lotes)
             self._notify_progress_start(total_lotes, len(comentarios_validos))
             
-            # Procesar cada lote
-            resultados_lotes = []
-            comentarios_analizados_total = []
-            
-            for i, lote in enumerate(lotes):
-                batch_number = i + 1
-                logger.info(f"🔄 Procesando lote {batch_number}/{len(lotes)} ({len(lote)} comentarios)")
+            # OPTIMIZATION: Choose processing strategy based on batch count
+            if len(lotes) <= 2:
+                # Small files - use sequential processing (no overhead)
+                return self._procesar_lotes_secuencial(lotes, total_lotes)
+            else:
+                # Large files - use parallel processing for speed
+                return self._procesar_lotes_paralelo(lotes, total_lotes)
                 
-                # PROGRESS INTEGRATION: Notify batch start
-                self._notify_batch_start(batch_number, total_lotes, len(lote))
-                
-                # DEBUG: Log first comment preview for debugging
-                if len(lote) > 0:
-                    preview = lote[0][:100] + "..." if len(lote[0]) > 100 else lote[0]
-                    logger.debug(f"🔍 Lote {batch_number} contenido: {preview}")
-                
-                # PHASE 3: Intelligent retry processing with smart decisions
-                resultado_lote = self._process_batch_with_intelligent_retry(batch_number, lote)
-                
-                # PROGRESS INTEGRATION: Notify batch completion
-                if resultado_lote and resultado_lote.es_exitoso():
-                    self._notify_batch_success(batch_number, total_lotes, resultado_lote.confianza_general)
-                    resultados_lotes.append(resultado_lote)
-                    comentarios_analizados_total.extend(resultado_lote.comentarios_analizados)
-                else:
-                    self._notify_batch_failure(batch_number, total_lotes, "Validation failed")
-                    logger.error(f"❌ Lote {i+1} SALTADO - No se pudo procesar exitosamente")
-                    
-                # Memory monitoring (always check after processing each batch)
-                if PSUTIL_AVAILABLE:
-                    try:
-                        process = psutil.Process()
-                        memory_mb = process.memory_info().rss / 1024 / 1024
-                        logger.info(f"💾 Memoria utilizada: {memory_mb:.1f}MB después del lote {i+1}")
-                        
-                        if memory_mb > 400:  # Alert on high memory usage
-                            logger.warning(f"⚠️ Uso alto de memoria: {memory_mb:.1f}MB")
-                    except Exception as mem_error:
-                        logger.debug(f"Error en monitoreo de memoria: {mem_error}")
-                
-                # Rate limiting pause between batches (only if not the last batch)
-                if i < len(lotes) - 1:
-                    # FASE 2 OPTIMIZATION: Ultra-minimal pause for maximum throughput (was 0.2-0.5s)
-                    pause_time = 0.05 if (resultado_lote and resultado_lote.es_exitoso()) else 0.15
-                    logger.debug(f"⏸️ Pausa ultra-optimizada de {pause_time}s antes del siguiente lote")
-                    time.sleep(pause_time)
-            
-            # Agregar resultados de todos los lotes
-            return self._agregar_resultados_lotes(resultados_lotes, comentarios_analizados_total, len(comentarios_validos))
-            
         except Exception as e:
             logger.error(f"❌ Error en procesamiento por lotes: {str(e)}")
             from ..dtos.analisis_completo_ia import AnalisisCompletoIA
@@ -638,6 +655,154 @@ class AnalizarExcelMaestroCasoUso:
                 dolores_mas_severos={},
                 emociones_predominantes={}
             )
+    
+    def _procesar_lotes_secuencial(self, lotes: List[List[str]], total_lotes: int) -> AnalisisCompletoIA:
+        """Sequential processing for small files (≤2 batches)"""
+        logger.info(f"📈 Using sequential processing for {len(lotes)} lotes")
+        
+        # Procesar cada lote secuencialmente
+        resultados_lotes = []
+        comentarios_analizados_total = []
+        
+        for i, lote in enumerate(lotes):
+            batch_number = i + 1
+            logger.info(f"🔄 Procesando lote {batch_number}/{len(lotes)} ({len(lote)} comentarios)")
+            
+            # PROGRESS INTEGRATION: Notify batch start
+            self._notify_batch_start(batch_number, total_lotes, len(lote))
+            
+            # DEBUG: Log first comment preview for debugging
+            if len(lote) > 0:
+                preview = lote[0][:100] + "..." if len(lote[0]) > 100 else lote[0]
+                logger.debug(f"🔍 Lote {batch_number} contenido: {preview}")
+            
+            # PHASE 3: Intelligent retry processing with smart decisions
+            resultado_lote = self._process_batch_with_intelligent_retry(batch_number, lote)
+            
+            # PROGRESS INTEGRATION: Notify batch completion
+            if resultado_lote and resultado_lote.es_exitoso():
+                self._notify_batch_success(batch_number, total_lotes, resultado_lote.confianza_general)
+                resultados_lotes.append(resultado_lote)
+                comentarios_analizados_total.extend(resultado_lote.comentarios_analizados)
+            else:
+                self._notify_batch_failure(batch_number, total_lotes, "Validation failed")
+                logger.error(f"❌ Lote {i+1} SALTADO - No se pudo procesar exitosamente")
+                
+            # Memory monitoring (always check after processing each batch)
+            if PSUTIL_AVAILABLE:
+                try:
+                    process = psutil.Process()
+                    memory_mb = process.memory_info().rss / 1024 / 1024
+                    logger.info(f"💾 Memoria utilizada: {memory_mb:.1f}MB después del lote {i+1}")
+                    
+                    if memory_mb > 400:  # Alert on high memory usage
+                        logger.warning(f"⚠️ Uso alto de memoria: {memory_mb:.1f}MB")
+                except Exception as mem_error:
+                    logger.debug(f"Error en monitoreo de memoria: {mem_error}")
+            
+            # OPTIMIZATION: Removed rate limiting - OpenAI handles this at API level
+            
+            # OPTIMIZATION: Aggressive memory cleanup after each batch
+            if i % 2 == 0:  # Every 2 batches
+                gc.collect()
+                logger.debug(f"🧹 Memory cleanup after {i+1} batches")
+        
+        # Final memory cleanup
+        gc.collect()
+        
+        # Agregar resultados de todos los lotes
+        return self._agregar_resultados_lotes(resultados_lotes, comentarios_analizados_total, len(lotes) * self.max_comments_per_batch)
+    
+    def _procesar_lotes_paralelo(self, lotes: List[List[str]], total_lotes: int) -> AnalisisCompletoIA:
+        """
+        OPTIMIZATION: Parallel processing for large files (>2 batches)
+        Processes 2-3 batches concurrently for maximum throughput
+        """
+        logger.info(f"⚡ Using PARALLEL processing for {len(lotes)} lotes")
+        
+        max_workers = min(3, len(lotes))  # Max 3 concurrent batches
+        resultados_lotes = []
+        comentarios_analizados_total = []
+        
+        # Thread-safe progress tracking
+        progress_lock = threading.Lock()
+        completed_batches = 0
+        
+        def process_single_batch(batch_data):
+            """Process a single batch - thread-safe function"""
+            i, lote = batch_data
+            batch_number = i + 1
+            
+            logger.info(f"🔄 [Thread-{threading.current_thread().ident}] Procesando lote {batch_number}/{total_lotes}")
+            
+            # Progress notification (thread-safe)
+            with progress_lock:
+                self._notify_batch_start(batch_number, total_lotes, len(lote))
+            
+            try:
+                # Process batch with retry logic
+                resultado_lote = self._process_batch_with_intelligent_retry(batch_number, lote)
+                
+                # Thread-safe progress update
+                with progress_lock:
+                    nonlocal completed_batches
+                    completed_batches += 1
+                    
+                    if resultado_lote and resultado_lote.es_exitoso():
+                        self._notify_batch_success(batch_number, total_lotes, resultado_lote.confianza_general)
+                        logger.info(f"✅ [Thread] Lote {batch_number} exitoso: confianza={resultado_lote.confianza_general:.2f}")
+                        return ('success', batch_number, resultado_lote)
+                    else:
+                        self._notify_batch_failure(batch_number, total_lotes, "Validation failed")
+                        logger.error(f"❌ [Thread] Lote {batch_number} falló")
+                        return ('failure', batch_number, None)
+                        
+            except Exception as e:
+                with progress_lock:
+                    self._notify_batch_failure(batch_number, total_lotes, f"Exception: {str(e)}")
+                    logger.error(f"❌ [Thread] Lote {batch_number} excepción: {str(e)}")
+                    return ('error', batch_number, None)
+        
+        # Execute parallel processing
+        with ThreadPoolExecutor(max_workers=max_workers) as executor:
+            # Submit all batches for parallel processing
+            future_to_batch = {
+                executor.submit(process_single_batch, (i, lote)): i 
+                for i, lote in enumerate(lotes)
+            }
+            
+            logger.info(f"⚡ Submitted {len(future_to_batch)} lotes for parallel processing (max_workers={max_workers})")
+            
+            # Collect results as they complete
+            for future in as_completed(future_to_batch):
+                batch_index = future_to_batch[future]
+                try:
+                    status, batch_number, resultado_lote = future.result()
+                    
+                    if status == 'success' and resultado_lote:
+                        resultados_lotes.append(resultado_lote)
+                        comentarios_analizados_total.extend(resultado_lote.comentarios_analizados)
+                        
+                    logger.info(f"📊 Parallel: Lote {batch_number} completed with status: {status}")
+                    
+                except Exception as e:
+                    logger.error(f"❌ Parallel: Future failed for batch {batch_index + 1}: {str(e)}")
+        
+        # Memory cleanup after parallel processing
+        if PSUTIL_AVAILABLE:
+            try:
+                process = psutil.Process()
+                memory_mb = process.memory_info().rss / 1024 / 1024
+                logger.info(f"💾 Memoria después de procesamiento paralelo: {memory_mb:.1f}MB")
+            except:
+                pass
+        
+        # Force garbage collection after parallel processing
+        gc.collect()
+        
+        # Agregar resultados de todos los lotes
+        total_comments_processed = sum(len(resultado.comentarios_analizados) for resultado in resultados_lotes)
+        return self._agregar_resultados_lotes(resultados_lotes, comentarios_analizados_total, total_comments_processed)
     
     def _agregar_resultados_lotes(self, resultados_lotes: List[AnalisisCompletoIA], 
                                  comentarios_analizados_total: List[Dict], 

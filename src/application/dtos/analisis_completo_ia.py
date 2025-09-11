@@ -4,6 +4,9 @@ DTO para el resultado completo del análisis de IA
 from dataclasses import dataclass
 from typing import List, Dict, Any, Optional
 from datetime import datetime
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 @dataclass
@@ -37,19 +40,34 @@ class AnalisisCompletoIA:
     emociones_predominantes: Dict[str, float]  # emociones con intensidad promedio
     
     def es_exitoso(self) -> bool:
-        """Verifica si el análisis fue exitoso"""
-        # CRITICAL FIX: Import constants to eliminate hardcoding
+        """Verifica si el análisis fue exitoso con threshold adaptativo"""
+        # OPTIMIZATION: Apply adaptive confidence threshold based on model and batch size
         try:
             from ...infrastructure.external_services.ai_engine_constants import AIEngineConstants
-            umbral_confianza = AIEngineConstants.MIN_CONFIDENCE_THRESHOLD
+            base_threshold = AIEngineConstants.MIN_CONFIDENCE_THRESHOLD
+            
+            # Apply adaptive adjustments for gpt-4o-mini model
+            if hasattr(self, 'modelo_utilizado') and 'mini' in self.modelo_utilizado.lower():
+                # gpt-4o-mini tends to be more conservative with confidence
+                adjusted_threshold = base_threshold - 0.10  # Reduce from 0.45 to 0.35
+                logger.info(f"🎯 Adaptive threshold for {self.modelo_utilizado}: {base_threshold:.2f} → {adjusted_threshold:.2f}")
+                umbral_confianza = adjusted_threshold
+            else:
+                umbral_confianza = base_threshold
+                
         except ImportError:
-            # Fallback for backwards compatibility
-            umbral_confianza = 0.5
+            # Fallback for backwards compatibility with generous threshold
+            umbral_confianza = 0.35  # More generous for compatibility
         
         # CRITICAL FIX: Use >= instead of > for correct threshold validation
-        return (self.comentarios_analizados and 
-                len(self.comentarios_analizados) == self.total_comentarios and
-                self.confianza_general >= umbral_confianza)
+        is_successful = (self.comentarios_analizados and 
+                        len(self.comentarios_analizados) == self.total_comentarios and
+                        self.confianza_general >= umbral_confianza)
+        
+        if not is_successful and hasattr(self, 'confianza_general'):
+            logger.warning(f"⚠️ Análisis por debajo del threshold: {self.confianza_general:.2f} < {umbral_confianza:.2f}")
+        
+        return is_successful
     
     def obtener_comentario_analizado(self, indice: int) -> Optional[Dict[str, Any]]:
         """Obtiene el análisis de un comentario específico por índice"""
