@@ -791,7 +791,7 @@ def _create_professional_excel(resultado):
         # Style headers
         header_row = row
         for col in ['A', 'B', 'C', 'D', 'E']:
-            ws[f'{col}{header_row}'].font = openpyxl.styles.Font(bold=True)
+            ws[f'{col}{header_row}'].font = Font(bold=True)
         
         row += 1
         
@@ -846,7 +846,7 @@ def _create_professional_excel(resultado):
             # Add summary statistics
             row += 1
             ws[f'A{row}'] = "ESTADÍSTICAS DE EMOCIONES"
-            ws[f'A{row}'].font = openpyxl.styles.Font(bold=True)
+            ws[f'A{row}'].font = Font(bold=True)
             row += 1
             
             # Calculate emotion type distributions
@@ -1199,13 +1199,22 @@ if 'analysis_results' in st.session_state:
         
         # Export IA results
         st.markdown("#### Exportar Análisis IA")
-        if st.button("Generar Excel Profesional IA", type="secondary"):
-            excel_data = _create_professional_excel(results)
+        try:
+            # Generate Excel directly for download button
+            with st.spinner("Preparando Excel profesional..."):
+                excel_data = _create_professional_excel(results)
+            
+            # Direct download button - no extra step needed
             st.download_button(
-                "Descargar Excel", 
+                "📊 Descargar Excel Profesional", 
                 excel_data,
                 f"analisis_ia_{datetime.now().strftime('%Y%m%d_%H%M%S')}.xlsx",
-                "application/vnd.ms-excel"
+                "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                type="primary"
             )
+            st.success("✅ Excel listo para descarga con análisis completo de IA")
+        except Exception as e:
+            st.error(f"❌ Error generando Excel: {str(e)}")
+            logger.error(f"Error en generación de Excel: {str(e)}")
     else:
         st.error(f"Error en análisis IA: {results.mensaje if hasattr(results, 'mensaje') else 'Error desconocido'}")
