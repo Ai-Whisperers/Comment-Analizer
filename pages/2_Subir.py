@@ -74,23 +74,58 @@ def live_batch_progress():
             progress_pct = progress_data.get('progress_percentage', 0.0)
             confidence = progress_data.get('confidence', 0.0)
             
-            # Progress bar with dynamic text
+            # Enhanced progress bar with time estimation
             status_icon = "✅" if action == 'batch_success' else "🔄"
             status_text = "Completado" if action == 'batch_success' else "Procesando"
-            st.progress(progress_pct / 100, text=f"{status_icon} {status_text}: Lote {current_batch}/{total_batches}")
             
-            # Real-time metrics
+            # Calculate ETA based on average 75 seconds per batch (from logs)
+            remaining_batches = total_batches - current_batch
+            estimated_minutes = remaining_batches * 1.3  # 1.3 min per batch average
+            
+            if action == 'batch_success' and current_batch == total_batches:
+                st.progress(1.0, text="🎉 ¡Análisis COMPLETADO! Preparando resultados...")
+                st.balloons()
+            else:
+                eta_text = f" - ETA: {estimated_minutes:.1f}min" if estimated_minutes > 0 else ""
+                st.progress(progress_pct / 100, text=f"{status_icon} {status_text}: Lote {current_batch}/{total_batches}{eta_text}")
+            
+            # Enhanced real-time metrics with motivational messages
             col1, col2, col3 = st.columns(3)
             with col1:
                 st.metric("📈 Progreso", f"{progress_pct:.1f}%")
+                if progress_pct < 25:
+                    st.caption("🚀 ¡Empezando fuerte!")
+                elif progress_pct < 50:
+                    st.caption("💪 ¡Vamos por buen camino!")
+                elif progress_pct < 75:
+                    st.caption("🔥 ¡Más de la mitad!")
+                else:
+                    st.caption("🎯 ¡Casi terminamos!")
+                    
             with col2:
                 if confidence > 0:
-                    st.metric("🎯 Confianza", f"{confidence:.2f}")
+                    st.metric("🎯 Confianza", f"{confidence:.1%}")
+                    if confidence > 0.8:
+                        st.caption("🌟 ¡Excelente calidad!")
+                    elif confidence > 0.6:
+                        st.caption("👍 Buena calidad")
+                    else:
+                        st.caption("⚡ Procesando...")
                 else:
                     st.metric("🎯 Confianza", "---")
+                    st.caption("⏳ Calculando...")
+                    
             with col3:
-                processing_mode = "AsyncIO" if total_batches > 2 else "Secuencial"
-                st.metric("⚡ Modo", processing_mode)
+                if estimated_minutes > 0:
+                    if estimated_minutes < 1:
+                        st.metric("⏱️ ETA", "<1 min")
+                        st.caption("🎉 ¡Ya casi!")
+                    else:
+                        st.metric("⏱️ ETA", f"{estimated_minutes:.1f} min")
+                        st.caption("☕ Tiempo para café")
+                else:
+                    st.metric("⏱️ ETA", "Finalizando")
+                    st.caption("🎊 ¡Listo!")
                 
         elif action == 'batch_failure':
             current_batch = progress_data.get('current_batch', 0)
@@ -225,7 +260,8 @@ MAX_COMMENTS_PER_BATCH={config.get('max_comments', 100)}
         comando = ComandoAnalisisExcelMaestro(
             archivo_cargado=uploaded_file,
             nombre_archivo=uploaded_file.name,
-            limpiar_repositorio=True
+            limpiar_repositorio=True,
+            progress_callback=progress_callback  # Pass the progress callback!
         )
         
         # Initialize progress display for real-time updates

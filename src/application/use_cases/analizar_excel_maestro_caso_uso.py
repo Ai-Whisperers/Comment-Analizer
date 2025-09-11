@@ -1,7 +1,7 @@
 """
 Caso de uso simplificado para análisis maestro con IA
 """
-from typing import List, Dict, Any
+from typing import List, Dict, Any, Optional
 from dataclasses import dataclass
 from datetime import datetime
 import logging
@@ -48,6 +48,7 @@ class ComandoAnalisisExcelMaestro:
     archivo_cargado: Any
     nombre_archivo: str
     limpiar_repositorio: bool = True
+    progress_callback: Optional[Any] = None  # Add progress callback support
 
 
 @dataclass
@@ -146,6 +147,11 @@ class AnalizarExcelMaestroCasoUso:
         """
         inicio_tiempo = datetime.now()
         logger.info(f"🚀 Iniciando análisis maestro de archivo: {comando.nombre_archivo}")
+        
+        # Use progress callback from command if provided
+        if comando.progress_callback:
+            self.progress_callback = comando.progress_callback
+            logger.info("📊 Progress callback enabled from command")
         
         try:
             # 1. Limpiar repositorio si se requiere
