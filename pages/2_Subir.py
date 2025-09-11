@@ -12,87 +12,27 @@ import plotly.express as px
 import plotly.graph_objects as go
 from plotly.subplots import make_subplots
 
-# POLISH-002 FIX: Import constants for consistent configuration
-try:
-    from src.infrastructure.external_services.ai_engine_constants import AIEngineConstants
-    CONSTANTS_AVAILABLE = True
-except ImportError:
-    CONSTANTS_AVAILABLE = False
-
 # Add src to path
 current_dir = Path(__file__).parent.parent
 if str(current_dir) not in sys.path:
     sys.path.insert(0, str(current_dir))
 
-# Import Clean Architecture components + CSS utilities
+# Import Clean Architecture components (simplified)
 try:
     from src.shared.exceptions.archivo_exception import ArchivoException
     from src.shared.exceptions.ia_exception import IAException
     
-    # HIGH-003 FIX: Centralized CSS loading strategy (no more import redundancy)
+    # Load CSS (single simple approach)
     try:
-        # Primary: Enhanced CSS loader with all features
-        from src.presentation.streamlit.enhanced_css_loader import (
-            ensure_css_loaded, inject_page_css
-        )
-        
-        # Try to import utility functions from basic loader
-        try:
-            from src.presentation.streamlit.css_loader import glass_card, metric_card
-            CSS_UTILS_AVAILABLE = True
-        except ImportError:
-            # HIGH-003 FIX: Create safe fallback implementations
-            def glass_card(content: str) -> None:
-                """Fallback glass card implementation"""
-                st.markdown(
-                    f'<div class="glass-card" style="'
-                    f'background: rgba(255, 255, 255, 0.08); '
-                    f'backdrop-filter: blur(16px); '
-                    f'border-radius: 16px; '
-                    f'padding: 1rem; '
-                    f'border: 1px solid rgba(255, 255, 255, 0.15);">'
-                    f'{content}</div>', 
-                    unsafe_allow_html=True
-                )
-            
-            def metric_card(title: str, value: str) -> None:
-                """Fallback metric card implementation"""
-                st.metric(title, value)
-            
-            CSS_UTILS_AVAILABLE = True
-            logger.info("⚠️ Using fallback CSS utility functions")
-        
-        # Load CSS with enhanced loader
-        try:
-            ensure_css_loaded()
-            inject_page_css('upload')
-            inject_page_css('analysis')
-            ENHANCED_CSS_LOADED = True
-        except Exception as css_error:
-            logger.error(f"❌ Enhanced CSS loading failed: {str(css_error)}")
-            ENHANCED_CSS_LOADED = False
-        
-    except ImportError as e:
-        # HIGH-003 FIX: Complete fallback to basic CSS system
-        logger.warning("⚠️ Enhanced CSS not available, using basic fallback")
-        try:
-            from src.presentation.streamlit.css_loader import load_css, glass_card, metric_card
-            load_css()
-            CSS_UTILS_AVAILABLE = True
-            ENHANCED_CSS_LOADED = False
-        except ImportError:
-            logger.error("❌ No CSS system available")
-            # Create minimal fallbacks
-            def glass_card(content: str) -> None:
-                st.markdown(content, unsafe_allow_html=True)
-            def metric_card(title: str, value: str) -> None:
-                st.metric(title, value)
-            CSS_UTILS_AVAILABLE = False
-            ENHANCED_CSS_LOADED = False
+        from src.presentation.streamlit.enhanced_css_loader import ensure_css_loaded
+        ensure_css_loaded()
+    except ImportError:
+        # Minimal fallback
+        st.markdown('<style>.stButton > button { border-radius: 8px; }</style>', unsafe_allow_html=True)
         
 except ImportError as e:
     st.error(f"Error importando Clean Architecture: {str(e)}")
-    CSS_UTILS_AVAILABLE = False
+    st.stop()
 
 
 @st.fragment(run_every=0.5)

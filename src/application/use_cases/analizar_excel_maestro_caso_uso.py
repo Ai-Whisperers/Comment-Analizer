@@ -7,15 +7,6 @@ from datetime import datetime
 import logging
 import time
 import gc
-# ROLLBACK: AsyncIO also has ScriptRunContext issues in Streamlit Cloud
-# import asyncio - REMOVED
-
-# OPTIMIZATION: Import Streamlit caching for smart result caching
-try:
-    import streamlit as st
-    STREAMLIT_CACHING_AVAILABLE = True
-except ImportError:
-    STREAMLIT_CACHING_AVAILABLE = False
 
 # Optional imports for enhanced functionality
 try:
@@ -182,20 +173,16 @@ class AnalizarExcelMaestroCasoUso:
             
             logger.info(f"📊 Procesando {len(comentarios_validos)} comentarios válidos en lotes de {self.max_comments_per_batch}")
             
-            # 3. Procesamiento en múltiples lotes
+            # 3. Procesamiento unificado (eliminada bifurcación innecesaria)
             if len(comentarios_validos) <= self.max_comments_per_batch:
                 # Archivo pequeño - procesamiento directo
                 analisis_completo_ia = self.analizador_maestro.analizar_excel_completo(comentarios_validos)
-                
-                if not analisis_completo_ia.es_exitoso():
-                    return self._crear_resultado_error("El análisis maestro de IA falló")
-                    
             else:
-                # Archivo grande - procesamiento en múltiples lotes con caching
-                analisis_completo_ia = self._procesar_en_lotes_con_cache(comentarios_validos)
-                
-                if not analisis_completo_ia.es_exitoso():
-                    return self._crear_resultado_error("Error en procesamiento por lotes")
+                # Archivo grande - procesamiento en múltiples lotes
+                analisis_completo_ia = self._procesar_en_lotes(comentarios_validos)
+            
+            if not analisis_completo_ia.es_exitoso():
+                return self._crear_resultado_error("Error en análisis IA")
             
             # 4. Mapear resultados IA a entidades de dominio
             comentarios_analizados = self._mapear_a_entidades_dominio(
@@ -445,52 +432,7 @@ class AnalizarExcelMaestroCasoUso:
         
         return dolores
 
-    def _procesar_en_lotes_con_cache(self, comentarios_validos: List[str]) -> AnalisisCompletoIA:
-        """
-        OPTIMIZATION: Cached batch processing with Streamlit native caching
-        Uses content hash for cache key to enable instant results for duplicate analysis
-        """
-        if STREAMLIT_CACHING_AVAILABLE:
-            # Create content hash for caching
-            import hashlib
-            content_hash = hashlib.md5(''.join(comentarios_validos).encode()).hexdigest()
-            
-            # Use cached version if available
-            try:
-                return self._procesar_lotes_cached(tuple(comentarios_validos), content_hash)
-            except Exception as e:
-                logger.warning(f"⚠️ Caching failed, falling back to direct processing: {str(e)}")
-                return self._procesar_en_lotes(comentarios_validos)
-        else:
-            # Fallback to direct processing
-            return self._procesar_en_lotes(comentarios_validos)
-    
-    def _procesar_lotes_cached(self, comentarios_tuple, content_hash: str) -> AnalisisCompletoIA:
-        """
-        OPTIMIZATION: Streamlit cached batch processing
-        Decorator applied conditionally to avoid import issues
-        """
-        if STREAMLIT_CACHING_AVAILABLE:
-            # Apply caching dynamically
-            @st.cache_data(ttl=1800, show_spinner="Procesando con IA optimizada...")
-            def _cached_processing(comments_tuple, hash_key, batch_size, ai_config_hash):
-                """Cached version of batch processing"""
-                # Convert back to list for processing
-                comentarios_list = list(comments_tuple)
-                logger.info(f"💾 Cache miss - processing {len(comentarios_list)} comentarios (hash: {hash_key[:8]})")
-                return self._procesar_en_lotes(comentarios_list)
-            
-            # Create AI config hash for cache key
-            ai_config_hash = str(hash((
-                self.ai_configuration.model if self.ai_configuration else 'default',
-                self.ai_configuration.temperature if self.ai_configuration else 0.0,
-                self.max_comments_per_batch
-            )))
-            
-            return _cached_processing(comentarios_tuple, content_hash, self.max_comments_per_batch, ai_config_hash)
-        else:
-            # Fallback without caching
-            return self._procesar_en_lotes(list(comentarios_tuple))
+    # PURGED: Complex caching logic eliminated (40+ lines of overhead removed)
     
     def _mapear_tipo_emocion(self, tipo_str: str) -> TipoEmocion:
         """Mapea string de emoción a enum"""
@@ -636,8 +578,7 @@ class AnalizarExcelMaestroCasoUso:
             total_lotes = len(lotes)
             self._notify_progress_start(total_lotes, len(comentarios_validos))
             
-            # ROLLBACK: AsyncIO also incompatible with Streamlit - same ScriptRunContext issues
-            # Use only optimized sequential processing (still achieves 60% improvement)
+            # SIMPLIFIED: Direct sequential processing only
             return self._procesar_lotes_secuencial(lotes, total_lotes)
                 
         except Exception as e:
@@ -718,77 +659,7 @@ class AnalizarExcelMaestroCasoUso:
         # Agregar resultados de todos los lotes
         return self._agregar_resultados_lotes(resultados_lotes, comentarios_analizados_total, len(lotes) * self.max_comments_per_batch)
     
-    def _procesar_lotes_asyncio(self, lotes: List[List[str]], total_lotes: int) -> AnalisisCompletoIA:
-        """
-        OPTIMIZATION: AsyncIO concurrent I/O processing (Streamlit-safe)
-        Uses AsyncIO for concurrent API calls without threading
-        Expected: 30-50% performance improvement for large files
-        """
-        logger.info(f"⚡ Using AsyncIO concurrent I/O for {len(lotes)} lotes")
-        
-        try:
-            # Execute AsyncIO concurrent processing in main thread (Streamlit-safe)
-            resultados_lotes = asyncio.run(
-                self.analizador_maestro.analizar_batches_concurrent(lotes)
-            )
-            
-            # Update progress for each completed batch
-            comentarios_analizados_total = []
-            for i, resultado in enumerate(resultados_lotes):
-                batch_number = i + 1
-                
-                if resultado and resultado.es_exitoso():
-                    # Progress notification for successful batch
-                    self._notify_batch_success(batch_number, total_lotes, resultado.confianza_general)
-                    comentarios_analizados_total.extend(resultado.comentarios_analizados)
-                    logger.info(f"✅ [ASYNCIO] Lote {batch_number} exitoso: confianza={resultado.confianza_general:.2f}")
-                else:
-                    # Progress notification for failed batch
-                    self._notify_batch_failure(batch_number, total_lotes, "AsyncIO processing failed")
-                    logger.error(f"❌ [ASYNCIO] Lote {batch_number} falló")
-            
-            # Memory cleanup after AsyncIO processing
-            if PSUTIL_AVAILABLE:
-                try:
-                    process = psutil.Process()
-                    memory_mb = process.memory_info().rss / 1024 / 1024
-                    logger.info(f"💾 Memoria después de AsyncIO: {memory_mb:.1f}MB")
-                except:
-                    pass
-            
-            # Force garbage collection
-            gc.collect()
-            
-            # Aggregate all successful results
-            if resultados_lotes:
-                total_comments_processed = sum(len(resultado.comentarios_analizados) for resultado in resultados_lotes)
-                return self._agregar_resultados_lotes(resultados_lotes, comentarios_analizados_total, total_comments_processed)
-            else:
-                logger.error("❌ [ASYNCIO] No hay resultados de lotes para agregar")
-                from ..dtos.analisis_completo_ia import AnalisisCompletoIA
-                from datetime import datetime
-                return AnalisisCompletoIA(
-                    total_comentarios=0,
-                    tendencia_general='error',
-                    resumen_ejecutivo='Error en procesamiento AsyncIO',
-                    recomendaciones_principales=[],
-                    comentarios_analizados=[],
-                    confianza_general=0.0,
-                    tiempo_analisis=0.0,
-                    tokens_utilizados=0,
-                    modelo_utilizado='error',
-                    fecha_analisis=datetime.now(),
-                    distribucion_sentimientos={},
-                    temas_mas_relevantes={},
-                    dolores_mas_severos={},
-                    emociones_predominantes={}
-                )
-        
-        except Exception as e:
-            logger.error(f"❌ [ASYNCIO] Error en procesamiento: {str(e)}")
-            # Fallback to sequential processing
-            logger.info("🔄 [ASYNCIO] Falling back to sequential processing")
-            return self._procesar_lotes_secuencial(lotes, total_lotes)
+    # REMOVED: AsyncIO code completely eliminated (80 lines of dead code)
     
     def _agregar_resultados_lotes(self, resultados_lotes: List[AnalisisCompletoIA], 
                                  comentarios_analizados_total: List[Dict], 
