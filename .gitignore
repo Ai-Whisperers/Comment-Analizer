@@ -109,6 +109,12 @@ outputs/visualizations/*
 .streamlit/
 !.streamlit/config.toml
 
+# Streamlit Cloud Emulator
+streamlit-cloud-emulator/.env*
+streamlit-cloud-emulator/data/
+streamlit-cloud-emulator/outputs/
+streamlit-cloud-emulator/logs/
+
 # Archives and backups
 archived_modules/
 *.zip

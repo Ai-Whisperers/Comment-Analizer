@@ -207,15 +207,68 @@ def _run_analysis(uploaded_file, analysis_type):
             return
         
         # Get caso uso maestro with progress callback
-        if 'contenedor' in st.session_state and st.session_state.contenedor:
-            caso_uso_maestro = st.session_state.contenedor.obtener_caso_uso_maestro(progress_callback)
-        else:
-            st.error("Contenedor de dependencias no disponible")
+        # Verificar disponibilidad del contenedor de dependencias
+        if not ('contenedor' in st.session_state and st.session_state.contenedor):
+            st.error("❌ Contenedor de dependencias no está disponible")
+            st.info("💡 La aplicación no se inicializó correctamente")
+            st.info("🔄 Recargar la página o verificar configuración")
+            return
+        
+        # Obtener caso de uso maestro
+        try:
+            caso_uso_maestro = st.session_state.contenedor.obtener_caso_uso_maestro()
+        except Exception as e:
+            st.error(f"❌ Error obteniendo sistema de análisis: {str(e)}")
+            st.info("💡 Posibles causas:")
+            st.info("- OpenAI API key no configurada o inválida")
+            st.info("- Problemas de conexión a internet") 
+            st.info("- Configuración incorrecta en variables de entorno")
             return
             
         if not caso_uso_maestro:
-            st.error("No se pudo obtener el sistema de análisis IA")
+            st.error("❌ Sistema de análisis IA no está disponible")
+            st.info("🔧 Configurar variables de entorno requeridas:")
+            st.code("""
+OPENAI_API_KEY=your-api-key-here
+OPENAI_MODEL=gpt-4o-mini  
+OPENAI_MAX_TOKENS=8000
+MAX_COMMENTS_PER_BATCH=20
+            """)
             return
+        
+        # Verificar disponibilidad del analizador IA específicamente
+        try:
+            analizador = st.session_state.contenedor.obtener_analizador_maestro_ia()
+            if not analizador.es_disponible():
+                st.warning("⚠️ Sistema IA en modo degradado - API no disponible")
+                col1, col2 = st.columns(2)
+                with col1:
+                    st.info("""
+                    **Configuración Local**
+                    - ✓ Archivo .env existe
+                    - ❓ OPENAI_API_KEY válida
+                    - ❓ Conexión a internet
+                    """)
+                with col2:
+                    st.info("""
+                    **Streamlit Cloud**
+                    - ❓ Secrets configurados
+                    - ❓ Variables de entorno
+                    - ❓ API key válida
+                    """)
+                
+                if st.button("🔄 Reintentar Conexión IA", key="retry_ai"):
+                    # Force reinitialization
+                    for key in ['contenedor', 'caso_uso_maestro', 'ai_config_manager']:
+                        if key in st.session_state:
+                            del st.session_state[key]
+                    st.experimental_rerun()
+                
+                st.stop()  # Don't proceed with analysis
+                
+        except Exception as e:
+            logger.warning(f"Could not verify IA analyzer availability: {e}")
+            # Continue anyway - let the analysis attempt fail gracefully
                 
         from src.application.use_cases.analizar_excel_maestro_caso_uso import ComandoAnalisisExcelMaestro
         
@@ -231,10 +284,11 @@ def _run_analysis(uploaded_file, analysis_type):
             st.info("🤖 Iniciando análisis con Inteligencia Artificial...")
             # Import and show AI progress tracker
             try:
-                from components.progress_tracker import show_ai_analysis_progress
+                from src.presentation.streamlit.progress_tracker import show_ai_analysis_progress
                 show_ai_analysis_progress()
-            except ImportError:
+            except ImportError as e:
                 st.info("🔄 Ejecutando análisis IA...")
+                logger.warning(f"Progress tracker no disponible: {e}")
         
         resultado = caso_uso_maestro.ejecutar(comando)
         

@@ -181,14 +181,65 @@ class ContenedorDependencias:
             )
             
             if analizador.disponible:
-                logger.info("AnalizadorMaestroIA configurado exitosamente")
+                logger.info("✅ AnalizadorMaestroIA configurado exitosamente")
                 return analizador
             else:
-                raise ValueError("AnalizadorMaestroIA no está disponible")
+                logger.warning("⚠️ AnalizadorMaestroIA no disponible - continuando en modo degradado")
+                logger.info("💡 Verificar OPENAI_API_KEY en variables de entorno o secrets")
+                return analizador  # ← PERMITIR MODO DEGRADADO
                 
         except Exception as e:
-            logger.error(f"Error configurando AnalizadorMaestroIA: {str(e)}")
-            raise ValueError(f"Error en configuración IA: {str(e)}")
+            logger.error(f"❌ Error configurando AnalizadorMaestroIA: {str(e)}")
+            logger.warning("🔄 Continuando en modo degradado - funcionalidad IA limitada")
+            # Retornar instancia en modo degradado en lugar de fallar completamente
+            return self._crear_analizador_degradado()
+    
+    def _crear_analizador_degradado(self) -> AnalizadorMaestroIA:
+        """
+        Crea una instancia del analizador en modo degradado para permitir funcionamiento básico
+        cuando OpenAI no está disponible (desarrollo, testing, sin conexión)
+        """
+        try:
+            # Crear con configuración básica pero sin verificar disponibilidad
+            analizador = AnalizadorMaestroIA(
+                api_key=self.configuracion.get('openai_api_key', 'degraded_mode_key'),
+                modelo=self.configuracion.get('openai_modelo', 'gpt-4o-mini'),
+                usar_cache=False,  # Disable cache in degraded mode
+                temperatura=self.configuracion.get('openai_temperatura', 0.0),
+                cache_ttl=self.configuracion.get('cache_ttl', 3600),
+                max_tokens=self.configuracion.get('openai_max_tokens', 8000),
+                ai_configuration=self.ai_configuration
+            )
+            
+            # Force disponible = False for degraded mode
+            analizador.disponible = False
+            
+            logger.info("🔄 AnalizadorMaestroIA creado en modo degradado")
+            logger.info("⚠️ Funcionalidad IA deshabilitada - configurar OPENAI_API_KEY para habilitar")
+            
+            return analizador
+            
+        except Exception as e:
+            logger.error(f"❌ Error crítico creando analizador degradado: {str(e)}")
+            # En caso extremo, crear mock básico
+            return self._crear_analizador_mock()
+    
+    def _crear_analizador_mock(self) -> AnalizadorMaestroIA:
+        """
+        Último recurso: crear mock básico que no falle en inicialización
+        """
+        class MockAnalizadorMaestroIA:
+            def __init__(self):
+                self.disponible = False
+                self.modelo = 'mock'
+            
+            def es_disponible(self):
+                return False
+                
+            def analizar_excel_completo(self, comentarios):
+                raise Exception("Sistema IA no disponible - configurar OPENAI_API_KEY")
+        
+        return MockAnalizadorMaestroIA()
     
     def _obtener_singleton(self, clave: str, factory_func: Callable[[], T]) -> T:
         """

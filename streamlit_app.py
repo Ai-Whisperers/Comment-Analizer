@@ -1,6 +1,7 @@
 """
 Personal Paraguay Comment Analyzer - Clean Architecture
 Migrated to use src/ clean architecture with SOLID principles
+UNIFIED ENVIRONMENT CONFIGURATION - Works on Local and Streamlit Cloud
 """
 
 import sys
@@ -8,7 +9,14 @@ import streamlit as st
 from pathlib import Path
 import logging
 
+# Import unified configuration
+from config import config, is_streamlit_cloud, get_environment_info
+
 # Setup logger
+logging.basicConfig(
+    level=getattr(logging, config.get('LOG_LEVEL', 'INFO')),
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+)
 logger = logging.getLogger(__name__)
 
 
@@ -141,10 +149,15 @@ try:
     
     # Initialize app in session state
     if 'analizador_app' not in st.session_state:
-        # PHASE 2: Use centralized AI configuration system
+        # PHASE 2: Use centralized AI configuration system with proper env loading
         import os
         from dotenv import load_dotenv
-        load_dotenv()
+        
+        # Load environment variables from .env file with override=False 
+        # (environment variables take priority over .env file)
+        load_dotenv(override=False)
+        
+        logger.info("🔧 Environment variables loaded from .env file")
         
         try:
             from src.infrastructure.config import get_ai_configuration_manager, get_ai_configuration

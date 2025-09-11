@@ -208,8 +208,8 @@ class AnalizadorMaestroIA:
             deterministic = is_temp_deterministic and has_fixed_seed
             
             if deterministic:
-                logger.info(f"🔒 Configuración determinista detectada: temp={self.temperatura}, seed={self.seed}")
-                logger.info("⚠️ Reintentos producirán resultados idénticos - se aplicará skip inteligente")
+                logger.debug(f"🔒 Configuración determinista detectada: temp={self.temperatura}, seed={self.seed}")
+                logger.debug("⚠️ Reintentos producirán resultados idénticos - se aplicará skip inteligente")
             else:
                 logger.info(f"🎲 Configuración no-determinista: temp={self.temperatura}, seed={self.seed}")
                 

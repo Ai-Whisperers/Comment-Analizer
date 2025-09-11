@@ -1,0 +1,37 @@
+# 🌩️ Docker Compose para Emulador de Streamlit Cloud
+# Replica exacta de límites y configuración de Streamlit Cloud
+version: '3.8'
+
+services:
+  comment-analyzer:
+    build: 
+      context: ..
+      dockerfile: streamlit-cloud-emulator/Dockerfile
+    container_name: comment-analyzer-cloud-emulator
+    ports:
+      - "8501:8501"
+    environment:
+      - APP_ENV=streamlit_cloud_emulation
+      - DEBUG_MODE=false
+      - STREAMLIT_CLOUD_EMULATOR=true
+    volumes:
+      - ../.env:/app/.env:ro
+      - ../data:/app/data
+      - ../outputs:/app/outputs
+    # 🌩️ LÍMITES EXACTOS DE STREAMLIT CLOUD (NO MODIFICAR)
+    mem_limit: 1g          # 1GB RAM máximo (igual que Streamlit Cloud)
+    mem_reservation: 512m  # 512MB reservado
+    cpus: 1.0              # 1 CPU máximo (igual que Streamlit Cloud)
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8501/_stcore/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    networks:
+      - streamlit-cloud-emulator-net
+
+networks:
+  streamlit-cloud-emulator-net:
+    driver: bridge
+    name: streamlit-cloud-emulator

@@ -21,7 +21,7 @@ if str(current_dir) not in sys.path:
 from components.file_processor import process_file_content, validate_file_structure, calculate_processing_estimate
 from components.ai_analyzer import analyze_comments_optimized, get_openai_client
 from components.chart_generator import create_analysis_dashboard, prepare_chart_data_optimized
-from components.progress_tracker import start_progress_tracking, auto_update_analysis_progress, finish_progress_tracking
+from src.presentation.streamlit.progress_tracker import start_progress_tracking, auto_update_analysis_progress, finish_progress_tracking
 from components.ui_components import (
     render_upload_section, render_analysis_controls, render_results_section, 
     render_performance_stats, render_error_section
@@ -195,7 +195,7 @@ def run_optimized_analysis(comments: List[str], metadata: Dict[str, Any],
         processing_time = time.time() - start_time
         
         # Display performance comparison
-        from components.progress_tracker import show_performance_comparison
+        from src.presentation.streamlit.progress_tracker import show_performance_comparison
         old_estimate = len(comments) * 0.3  # Old system estimate
         show_performance_comparison(processing_time, old_estimate)
         

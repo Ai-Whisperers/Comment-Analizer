@@ -127,14 +127,15 @@ class AIProgressTracker:
                 step = self.steps[step_name]
                 logger.debug(f"📍 Step started: {step_name} - {step.description}")
                 
-                # STREAMLIT DEPLOYMENT FIX: Update session state instead of callbacks
-                if STREAMLIT_AVAILABLE:
+                # STREAMLIT DEPLOYMENT FIX: Safe session state update with context verification
+                if self._has_streamlit_context():
                     try:
                         # Store progress in session state for UI polling
                         st.session_state._ai_progress_data = self.get_current_progress()
                         st.session_state._ai_progress_update_time = datetime.now().isoformat()
+                        logger.debug(f"📊 Progress updated in session state: {step_name}")
                     except Exception as e:
-                        logger.warning(f"Session state progress update error: {e}")
+                        logger.debug(f"Session state progress update error (non-critical): {e}")
                 
                 # Trigger progress callback if registered (for non-Streamlit usage)
                 if step_name in self.progress_callbacks:
@@ -142,6 +143,31 @@ class AIProgressTracker:
                         self.progress_callbacks[step_name](self.get_current_progress())
                     except Exception as e:
                         logger.warning(f"Progress callback error for {step_name}: {e}")
+    
+    def _has_streamlit_context(self) -> bool:
+        """
+        Safely check if we're running in a valid Streamlit context
+        Prevents warnings and exceptions in development/testing environments
+        """
+        if not STREAMLIT_AVAILABLE:
+            return False
+            
+        try:
+            import streamlit as st
+            from streamlit.runtime.scriptrunner import get_script_run_ctx
+            
+            # Check if we have a valid script run context
+            ctx = get_script_run_ctx()
+            if ctx is None:
+                return False
+            
+            # Additional check: try to access session state
+            _ = st.session_state
+            return True
+            
+        except Exception:
+            # Any exception means we don't have valid Streamlit context
+            return False
     
     def complete_step(self, step_name: str) -> None:
         """Mark a step as completed with accurate timestamp"""
@@ -153,13 +179,14 @@ class AIProgressTracker:
                 actual_time = step.actual_duration
                 logger.debug(f"✅ Step completed: {step_name} in {actual_time:.2f}s (estimated: {step.estimated_duration:.2f}s)")
                 
-                # STREAMLIT DEPLOYMENT FIX: Update session state on completion
-                if STREAMLIT_AVAILABLE:
+                # STREAMLIT DEPLOYMENT FIX: Safe session state update on completion
+                if self._has_streamlit_context():
                     try:
                         st.session_state._ai_progress_data = self.get_current_progress()
                         st.session_state._ai_progress_update_time = datetime.now().isoformat()
+                        logger.debug(f"📊 Progress completion updated in session state: {step_name}")
                     except Exception as e:
-                        logger.warning(f"Session state progress completion error: {e}")
+                        logger.debug(f"Session state progress completion error (non-critical): {e}")
     
     def get_current_progress(self) -> Dict[str, Any]:
         """Get current progress information for UI display"""
@@ -283,18 +310,44 @@ except ImportError:
 _current_tracker: Optional[AIProgressTracker] = None
 _tracker_lock = threading.RLock()
 
+def _has_streamlit_context_global() -> bool:
+    """
+    Global function to safely check Streamlit context
+    (Same logic as AIProgressTracker._has_streamlit_context but accessible globally)
+    """
+    if not STREAMLIT_AVAILABLE:
+        return False
+        
+    try:
+        import streamlit as st
+        from streamlit.runtime.scriptrunner import get_script_run_ctx
+        
+        # Check if we have a valid script run context
+        ctx = get_script_run_ctx()
+        if ctx is None:
+            return False
+        
+        # Additional check: try to access session state
+        _ = st.session_state
+        return True
+        
+    except Exception:
+        # Any exception means we don't have valid Streamlit context
+        return False
+
 def create_progress_tracker(comment_count: int) -> AIProgressTracker:
     """Create and set progress tracker (session state compatible)"""
     global _current_tracker
     with _tracker_lock:
         _current_tracker = AIProgressTracker(comment_count)
         
-        # STREAMLIT DEPLOYMENT FIX: Store in session state instead of global thread
-        if STREAMLIT_AVAILABLE:
+        # STREAMLIT DEPLOYMENT FIX: Safe session state storage with context verification
+        if _has_streamlit_context_global():
             try:
                 st.session_state._ai_progress_tracker = _current_tracker
+                logger.debug("📊 Progress tracker stored in session state")
             except Exception:
-                pass  # Fallback to global if session state unavailable
+                logger.debug("Progress tracker session state storage failed - using global fallback")
         
         return _current_tracker
 
@@ -302,8 +355,8 @@ def get_current_progress() -> Optional[Dict[str, Any]]:
     """Get current progress information (Streamlit deployment compatible)"""
     tracker = None
     
-    # STREAMLIT DEPLOYMENT FIX: Get from session state first
-    if STREAMLIT_AVAILABLE:
+    # STREAMLIT DEPLOYMENT FIX: Safe session state access with context verification
+    if _has_streamlit_context_global():
         try:
             tracker = getattr(st.session_state, '_ai_progress_tracker', None)
         except Exception:
