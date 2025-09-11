@@ -399,7 +399,7 @@ class AnalizarExcelMaestroCasoUso:
                                 palabras_clave=[],
                                 frecuencia=1
                             )
-                        elif severidad >= 0.5:
+                        elif severidad >= 0.5 and severidad < 0.8:  # FIX: Respect factory method range
                             dolor = PuntoDolor.crear_alto_impacto(
                                 tipo=tipo_dolor,
                                 severidad=severidad,
@@ -408,7 +408,17 @@ class AnalizarExcelMaestroCasoUso:
                                 palabras_clave=[],
                                 frecuencia=1
                             )
-                        elif severidad >= 0.3:
+                        elif severidad >= 0.6 and severidad < 0.7:  # FIX: Handle gap between moderado and critico
+                            # Use alto_impacto for high-moderate range
+                            dolor = PuntoDolor.crear_alto_impacto(
+                                tipo=tipo_dolor,
+                                severidad=0.7,  # Clamp to valid range
+                                confianza=confianza,
+                                contexto=contexto,
+                                palabras_clave=[],
+                                frecuencia=1
+                            )
+                        elif severidad >= 0.3 and severidad < 0.6:  # FIX: Respect factory method range
                             dolor = PuntoDolor.crear_moderado(
                                 tipo=tipo_dolor,
                                 severidad=severidad,
@@ -419,6 +429,7 @@ class AnalizarExcelMaestroCasoUso:
                             )
                         else:
                             # Severidad muy baja, skip o usar constructor directo con validación
+                            logger.debug(f"🔍 Saltando punto de dolor con severidad muy baja: {severidad:.2f}")
                             continue
                             
                         dolores.append(dolor)
