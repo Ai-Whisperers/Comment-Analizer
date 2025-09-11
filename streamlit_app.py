@@ -50,25 +50,25 @@ st.set_page_config(
 )
 
 # Main page
-st.title("📊 Personal Paraguay - Análisis de Comentarios")
-st.markdown("Sistema de análisis automatizado de comentarios de clientes usando IA")
+st.title("Análisis de Comentarios de Personal PY")
+st.markdown("Sistema de análisis de comentarios de clientes. Automatizado mediante IA")
 
 # Show environment info
 env_info = get_environment_info()
 with st.sidebar:
-    st.markdown("### 🔧 Configuración")
+    st.markdown("### Configuración")
     st.json(env_info)
 
 # Navigation
-st.markdown("### 📄 Páginas Disponibles")
+st.markdown("### Páginas Disponibles")
 
 col1, col2 = st.columns(2)
 with col1:
-    st.page_link("pages/2_Subir.py", label="📁 Subir y Analizar", icon="🚀")
+    st.page_link("pages/2_Subir.py", label="Subir y Analizar", icon="🚀")
     st.caption("Subir archivo Excel/CSV y ejecutar análisis con IA")
 
 with col2:
-    if st.button("🧹 Limpiar Cache", help="Limpiar cache y memoria"):
+    if st.button("Limpiar Cache", help="Limpiar cache y memoria"):
         # Simple cleanup
         for key in list(st.session_state.keys()):
             if key not in ['app', 'contenedor']:
@@ -77,7 +77,7 @@ with col2:
         st.rerun()
 
 # Instructions
-with st.expander("📖 Instrucciones de Uso", expanded=False):
+with st.expander("Instrucciones de Uso", expanded=False):
     st.markdown("""
     **Paso 1:** Ve a la página "Subir y Analizar"  
     **Paso 2:** Carga tu archivo Excel o CSV con comentarios  

@@ -265,15 +265,15 @@ class AnalizadorMaestroIA:
         
         # FASE 5 OPTIMIZATION: Adaptive safety nets based on file size and configuration
         
-        # SAFETY NET 1: Adaptive maximum based on file size and token limits
+        # SAFETY NET 1: Adaptive maximum based on file size and token limits (1000-comment optimized)
         if tokens_disponibles >= 14000:  # 14K+ tokens available
-            ADAPTIVE_MAX_COMMENTS = min(80, max_comentarios_teorico)  # Up to 80 for large token limits
-        elif tokens_disponibles >= 12000:  # 12K+ tokens available
-            ADAPTIVE_MAX_COMMENTS = min(70, max_comentarios_teorico)  # Up to 70 for 12K tokens
+            ADAPTIVE_MAX_COMMENTS = min(120, max_comentarios_teorico)  # Up to 120 for large token limits
+        elif tokens_disponibles >= 11000:  # 11K+ tokens available (optimal for 1000 comments)
+            ADAPTIVE_MAX_COMMENTS = min(100, max_comentarios_teorico)  # Up to 100 for 11K tokens
         elif tokens_disponibles >= 8000:   # 8K+ tokens available  
-            ADAPTIVE_MAX_COMMENTS = min(60, max_comentarios_teorico)  # Up to 60 for 8K tokens (optimized)
+            ADAPTIVE_MAX_COMMENTS = min(80, max_comentarios_teorico)  # Up to 80 for 8K tokens
         else:  # Limited tokens
-            ADAPTIVE_MAX_COMMENTS = min(40, max_comentarios_teorico)  # Conservative for small token limits
+            ADAPTIVE_MAX_COMMENTS = min(50, max_comentarios_teorico)  # Conservative for small token limits
             
         if len(comentarios_raw) > ADAPTIVE_MAX_COMMENTS:
             logger.warning(f"🚨 ADAPTIVE SAFETY: {len(comentarios_raw)} comentarios > {ADAPTIVE_MAX_COMMENTS} (tokens={tokens_disponibles:,}), limitando")

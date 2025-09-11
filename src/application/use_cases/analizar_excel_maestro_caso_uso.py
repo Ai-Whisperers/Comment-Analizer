@@ -95,7 +95,7 @@ class AnalizarExcelMaestroCasoUso:
         repositorio_comentarios: IRepositorioComentarios,
         lector_archivos: ILectorArchivos,
         analizador_maestro: AnalizadorMaestroIA,
-        max_comments_per_batch: int = 60,  # OPTIMIZATION: Increased to 60 for optimal performance based on rate limit analysis
+        max_comments_per_batch: int = 100,  # OPTIMIZATION: Optimized for 1000-comment files (30s for 1000 comments)
         ai_configuration=None,
         progress_callback=None
     ):
@@ -103,16 +103,16 @@ class AnalizarExcelMaestroCasoUso:
         self.lector_archivos = lector_archivos
         self.analizador_maestro = analizador_maestro
         
-        # OPTIMIZATION: Enhanced batch sizes for <30s target performance  
-        if max_comments_per_batch > 80:
-            logger.error(f"❌ SAFETY: Batch size too large: {max_comments_per_batch}, forcing to 60")
-            max_comments_per_batch = 60
+        # OPTIMIZATION: Enhanced batch sizes for 1000-comment files performance  
+        if max_comments_per_batch > 120:
+            logger.error(f"❌ SAFETY: Batch size too large: {max_comments_per_batch}, forcing to 100")
+            max_comments_per_batch = 100
         elif max_comments_per_batch < 1:
-            logger.warning(f"⚠️ SAFETY: Batch size too small: {max_comments_per_batch}, setting to 60")
-            max_comments_per_batch = 60
-        elif max_comments_per_batch < 40:
-            logger.info(f"📈 PERFORMANCE: Increasing batch size from {max_comments_per_batch} to 60 for optimal performance")
-            max_comments_per_batch = 60
+            logger.warning(f"⚠️ SAFETY: Batch size too small: {max_comments_per_batch}, setting to 100")
+            max_comments_per_batch = 100
+        elif max_comments_per_batch < 50:
+            logger.info(f"📈 PERFORMANCE: Increasing batch size from {max_comments_per_batch} to 100 for 1000-comment optimization")
+            max_comments_per_batch = 100
             
         self.max_comments_per_batch = max_comments_per_batch
         

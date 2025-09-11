@@ -97,7 +97,7 @@ class ContenedorDependencias:
                     repositorio_comentarios=self.obtener_repositorio_comentarios(),
                     lector_archivos=self.obtener_lector_archivos(),
                     analizador_maestro=self.obtener_analizador_maestro_ia(),
-                    max_comments_per_batch=self.configuracion.get('max_comments', 60),
+                    max_comments_per_batch=self.configuracion.get('max_comments', 100),
                     ai_configuration=self.ai_configuration,
                     progress_callback=progress_callback
                 )
@@ -108,7 +108,7 @@ class ContenedorDependencias:
                                                  repositorio_comentarios=self.obtener_repositorio_comentarios(),
                                                  lector_archivos=self.obtener_lector_archivos(),
                                                  analizador_maestro=self.obtener_analizador_maestro_ia(),
-                                                 max_comments_per_batch=self.configuracion.get('max_comments', 60),
+                                                 max_comments_per_batch=self.configuracion.get('max_comments', 100),
                                                  ai_configuration=self.ai_configuration
                                              ))
         except ImportError as e:
