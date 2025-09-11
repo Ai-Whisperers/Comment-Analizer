@@ -225,7 +225,21 @@ def _run_analysis(uploaded_file, analysis_type):
             limpiar_repositorio=True
         )
         
+        # Show AI analysis progress during execution
+        progress_placeholder = st.empty()
+        with progress_placeholder.container():
+            st.info("🤖 Iniciando análisis con Inteligencia Artificial...")
+            # Import and show AI progress tracker
+            try:
+                from components.progress_tracker import show_ai_analysis_progress
+                show_ai_analysis_progress()
+            except ImportError:
+                st.info("🔄 Ejecutando análisis IA...")
+        
         resultado = caso_uso_maestro.ejecutar(comando)
+        
+        # Clear progress display once analysis is complete
+        progress_placeholder.empty()
         
         if resultado.es_exitoso():
             # Memory management: cleanup previous analysis before storing new one

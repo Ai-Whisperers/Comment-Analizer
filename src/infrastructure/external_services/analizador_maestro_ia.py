@@ -267,11 +267,11 @@ class AnalizadorMaestroIA:
         
         # SAFETY NET 1: Adaptive maximum based on file size and token limits
         if tokens_disponibles >= 12000:  # 12K+ tokens available
-            ADAPTIVE_MAX_COMMENTS = min(60, max_comentarios_teorico)  # Up to 60 for large token limits
+            ADAPTIVE_MAX_COMMENTS = min(70, max_comentarios_teorico)  # Up to 70 for large token limits
         elif tokens_disponibles >= 8000:   # 8K+ tokens available  
-            ADAPTIVE_MAX_COMMENTS = min(40, max_comentarios_teorico)  # Up to 40 for medium token limits
+            ADAPTIVE_MAX_COMMENTS = min(55, max_comentarios_teorico)  # Up to 55 for 8K tokens (was 40)
         else:  # Limited tokens
-            ADAPTIVE_MAX_COMMENTS = min(25, max_comentarios_teorico)  # Conservative for small token limits
+            ADAPTIVE_MAX_COMMENTS = min(30, max_comentarios_teorico)  # Conservative for small token limits
             
         if len(comentarios_raw) > ADAPTIVE_MAX_COMMENTS:
             logger.warning(f"🚨 ADAPTIVE SAFETY: {len(comentarios_raw)} comentarios > {ADAPTIVE_MAX_COMMENTS} (tokens={tokens_disponibles:,}), limitando")
@@ -292,7 +292,7 @@ class AnalizadorMaestroIA:
         
         try:
             # STEP 1: Cache operations (3% of total time)
-            with track_step('cache_check') if PROGRESS_TRACKING_AVAILABLE else track_step('cache_check'):
+            with track_step('cache_check'):
                 cache_key = self._generar_cache_key(comentarios_raw)
                 
                 # Verificar cache (con TTL y LRU)
@@ -303,15 +303,15 @@ class AnalizadorMaestroIA:
                     return self._cache[cache_key]
             
             # STEP 2: Prompt generation (10% of total time)
-            with track_step('prompt_generation') if PROGRESS_TRACKING_AVAILABLE else track_step('prompt_generation'):
+            with track_step('prompt_generation'):
                 prompt_completo = self._generar_prompt_maestro(comentarios_raw)
             
             # STEP 3: OpenAI API call (75% of total time - LONGEST STEP)
-            with track_step('openai_api_call') if PROGRESS_TRACKING_AVAILABLE else track_step('openai_api_call'):
+            with track_step('openai_api_call'):
                 respuesta_raw = self._hacer_llamada_api_maestra(prompt_completo, len(comentarios_raw))
             
             # STEP 4: Response processing and emotion extraction (10% of total time)  
-            with track_step('response_processing') if PROGRESS_TRACKING_AVAILABLE else track_step('response_processing'):
+            with track_step('response_processing'):
                 tiempo_transcurrido = time.time() - inicio_tiempo
                 analisis_completo = self._procesar_respuesta_maestra(
                     respuesta_raw, comentarios_raw, tiempo_transcurrido

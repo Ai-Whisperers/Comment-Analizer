@@ -115,6 +115,58 @@ def finish_progress_tracking() -> Dict[str, Any]:
     return final_metrics
 
 
+@st.fragment(run_every=1)
+def show_ai_analysis_progress() -> None:
+    """
+    Show detailed AI analysis progress with real-time updates
+    Displays progress from AI pipeline tracker (not batch tracker)
+    """
+    try:
+        # Get AI progress data from session state (set by ai_progress_tracker)
+        if hasattr(st.session_state, '_ai_progress_data'):
+            progress_data = st.session_state._ai_progress_data
+            
+            # Show detailed AI progress
+            progress_pct = progress_data.get('progress_percentage', 0)
+            current_step = progress_data.get('current_step', {})
+            elapsed = progress_data.get('elapsed_time', 0)
+            eta = progress_data.get('estimated_remaining', 0)
+            
+            # Progress bar
+            st.progress(
+                progress_pct / 100, 
+                text=f"Análisis IA: {progress_pct:.1f}% - {current_step.get('description', 'Procesando...')}"
+            )
+            
+            # Detailed info
+            stage = progress_data.get('pipeline_stage', 'Iniciando...')
+            completed_steps = progress_data.get('completed_steps', 0)
+            total_steps = progress_data.get('total_steps', 6)
+            
+            st.info(f"""
+🤖 **{stage}**  
+📊 **Progreso:** {progress_pct:.1f}% ({completed_steps}/{total_steps} pasos)  
+⏱️ **Tiempo:** {elapsed:.1f}s transcurridos, ~{eta:.1f}s restantes  
+🎯 **Paso actual:** {current_step.get('description', 'Preparando...')}
+""")
+            
+        # Also check for AI progress tracker directly
+        elif hasattr(st.session_state, '_ai_progress_tracker'):
+            tracker = st.session_state._ai_progress_tracker
+            if tracker:
+                progress_data = tracker.get_current_progress()
+                if progress_data:
+                    # Same display logic as above
+                    progress_pct = progress_data.get('progress_percentage', 0)
+                    stage = progress_data.get('pipeline_stage', 'Iniciando...')
+                    
+                    st.progress(progress_pct / 100, text=f"Análisis IA: {progress_pct:.1f}%")
+                    st.info(f"🤖 **{stage}**")
+                    
+    except Exception as e:
+        logger.warning(f"Error showing AI progress: {e}")
+
+
 @st.fragment  
 def show_performance_comparison(current_time: float, estimated_old_time: float) -> None:
     """
