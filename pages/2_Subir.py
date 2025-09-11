@@ -185,11 +185,13 @@ def _run_analysis(uploaded_file, analysis_type):
         if not caso_uso_maestro:
             st.error("❌ Sistema de análisis IA no está disponible")
             st.info("🔧 Configurar variables de entorno requeridas:")
-            st.code("""
+            # Use actual configuration values instead of hardcoded ones
+            from config import config
+            st.code(f"""
 OPENAI_API_KEY=your-api-key-here
-OPENAI_MODEL=gpt-4o-mini  
-OPENAI_MAX_TOKENS=8000
-MAX_COMMENTS_PER_BATCH=20
+OPENAI_MODEL={config.get('openai_modelo', 'gpt-4o-mini')}
+OPENAI_MAX_TOKENS={config.get('openai_max_tokens', 12000)}
+MAX_COMMENTS_PER_BATCH={config.get('max_comments', 100)}
             """)
             return
         
@@ -316,16 +318,10 @@ def _create_comprehensive_emotions_chart(emociones_predominantes):
         emotion_colors = AIEngineConstants.EMOTION_COLORS
         default_color = AIEngineConstants.DEFAULT_EMOTION_COLOR
     else:
-        # Fallback color mapping
-        emotion_colors = {
-            'satisfaccion': '#10B981', 'alegria': '#06D6A0', 'entusiasmo': '#FFD23F',
-            'gratitud': '#118AB2', 'confianza': '#073B4C', 'frustracion': '#EF4444',
-            'enojo': '#DC2626', 'decepcion': '#991B1B', 'preocupacion': '#F97316',
-            'irritacion': '#EA580C', 'ansiedad': '#C2410C', 'tristeza': '#7C2D12',
-            'confusion': '#6B7280', 'esperanza': '#8B5CF6', 'curiosidad': '#A855F7',
-            'impaciencia': '#9333EA', 'neutral': '#9CA3AF'
-        }
-        default_color = '#8B5CF6'
+        # Use constants directly as fallback instead of hardcoded values
+        from src.infrastructure.external_services.ai_engine_constants import AIEngineConstants
+        emotion_colors = AIEngineConstants.EMOTION_COLORS
+        default_color = AIEngineConstants.DEFAULT_EMOTION_COLOR
     
     colors = [emotion_colors.get(emotion, default_color) for emotion in emotions]
     
@@ -398,7 +394,7 @@ def _create_sentiment_distribution_chart(distribucion_sentimientos):
         font=dict(color='white'),
         paper_bgcolor='rgba(0,0,0,0)',
         plot_bgcolor='rgba(0,0,0,0)',
-        height=400
+        height=AIEngineConstants.CHART_DEFAULT_HEIGHT if CONSTANTS_AVAILABLE else 400
     )
     
     return fig
@@ -439,7 +435,7 @@ def _create_themes_chart(temas_relevantes):
         font=dict(color='white'),
         paper_bgcolor='rgba(0,0,0,0)',
         plot_bgcolor='rgba(0,0,0,0)',
-        height=400
+        height=AIEngineConstants.CHART_DEFAULT_HEIGHT if CONSTANTS_AVAILABLE else 400
     )
     
     return fig
@@ -480,7 +476,7 @@ def _create_emotions_donut_chart(emociones_predominantes):
         font=dict(color='white'),
         paper_bgcolor='rgba(0,0,0,0)',
         plot_bgcolor='rgba(0,0,0,0)',
-        height=400
+        height=AIEngineConstants.CHART_DEFAULT_HEIGHT if CONSTANTS_AVAILABLE else 400
     )
     
     return fig
@@ -622,7 +618,9 @@ def _create_batch_processing_timeline(analisis):
     
     # Estimate batch information
     total_comments = analisis.total_comentarios
-    batch_size = 50  # CONSISTENCY: Updated to match optimized batch size
+    # Use actual configuration value instead of hardcoded batch size
+    from config import config
+    batch_size = config.get('max_comments', 100)
     num_batches = max(1, (total_comments + batch_size - 1) // batch_size)  # Ceiling division
     time_per_batch = analisis.tiempo_analisis / num_batches if num_batches > 0 else 0
     

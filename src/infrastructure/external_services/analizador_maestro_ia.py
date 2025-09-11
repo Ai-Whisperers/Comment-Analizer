@@ -51,7 +51,7 @@ class AnalizadorMaestroIA:
     
     def __init__(self, api_key: str, modelo: str = "gpt-4", usar_cache: bool = True, 
                  temperatura: float = 0.0, cache_ttl: int = 3600, max_tokens: int = 8000,
-                 ai_configuration=None):
+                 ai_configuration=None, configuracion=None):
         self.api_key = api_key  # CRITICAL FIX: Store API key for AsyncClient
         self.client = openai.OpenAI(api_key=api_key)
         self.modelo = modelo
@@ -60,6 +60,9 @@ class AnalizadorMaestroIA:
         
         # PHASE 2: Store centralized AI configuration if provided
         self.ai_configuration = ai_configuration
+        
+        # Store general configuration for production limits
+        self.configuracion = configuracion
         
         # FUNCTIONAL FIX: Initialize _cache_ttl_seconds for all cases (logging needs it)
         if ai_configuration:
@@ -152,14 +155,8 @@ class AnalizadorMaestroIA:
         if CONSTANTS_AVAILABLE:
             limite_modelo = AIEngineConstants.get_model_token_limit(self.modelo)
         else:
-            # Fallback model limits
-            limites_por_modelo = {
-                'gpt-4o-mini': 16384,
-                'gpt-4o': 16384,
-                'gpt-4': 128000,
-                'gpt-4-turbo': 128000
-            }
-            limite_modelo = limites_por_modelo.get(self.modelo, 16384)
+            # Fallback using constants
+            limite_modelo = AIEngineConstants.get_model_token_limit(self.modelo)
         
         # Aplicar límites: usar el menor entre configurado y límite del modelo
         tokens_minimos = 1000
@@ -180,11 +177,11 @@ class AnalizadorMaestroIA:
             logger.error(f"🚨 CONFIG SAFETY: Forzando tokens de {tokens_finales:,} a límite config {self.max_tokens_limit:,}")
             tokens_finales = self.max_tokens_limit
             
-        # Safety check 3: FASE 3 OPTIMIZED - Increased production limit for better performance
-        PRODUCTION_SAFE_LIMIT = 14000  # OPTIMIZED: Increased from 12K to 14K based on rate limit analysis
-        if tokens_finales > PRODUCTION_SAFE_LIMIT:
-            logger.error(f"🚨 PRODUCTION SAFETY: Forzando tokens de {tokens_finales:,} a límite producción {PRODUCTION_SAFE_LIMIT:,}")
-            tokens_finales = PRODUCTION_SAFE_LIMIT
+        # Safety check 3: CONFIGURABLE production limit
+        production_limit = self.configuracion.get('production_token_limit', 14000) if self.configuracion else 14000
+        if tokens_finales > production_limit:
+            logger.error(f"🚨 PRODUCTION SAFETY: Forzando tokens de {tokens_finales:,} a límite producción {production_limit:,}")
+            tokens_finales = production_limit
         
         logger.info(f"📊 Tokens finales: {num_comentarios} comentarios → {tokens_finales:,} tokens (modelo: {self.modelo}, límites: modelo={limite_modelo:,}, config={self.max_tokens_limit:,})")
         
@@ -246,13 +243,7 @@ class AnalizadorMaestroIA:
             self._cleanup_expired_cache()
         
         # LÍMITE DE SEGURIDAD: Calcular máximo de comentarios basado en modelo
-        limites_por_modelo = {
-            'gpt-4o-mini': 16384,
-            'gpt-4o': 16384,
-            'gpt-4': 128000,
-            'gpt-4-turbo': 128000
-        }
-        limite_modelo = limites_por_modelo.get(self.modelo, 16384)
+        limite_modelo = AIEngineConstants.get_model_token_limit(self.modelo)
         
         # Calcular máximo de comentarios que caben en el límite configurado
         # OPTIMIZADO: Usar límite de configuración directamente para control estricto
@@ -265,15 +256,28 @@ class AnalizadorMaestroIA:
         
         # FASE 5 OPTIMIZATION: Adaptive safety nets based on file size and configuration
         
-        # SAFETY NET 1: Adaptive maximum based on file size and token limits (1000-comment optimized)
-        if tokens_disponibles >= 14000:  # 14K+ tokens available
-            ADAPTIVE_MAX_COMMENTS = min(120, max_comentarios_teorico)  # Up to 120 for large token limits
-        elif tokens_disponibles >= 11000:  # 11K+ tokens available (optimal for 1000 comments)
-            ADAPTIVE_MAX_COMMENTS = min(100, max_comentarios_teorico)  # Up to 100 for 11K tokens
-        elif tokens_disponibles >= 8000:   # 8K+ tokens available  
-            ADAPTIVE_MAX_COMMENTS = min(80, max_comentarios_teorico)  # Up to 80 for 8K tokens
+        # SAFETY NET 1: Configurable adaptive maximum based on file size and token limits
+        if self.configuracion:
+            threshold_high = self.configuracion.get('token_threshold_high', 14000)
+            threshold_medium = self.configuracion.get('token_threshold_medium', 11000)
+            threshold_low = self.configuracion.get('token_threshold_low', 8000)
+            max_high = self.configuracion.get('max_comments_high', 120)
+            max_medium = self.configuracion.get('max_comments_medium', 100)
+            max_low = self.configuracion.get('max_comments_low', 80)
+            max_minimal = self.configuracion.get('max_comments_minimal', 50)
+        else:
+            # Fallback values
+            threshold_high, threshold_medium, threshold_low = 14000, 11000, 8000
+            max_high, max_medium, max_low, max_minimal = 120, 100, 80, 50
+        
+        if tokens_disponibles >= threshold_high:  # Configurable high threshold
+            ADAPTIVE_MAX_COMMENTS = min(max_high, max_comentarios_teorico)
+        elif tokens_disponibles >= threshold_medium:  # Configurable medium threshold
+            ADAPTIVE_MAX_COMMENTS = min(max_medium, max_comentarios_teorico)
+        elif tokens_disponibles >= threshold_low:  # Configurable low threshold  
+            ADAPTIVE_MAX_COMMENTS = min(max_low, max_comentarios_teorico)
         else:  # Limited tokens
-            ADAPTIVE_MAX_COMMENTS = min(50, max_comentarios_teorico)  # Conservative for small token limits
+            ADAPTIVE_MAX_COMMENTS = min(max_minimal, max_comentarios_teorico)
             
         if len(comentarios_raw) > ADAPTIVE_MAX_COMMENTS:
             logger.warning(f"🚨 ADAPTIVE SAFETY: {len(comentarios_raw)} comentarios > {ADAPTIVE_MAX_COMMENTS} (tokens={tokens_disponibles:,}), limitando")

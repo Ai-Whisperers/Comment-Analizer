@@ -49,7 +49,25 @@ def _load_config() -> Dict[str, Any]:
         'openai_temperatura': float(get_value('OPENAI_TEMPERATURE', '0.0')),
         'max_comments': int(get_value('MAX_COMMENTS_PER_BATCH', '100')),  # UNIFIED: Match working pipeline
         'cache_ttl': int(get_value('CACHE_TTL_SECONDS', '3600')),
-        'log_level': get_value('LOG_LEVEL', 'INFO')
+        'log_level': get_value('LOG_LEVEL', 'INFO'),
+        
+        # PRODUCTION LIMITS: Made configurable via environment variables
+        'production_token_limit': int(get_value('PRODUCTION_TOKEN_LIMIT', '14000')),
+        'token_threshold_high': int(get_value('TOKEN_THRESHOLD_HIGH', '14000')),  # 14K+ tokens
+        'token_threshold_medium': int(get_value('TOKEN_THRESHOLD_MEDIUM', '11000')),  # 11K+ tokens  
+        'token_threshold_low': int(get_value('TOKEN_THRESHOLD_LOW', '8000')),  # 8K+ tokens
+        'max_comments_high': int(get_value('MAX_COMMENTS_HIGH', '120')),
+        'max_comments_medium': int(get_value('MAX_COMMENTS_MEDIUM', '100')),
+        'max_comments_low': int(get_value('MAX_COMMENTS_LOW', '80')),
+        'max_comments_minimal': int(get_value('MAX_COMMENTS_MINIMAL', '50')),
+        
+        # VALIDATION LIMITS: Made configurable via environment variables
+        'max_batch_size_absolute': int(get_value('MAX_BATCH_SIZE_ABSOLUTE', '120')),
+        'min_batch_size_threshold': int(get_value('MIN_BATCH_SIZE_THRESHOLD', '50')),
+        'max_file_comments': int(get_value('MAX_FILE_COMMENTS', '2000')),
+        'min_file_comments_info': int(get_value('MIN_FILE_COMMENTS_INFO', '100')),
+        'preview_length': int(get_value('PREVIEW_LENGTH', '100')),
+        'memory_threshold_mb': int(get_value('MEMORY_THRESHOLD_MB', '400'))
     }
 
 # Global configuration

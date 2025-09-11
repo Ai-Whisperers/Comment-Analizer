@@ -97,22 +97,30 @@ class AnalizarExcelMaestroCasoUso:
         analizador_maestro: AnalizadorMaestroIA,
         max_comments_per_batch: int = 100,  # OPTIMIZATION: Optimized for 1000-comment files (30s for 1000 comments)
         ai_configuration=None,
-        progress_callback=None
+        progress_callback=None,
+        configuracion=None
     ):
         self.repositorio_comentarios = repositorio_comentarios
         self.lector_archivos = lector_archivos
         self.analizador_maestro = analizador_maestro
         
-        # OPTIMIZATION: Enhanced batch sizes for 1000-comment files performance  
-        if max_comments_per_batch > 120:
-            logger.error(f"❌ SAFETY: Batch size too large: {max_comments_per_batch}, forcing to 100")
-            max_comments_per_batch = 100
+        # Store general configuration for validation limits
+        self.configuracion = configuracion
+        
+        # CONFIGURABLE: Enhanced batch sizes for 1000-comment files performance
+        max_absolute = configuracion.get('max_batch_size_absolute', 120) if configuracion else 120
+        min_threshold = configuracion.get('min_batch_size_threshold', 50) if configuracion else 50
+        default_batch = configuracion.get('max_comments', 100) if configuracion else 100
+        
+        if max_comments_per_batch > max_absolute:
+            logger.error(f"❌ SAFETY: Batch size too large: {max_comments_per_batch}, forcing to {default_batch}")
+            max_comments_per_batch = default_batch
         elif max_comments_per_batch < 1:
-            logger.warning(f"⚠️ SAFETY: Batch size too small: {max_comments_per_batch}, setting to 100")
-            max_comments_per_batch = 100
-        elif max_comments_per_batch < 50:
-            logger.info(f"📈 PERFORMANCE: Increasing batch size from {max_comments_per_batch} to 100 for 1000-comment optimization")
-            max_comments_per_batch = 100
+            logger.warning(f"⚠️ SAFETY: Batch size too small: {max_comments_per_batch}, setting to {default_batch}")
+            max_comments_per_batch = default_batch
+        elif max_comments_per_batch < min_threshold:
+            logger.info(f"📈 PERFORMANCE: Increasing batch size from {max_comments_per_batch} to {default_batch} for 1000-comment optimization")
+            max_comments_per_batch = default_batch
             
         self.max_comments_per_batch = max_comments_per_batch
         
@@ -163,12 +171,15 @@ class AnalizarExcelMaestroCasoUso:
             if not comentarios_validos:
                 return self._crear_resultado_error("No se encontraron comentarios válidos después del filtrado")
             
-            # Validar límites de procesamiento 
-            if len(comentarios_validos) > 2000:
-                logger.warning(f"🚨 ARCHIVO MUY GRANDE: {len(comentarios_validos)} comentarios, limitando a 2000")
-                comentarios_validos = comentarios_validos[:2000]
-                comentarios_raw_data = comentarios_raw_data[:2000]
-            elif len(comentarios_validos) < 100:
+            # CONFIGURABLE: Validar límites de procesamiento
+            max_file_size = self.configuracion.get('max_file_comments', 2000) if self.configuracion else 2000
+            min_file_info = self.configuracion.get('min_file_comments_info', 100) if self.configuracion else 100
+            
+            if len(comentarios_validos) > max_file_size:
+                logger.warning(f"🚨 ARCHIVO MUY GRANDE: {len(comentarios_validos)} comentarios, limitando a {max_file_size}")
+                comentarios_validos = comentarios_validos[:max_file_size]
+                comentarios_raw_data = comentarios_raw_data[:max_file_size]
+            elif len(comentarios_validos) < min_file_info:
                 logger.info(f"📊 Archivo pequeño: {len(comentarios_validos)} comentarios")
             
             logger.info(f"📊 Procesando {len(comentarios_validos)} comentarios válidos en lotes de {self.max_comments_per_batch}")
@@ -619,7 +630,8 @@ class AnalizarExcelMaestroCasoUso:
             
             # DEBUG: Log first comment preview for debugging
             if len(lote) > 0:
-                preview = lote[0][:100] + "..." if len(lote[0]) > 100 else lote[0]
+                preview_len = self.configuracion.get('preview_length', 100) if self.configuracion else 100
+                preview = lote[0][:preview_len] + "..." if len(lote[0]) > preview_len else lote[0]
                 logger.debug(f"🔍 Lote {batch_number} contenido: {preview}")
             
             # PHASE 3: Intelligent retry processing with smart decisions
@@ -641,8 +653,10 @@ class AnalizarExcelMaestroCasoUso:
                     memory_mb = process.memory_info().rss / 1024 / 1024
                     logger.info(f"💾 Memoria utilizada: {memory_mb:.1f}MB después del lote {i+1}")
                     
-                    if memory_mb > 400:  # Alert on high memory usage
-                        logger.warning(f"⚠️ Uso alto de memoria: {memory_mb:.1f}MB")
+                    # CONFIGURABLE: Alert on high memory usage
+                    memory_threshold = self.configuracion.get('memory_threshold_mb', 400) if self.configuracion else 400
+                    if memory_mb > memory_threshold:
+                        logger.warning(f"⚠️ Uso alto de memoria: {memory_mb:.1f}MB (límite: {memory_threshold}MB)")
                 except Exception as mem_error:
                     logger.debug(f"Error en monitoreo de memoria: {mem_error}")
             

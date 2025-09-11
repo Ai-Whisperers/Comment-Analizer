@@ -99,7 +99,8 @@ class ContenedorDependencias:
                     analizador_maestro=self.obtener_analizador_maestro_ia(),
                     max_comments_per_batch=self.configuracion.get('max_comments', 100),
                     ai_configuration=self.ai_configuration,
-                    progress_callback=progress_callback
+                    progress_callback=progress_callback,
+                    configuracion=self.configuracion
                 )
             else:
                 # Use singleton when no callback is needed
@@ -109,7 +110,8 @@ class ContenedorDependencias:
                                                  lector_archivos=self.obtener_lector_archivos(),
                                                  analizador_maestro=self.obtener_analizador_maestro_ia(),
                                                  max_comments_per_batch=self.configuracion.get('max_comments', 100),
-                                                 ai_configuration=self.ai_configuration
+                                                 ai_configuration=self.ai_configuration,
+                                                 configuracion=self.configuracion
                                              ))
         except ImportError as e:
             logger.error(f"Error importando caso de uso maestro: {str(e)}")
@@ -136,7 +138,7 @@ class ContenedorDependencias:
             try:
                 analizador_openai = AnalizadorOpenAI(
                     api_key=openai_key,
-                    modelo=self.configuracion.get('openai_modelo', 'gpt-4'),
+                    modelo=self.configuracion.get('openai_modelo', 'gpt-4o-mini'),
                     usar_cache=True
                 )
                 
@@ -167,12 +169,13 @@ class ContenedorDependencias:
         try:
             analizador = AnalizadorMaestroIA(
                 api_key=openai_key,
-                modelo=self.configuracion.get('openai_modelo', 'gpt-4'),
+                modelo=self.configuracion.get('openai_modelo', 'gpt-4o-mini'),
                 usar_cache=True,
                 temperatura=self.configuracion.get('openai_temperatura', 0.0),
                 cache_ttl=self.configuracion.get('cache_ttl', 3600),
-                max_tokens=self.configuracion.get('openai_max_tokens', 8000),
-                ai_configuration=self.ai_configuration  # PHASE 5: Pass AI configuration
+                max_tokens=self.configuracion.get('openai_max_tokens', 12000),
+                ai_configuration=self.ai_configuration,  # PHASE 5: Pass AI configuration
+                configuracion=self.configuracion  # Pass general configuration for production limits
             )
             
             if analizador.disponible:
@@ -202,8 +205,9 @@ class ContenedorDependencias:
                 usar_cache=False,  # Disable cache in degraded mode
                 temperatura=self.configuracion.get('openai_temperatura', 0.0),
                 cache_ttl=self.configuracion.get('cache_ttl', 3600),
-                max_tokens=self.configuracion.get('openai_max_tokens', 8000),
-                ai_configuration=self.ai_configuration
+                max_tokens=self.configuracion.get('openai_max_tokens', 12000),
+                ai_configuration=self.ai_configuration,
+                configuracion=self.configuracion
             )
             
             # Force disponible = False for degraded mode

@@ -31,7 +31,7 @@ class AIConfiguration:
     seed: Optional[int] = 12345
     
     # Batch Processing Configuration - OPTIMIZED for better performance
-    max_comments_per_batch: int = 50  # OPTIMIZATION: Increased to 50 for target <30s processing
+    max_comments_per_batch: int = 100  # CONSISTENCY: Updated to match config.py and optimized batch size
     batch_retry_count: int = 2
     batch_retry_base_delay: float = 0.5
     
