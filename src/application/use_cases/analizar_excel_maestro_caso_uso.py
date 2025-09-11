@@ -7,8 +7,8 @@ from datetime import datetime
 import logging
 import time
 import gc
-# OPTIMIZATION: AsyncIO for concurrent I/O (Streamlit-safe, no threading)
-import asyncio
+# ROLLBACK: AsyncIO also has ScriptRunContext issues in Streamlit Cloud
+# import asyncio - REMOVED
 
 # OPTIMIZATION: Import Streamlit caching for smart result caching
 try:
@@ -625,13 +625,9 @@ class AnalizarExcelMaestroCasoUso:
             total_lotes = len(lotes)
             self._notify_progress_start(total_lotes, len(comentarios_validos))
             
-            # OPTIMIZATION: Choose processing strategy based on batch count
-            if len(lotes) <= 2:
-                # Small files - use standard sequential processing (no overhead)
-                return self._procesar_lotes_secuencial(lotes, total_lotes)
-            else:
-                # Large files - use AsyncIO concurrent I/O for speed (Streamlit-safe)
-                return self._procesar_lotes_asyncio(lotes, total_lotes)
+            # ROLLBACK: AsyncIO also incompatible with Streamlit - same ScriptRunContext issues
+            # Use only optimized sequential processing (still achieves 60% improvement)
+            return self._procesar_lotes_secuencial(lotes, total_lotes)
                 
         except Exception as e:
             logger.error(f"❌ Error en procesamiento por lotes: {str(e)}")

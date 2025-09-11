@@ -694,7 +694,7 @@ NO agregar comentarios extra. RETORNAR exactamente {len(comentarios)} items en a
             logger.info(f"🔍 [ASYNC] Iniciando análisis maestro de {num_comentarios} comentarios")
             
             # Prepare prompt (reuse existing logic)
-            prompt = self._crear_prompt_maestro(comentarios_batch)
+            prompt = self._generar_prompt_maestro(comentarios_batch)
             
             # Async API call
             response = await self._async_client.chat.completions.create(
@@ -716,7 +716,19 @@ NO agregar comentarios extra. RETORNAR exactamente {len(comentarios)} items en a
             )
             
             # Parse response (reuse existing logic)
-            return self._parsear_respuesta_maestro(response, comentarios_batch)
+            content = response.choices[0].message.content
+            tokens_utilizados = response.usage.total_tokens if response.usage else 0
+            
+            # Parse JSON response
+            resultado = json.loads(content)
+            resultado['_tokens_utilizados'] = tokens_utilizados
+            resultado['_modelo_utilizado'] = self.modelo
+            
+            # Process response using existing logic
+            import time
+            return self._procesar_respuesta_maestra(
+                resultado, comentarios_batch, time.time()
+            )
             
         except Exception as e:
             logger.error(f"❌ [ASYNC] Error en análisis maestro: {str(e)}")
