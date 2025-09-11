@@ -2,7 +2,6 @@
 # This file automatically detects the environment and applies appropriate settings
 
 import os
-import streamlit as st
 from typing import Dict, Any
 
 class EnvironmentConfig:
@@ -17,8 +16,17 @@ class EnvironmentConfig:
         return (
             os.getenv('HOSTNAME', '').startswith('streamlit-') or
             'STREAMLIT_SHARING_MODE' in os.environ or
-            hasattr(st, 'secrets') and hasattr(st.secrets, 'get')
+            os.getenv('STREAMLIT_CLOUD_EMULATOR') == 'true' or
+            self._has_streamlit_secrets()
         )
+    
+    def _has_streamlit_secrets(self) -> bool:
+        """Check if Streamlit secrets are available without importing streamlit"""
+        try:
+            import streamlit as st
+            return hasattr(st, 'secrets') and hasattr(st.secrets, 'get')
+        except ImportError:
+            return False
     
     def _load_config(self) -> Dict[str, Any]:
         """Load configuration based on environment"""
@@ -29,17 +37,24 @@ class EnvironmentConfig:
     
     def _load_streamlit_cloud_config(self) -> Dict[str, Any]:
         """Configuration optimized for Streamlit Cloud (1GB memory limit)"""
+        try:
+            import streamlit as st
+            secrets = st.secrets
+        except (ImportError, AttributeError):
+            # Fallback to environment variables if streamlit not available
+            secrets = type('MockSecrets', (), {'get': lambda k, default='': os.getenv(k, default)})()
+        
         return {
             # API Configuration
-            'OPENAI_API_KEY': st.secrets.get('OPENAI_API_KEY', ''),
-            'OPENAI_MODEL': st.secrets.get('OPENAI_MODEL', 'gpt-4o-mini'),
-            'OPENAI_MAX_TOKENS': int(st.secrets.get('OPENAI_MAX_TOKENS', '4000')),  # Reduced
-            'OPENAI_TEMPERATURE': float(st.secrets.get('OPENAI_TEMPERATURE', '0.0')),
+            'OPENAI_API_KEY': secrets.get('OPENAI_API_KEY', ''),
+            'OPENAI_MODEL': secrets.get('OPENAI_MODEL', 'gpt-4o-mini'),
+            'OPENAI_MAX_TOKENS': int(secrets.get('OPENAI_MAX_TOKENS', '4000')),  # Reduced
+            'OPENAI_TEMPERATURE': float(secrets.get('OPENAI_TEMPERATURE', '0.0')),
             
             # Streamlit Cloud Optimized Limits
-            'MAX_COMMENTS_PER_BATCH': int(st.secrets.get('MAX_COMMENTS_PER_BATCH', '10')),  # Conservative
+            'MAX_COMMENTS_PER_BATCH': int(secrets.get('MAX_COMMENTS_PER_BATCH', '10')),  # Conservative
             'MAX_FILE_SIZE_MB': 3,  # Reduced for cloud
-            'CACHE_TTL_SECONDS': int(st.secrets.get('CACHE_TTL_SECONDS', '1800')),  # 30 min
+            'CACHE_TTL_SECONDS': int(secrets.get('CACHE_TTL_SECONDS', '1800')),  # 30 min
             
             # Performance Settings
             'API_RATE_LIMIT_PER_MINUTE': 30,  # Reduced for stability

@@ -269,9 +269,9 @@ class AIConfigurationManager:
         logger.info(f"🔧 AI Configuration loaded: {summary}")
         logger.debug(f"🔍 Configuration sources: {source_summary}")
         
-        # Warn about potential issues
+        # Log configuration status
         if config.is_deterministic():
-            logger.warning("⚠️ Deterministic configuration detected - intelligent retry enabled for variation")
+            logger.info("🎯 Deterministic mode active - intelligent retry enabled for variation")
         
         if config.max_comments_per_batch > 30:
             logger.warning(f"⚠️ Large batch size configured: {config.max_comments_per_batch} - monitor token usage")
