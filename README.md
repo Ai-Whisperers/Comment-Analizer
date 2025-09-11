@@ -1,39 +1,36 @@
 # Analizador de Comentarios IA - Personal Paraguay
 
-Sistema de **Inteligencia Artificial pura** para análisis avanzado de comentarios de clientes. Plataforma empresarial con arquitectura Clean Architecture, análisis GPT-4 y interfaz profesional.
+Sistema profesional de **Inteligencia Artificial** para análisis avanzado de comentarios de clientes. Plataforma empresarial construida con Clean Architecture, motor GPT-4 de OpenAI e interfaz moderna.
 
-**Desarrollado para**: Personal Paraguay (Núcleo S.A.)
+**Desarrollado para**: Personal Paraguay (Núcleo S.A.)  
+**Versión**: 3.0.0-ia-pure  
+**Estado**: ✅ Producción Estable  
 
 ---
 
-## 🚀 **INICIO RÁPIDO - SISTEMA IA PURO v3.0**
+## 🚀 Inicio Rápido
 
-### **ARQUITECTURA IA-FIRST IMPLEMENTADA**
+### Configuración Básica
 
-**Estado Actual**: ✅ **SISTEMA IA PURO** - Arquitectura Clean con análisis 100% por Inteligencia Artificial.
-
-1. **Configurar API Key**:
+1. **Instalar dependencias**:
    ```bash
-   # Crear archivo .env
-   echo "OPENAI_API_KEY=tu-clave-aquí" > .env
+   pip install -r requirements.txt
    ```
 
-2. **Ejecutar aplicación**:
+2. **Configurar OpenAI**:
+   ```bash
+   echo "OPENAI_API_KEY=sk-proj-tu-clave-openai" > .env
+   ```
+
+3. **Ejecutar aplicación**:
    ```bash
    streamlit run streamlit_app.py
    ```
 
-3. **Navegar a**: http://localhost:8501
+4. **Acceder**: http://localhost:8501
 
-4. **Flujo de análisis**:
-   - **Cargar Archivo** → **Análisis IA Automático** → **Insights Avanzados** → **Export Excel**
-
-5. **Capacidades IA**:
-   - Análisis completo con GPT-4
-   - Detección automática de sentimientos, emociones y temas
-   - Recomendaciones estratégicas generadas por IA
-   - Identificación de puntos de dolor críticos
-   - Exportación profesional automatizada
+### Flujo de Uso
+**📤 Cargar Archivo** → **🤖 Análisis IA** → **📊 Insights** → **📥 Exportar Reporte**
 
 ---
 
@@ -315,58 +312,46 @@ TOKENS_PER_ANALYSIS = 4000     # GPT-4 análisis comprehensivo
 
 ---
 
-## 📚 **DOCUMENTACIÓN SISTEMA IA**
+## 📚 Documentación Completa
 
-### **Estructura de Documentación**:
-```
-docs/
-├── arquitectura/                      # Arquitectura IA + Clean
-│   ├── sistema-ia-puro.md           # Sistema IA comprehensivo
-│   └── clean-architecture-final.md  # Clean Architecture implementada
-├── guias/                           # Guías de usuario y admin
-│   ├── guia-usuario-final.md        # Manual del usuario final
-│   └── troubleshooting.md           # Solución de problemas IA
-├── deployment/                      # Deploy y configuración
-│   └── streamlit-cloud.md           # Deploy en Streamlit Cloud
-└── analisis/                        # Análisis técnicos
-    ├── transformacion-ia-pura.md    # Proceso de migración IA
-    └── problemas-resueltos.md       # Issues solucionados
-```
+### 📖 Guías Disponibles
 
-### **APIs Clean Architecture + IA**:
+| Documento | Descripción | Audiencia |
+|-----------|-------------|-----------|
+| **[📋 Guía de Usuario](docs/guia-usuario.md)** | Manual completo de uso de la aplicación | Usuarios finales |
+| **[⚙️ Guía de Instalación](docs/guia-instalacion.md)** | Instalación paso a paso en todos los sistemas | Administradores |
+| **[🔧 Configuración](docs/configuracion.md)** | Variables de entorno y configuración avanzada | DevOps |
+| **[🚀 Despliegue](docs/despliegue.md)** | Deploy en Streamlit Cloud, Heroku, Docker | DevOps |
+| **[🏗️ Arquitectura](docs/arquitectura-sistema.md)** | Clean Architecture y diseño del sistema | Desarrolladores |
+| **[📖 API Referencia](docs/api-referencia.md)** | Documentación técnica de la API interna | Desarrolladores |
+| **[🔍 Troubleshooting](docs/troubleshooting.md)** | Solución de problemas comunes | Todos |
 
-#### **AnalizadorMaestroIA**:
+### 🎯 Navegación Rápida
+- **Nuevo usuario**: Comienza con [Guía de Usuario](docs/guia-usuario.md)
+- **Instalación**: Ver [Guía de Instalación](docs/guia-instalacion.md)
+- **Problemas**: Consulta [Troubleshooting](docs/troubleshooting.md)
+- **Desarrollo**: Revisa [Arquitectura](docs/arquitectura-sistema.md) y [API](docs/api-referencia.md)
+
+## ⚡ Capacidades IA
+
+### 🧠 Motor de Análisis GPT-4
+- **Análisis de Sentimientos**: Granular con intensidades
+- **Detección de Emociones**: 20+ emociones específicas  
+- **Identificación de Temas**: Automática con relevancia
+- **Puntos de Dolor**: Clasificados por severidad
+- **Recomendaciones**: Estratégicas y accionables
+- **Resumen Ejecutivo**: Narrativa comprehensiva
+
+### 📊 Resultados Generados
 ```python
-# Motor IA principal
-class AnalizadorMaestroIA:
-    def analizar_comentarios_completo(comentarios: List[str]) -> AnalisisCompletoIA
-    def detectar_sentimientos_granular() -> Dict
-    def identificar_temas_relevantes() -> Dict
-    def generar_recomendaciones() -> List[str]
-```
-
-#### **ContenedorDependencias**:
-```python  
-# Dependency Injection para IA
-class ContenedorDependencias:
-    def obtener_analizador_maestro() -> AnalizadorMaestroIA
-    def obtener_caso_uso_maestro() -> AnalizarExcelMaestroCasoUso
-    def configurar_openai_client() -> OpenAI
-```
-
-#### **AnalisisCompletoIA (DTO)**:
-```python
-# Estructura de datos IA
-@dataclass
-class AnalisisCompletoIA:
-    total_comentarios: int
-    distribucion_sentimientos: Dict[str, int]
-    emociones_predominantes: Dict[str, float]
-    temas_mas_relevantes: Dict[str, float]
-    dolores_mas_severos: Dict[str, float]
-    recomendaciones_principales: List[str]
-    resumen_ejecutivo: str
-    confianza_general: float
+AnalisisCompletoIA:
+├── total_comentarios: 1500
+├── distribucion_sentimientos: {"positivo": 68%, "negativo": 22%}
+├── emociones_predominantes: {"satisfaccion": 8.5, "frustracion": 3.2}
+├── temas_mas_relevantes: {"calidad_servicio": 85%, "atencion": 62%}
+├── puntos_dolor_criticos: ["conectividad", "soporte_tecnico"]
+├── recomendaciones_principales: [...]
+└── resumen_ejecutivo: "Análisis comprehensivo..."
 ```
 
 ---
@@ -529,5 +514,31 @@ Escalabilidad:       89/100  (EXCELENTE - Hasta 2000 comentarios)
 
 ---
 
-**🤖 SISTEMA PROFESIONAL DE ANÁLISIS IA PARA COMENTARIOS**  
-**Clean Architecture + GPT-4 + Interfaz Avanzada + Zero Fallbacks**
+## 📞 Soporte y Recursos
+
+### 📚 Documentación
+- **Documentación completa**: [`/docs`](docs/)
+- **Guías paso a paso**: Instalación, configuración, uso
+- **API Reference**: Para desarrolladores  
+- **Troubleshooting**: Solución de problemas comunes
+
+### 🏷️ Información del Proyecto
+- **Versión**: 3.0.0-ia-pure
+- **Motor IA**: OpenAI GPT-4
+- **Framework**: Streamlit + Python 3.12
+- **Arquitectura**: Clean Architecture + SOLID + DDD
+- **Estado**: ✅ Producción estable
+- **Última actualización**: Septiembre 2025
+
+### 🔧 Stack Tecnológico
+- **Backend**: Python 3.12, Clean Architecture
+- **IA**: OpenAI GPT-4, análisis avanzado
+- **Frontend**: Streamlit, CSS glassmorphism
+- **Datos**: Pandas, Excel/CSV processing  
+- **Visualización**: Plotly, gráficos interactivos
+- **Deployment**: Streamlit Cloud, Docker, Heroku
+
+---
+
+**🚀 Sistema Profesional de Análisis IA para Comentarios**  
+*Arquitectura Clean + GPT-4 + Interfaz Moderna*
