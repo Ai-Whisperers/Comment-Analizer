@@ -47,7 +47,7 @@ def _load_config() -> Dict[str, Any]:
         'openai_modelo': get_value('OPENAI_MODEL', 'gpt-4o-mini'),
         'openai_max_tokens': int(get_value('OPENAI_MAX_TOKENS', '12000')),  # OPTIMIZED
         'openai_temperatura': float(get_value('OPENAI_TEMPERATURE', '0.0')),
-        'max_comments': int(get_value('MAX_COMMENTS_PER_BATCH', '100')),  # UNIFIED: Match working pipeline
+        'max_comments': int(get_value('MAX_COMMENTS_PER_BATCH', '200')),  # EXTREME PERFORMANCE: Optimized for parallel processing
         'cache_ttl': int(get_value('CACHE_TTL_SECONDS', '3600')),
         'log_level': get_value('LOG_LEVEL', 'INFO'),
         
@@ -57,9 +57,9 @@ def _load_config() -> Dict[str, Any]:
         'token_threshold_medium': int(get_value('TOKEN_THRESHOLD_MEDIUM', '11000')),  # 11K+ tokens  
         'token_threshold_low': int(get_value('TOKEN_THRESHOLD_LOW', '8000')),  # 8K+ tokens
         'max_comments_high': int(get_value('MAX_COMMENTS_HIGH', '120')),
-        'max_comments_medium': int(get_value('MAX_COMMENTS_MEDIUM', '100')),
-        'max_comments_low': int(get_value('MAX_COMMENTS_LOW', '80')),
-        'max_comments_minimal': int(get_value('MAX_COMMENTS_MINIMAL', '50')),
+        'max_comments_medium': int(get_value('MAX_COMMENTS_MEDIUM', '50')),
+        'max_comments_low': int(get_value('MAX_COMMENTS_LOW', '40')),
+        'max_comments_minimal': int(get_value('MAX_COMMENTS_MINIMAL', '30')),
         
         # VALIDATION LIMITS: Made configurable via environment variables
         'max_batch_size_absolute': int(get_value('MAX_BATCH_SIZE_ABSOLUTE', '120')),

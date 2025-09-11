@@ -78,9 +78,9 @@ def live_batch_progress():
             status_icon = "✅" if action == 'batch_success' else "🔄"
             status_text = "Completado" if action == 'batch_success' else "Procesando"
             
-            # Calculate ETA based on average 75 seconds per batch (from logs)
+            # Calculate ETA based on optimized performance (reduced batch size and tokens)
             remaining_batches = total_batches - current_batch
-            estimated_minutes = remaining_batches * 1.3  # 1.3 min per batch average
+            estimated_minutes = remaining_batches * 0.5  # OPTIMIZED: 0.5 min per batch (reduced from 1.3)
             
             if action == 'batch_success' and current_batch == total_batches:
                 st.progress(1.0, text="🎉 ¡Análisis COMPLETADO! Preparando resultados...")

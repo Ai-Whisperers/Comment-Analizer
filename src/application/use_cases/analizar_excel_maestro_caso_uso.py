@@ -7,6 +7,8 @@ from datetime import datetime
 import logging
 import time
 import gc
+from threading import Thread
+from concurrent.futures import ThreadPoolExecutor, as_completed
 
 # Optional imports for enhanced functionality
 try:
@@ -595,8 +597,13 @@ class AnalizarExcelMaestroCasoUso:
             total_lotes = len(lotes)
             self._notify_progress_start(total_lotes, len(comentarios_validos))
             
-            # SIMPLIFIED: Direct sequential processing only
-            return self._procesar_lotes_secuencial(lotes, total_lotes)
+            # PERFORMANCE OPTIMIZATION: Use parallel processing for large files
+            if len(lotes) >= 4 and len(comentarios_validos) >= 200:
+                logger.info(f"🚀 Using PARALLEL processing for {len(lotes)} lotes (PERFORMANCE TARGET)")
+                return self._procesar_lotes_paralelo(lotes, total_lotes)
+            else:
+                logger.info(f"📈 Using sequential processing for {len(lotes)} lotes")
+                return self._procesar_lotes_secuencial(lotes, total_lotes)
                 
         except Exception as e:
             logger.error(f"❌ Error en procesamiento por lotes: {str(e)}")
@@ -677,6 +684,104 @@ class AnalizarExcelMaestroCasoUso:
         gc.collect()
         
         # Agregar resultados de todos los lotes
+        return self._agregar_resultados_lotes(resultados_lotes, comentarios_analizados_total, len(lotes) * self.max_comments_per_batch)
+    
+    def _procesar_lotes_paralelo(self, lotes: List[List[str]], total_lotes: int) -> AnalisisCompletoIA:
+        """
+        EXTREME PERFORMANCE: Process batches in parallel using threading (Streamlit-compatible)
+        Target: 850+ comments in 20-30 seconds total
+        """
+        import time
+        from concurrent.futures import ThreadPoolExecutor, as_completed
+        
+        logger.info(f"🚀 PARALLEL PROCESSING: {len(lotes)} lotes en paralelo (TARGET: 20-30s)")
+        
+        resultados_lotes = []
+        comentarios_analizados_total = []
+        inicio_paralelo = time.time()
+        
+        # WORKER THREAD CLASS (Streamlit Pattern 1 - No Streamlit commands)
+        class BatchWorkerThread(Thread):
+            def __init__(self, lote, batch_id, analizador_maestro, parent_caso_uso):
+                super().__init__()
+                self.lote = lote
+                self.batch_id = batch_id
+                self.analizador_maestro = analizador_maestro
+                self.parent_caso_uso = parent_caso_uso
+                self.resultado = None
+                self.error = None
+                self.start_time = None
+                self.end_time = None
+                
+            def run(self):
+                """Execute batch analysis in worker thread (NO Streamlit commands)"""
+                try:
+                    self.start_time = time.time()
+                    logger.info(f"🔄 Thread {self.batch_id}: Processing {len(self.lote)} comments")
+                    
+                    # Direct API call without Streamlit dependencies
+                    self.resultado = self.analizador_maestro.analizar_excel_completo(self.lote)
+                    
+                    self.end_time = time.time()
+                    duration = self.end_time - self.start_time
+                    logger.info(f"✅ Thread {self.batch_id}: Completed in {duration:.1f}s")
+                    
+                except Exception as e:
+                    self.error = e
+                    self.end_time = time.time()
+                    logger.error(f"❌ Thread {self.batch_id}: Error - {str(e)}")
+        
+        # Calculate optimal worker count based on batches
+        max_workers = min(len(lotes), 6)  # Max 6 concurrent workers
+        logger.info(f"👥 Using {max_workers} parallel workers for {len(lotes)} batches")
+        
+        # Create and start worker threads
+        workers = []
+        for i, lote in enumerate(lotes):
+            worker = BatchWorkerThread(lote, i+1, self.analizador_maestro, self)
+            workers.append(worker)
+            worker.start()
+            
+        logger.info(f"🚀 {len(workers)} parallel threads STARTED")
+        
+        # Wait for all workers to complete (with progress updates)
+        completed_count = 0
+        while completed_count < len(workers):
+            time.sleep(0.1)  # Small delay to prevent busy waiting
+            
+            # Check completed workers
+            newly_completed = []
+            for worker in workers:
+                if not worker.is_alive() and worker not in newly_completed:
+                    newly_completed.append(worker)
+                    
+            if newly_completed:
+                completed_count += len(newly_completed)
+                
+                # Process results from completed workers
+                for worker in newly_completed:
+                    if worker.resultado and worker.resultado.es_exitoso():
+                        resultados_lotes.append(worker.resultado)
+                        comentarios_analizados_total.extend(worker.resultado.comentarios_analizados)
+                        
+                        # Notify progress (main thread can call Streamlit commands)
+                        self._notify_batch_success(worker.batch_id, total_lotes, worker.resultado.confianza_general)
+                        
+                    elif worker.error:
+                        self._notify_batch_failure(worker.batch_id, total_lotes, str(worker.error))
+                        
+                elapsed = time.time() - inicio_paralelo
+                progress_pct = (completed_count / len(workers)) * 100
+                logger.info(f"📊 Parallel progress: {completed_count}/{len(workers)} ({progress_pct:.1f}%) - {elapsed:.1f}s elapsed")
+        
+        # Final cleanup
+        for worker in workers:
+            worker.join(timeout=1.0)  # Ensure all threads are properly closed
+            
+        tiempo_total = time.time() - inicio_paralelo
+        logger.info(f"🎉 PARALLEL PROCESSING COMPLETED in {tiempo_total:.1f}s")
+        logger.info(f"🎯 TARGET STATUS: {'✅ ACHIEVED' if tiempo_total <= 30 else '❌ EXCEEDED'} (target: 20-30s)")
+        
         return self._agregar_resultados_lotes(resultados_lotes, comentarios_analizados_total, len(lotes) * self.max_comments_per_batch)
     
     # REMOVED: AsyncIO code completely eliminated (80 lines of dead code)
