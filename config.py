@@ -21,10 +21,23 @@ class EnvironmentConfig:
         )
     
     def _has_streamlit_secrets(self) -> bool:
-        """Check if Streamlit secrets are available without importing streamlit"""
+        """Check if Streamlit secrets are available and populated"""
         try:
             import streamlit as st
-            return hasattr(st, 'secrets') and hasattr(st.secrets, 'get')
+            # Check if secrets exist AND have actual content
+            if hasattr(st, 'secrets') and hasattr(st.secrets, 'get'):
+                # Try to access a common secret to verify we're in cloud environment
+                try:
+                    # In real Streamlit Cloud, this would have actual secrets
+                    secrets_dict = dict(st.secrets)
+                    # If secrets is empty or only has default values, we're not in cloud
+                    return len(secrets_dict) > 0 and any(
+                        key in secrets_dict for key in ['OPENAI_API_KEY', 'openai_api_key', 'api_key']
+                    )
+                except:
+                    # If we can't access secrets properly, we're not in cloud
+                    return False
+            return False
         except ImportError:
             return False
     
