@@ -76,6 +76,16 @@ if 'contenedor' not in st.session_state:
         logger.info("✅ Nueva arquitectura inicializada directamente")
         logger.info(f"📊 Session state keys: {list(st.session_state.keys())}")
         
+        # FORCE CACHE REFRESH: Verify modern pipeline components
+        logger.info("🔍 Verifying modern pipeline version...")
+        from src.application.use_cases.analizar_excel_maestro_caso_uso import ComandoAnalisisExcelMaestro
+        import inspect
+        
+        sig = inspect.signature(ComandoAnalisisExcelMaestro.__init__)
+        has_progress_callback = 'progress_callback' in str(sig)
+        logger.info(f"📋 ComandoAnalisisExcelMaestro signature: {sig}")
+        logger.info(f"🎯 Modern pipeline active: {'✅' if has_progress_callback else '❌'} (progress_callback support)")
+        
         # Final verification that contenedor is properly initialized
         if 'contenedor' not in st.session_state or st.session_state.contenedor is None:
             raise Exception("Contenedor no se inicializó correctamente en session_state")

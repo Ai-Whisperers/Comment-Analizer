@@ -256,13 +256,33 @@ MAX_COMMENTS_PER_BATCH={config.get('max_comments', 100)}
             # Continue anyway - let the analysis attempt fail gracefully
                 
         from src.application.use_cases.analizar_excel_maestro_caso_uso import ComandoAnalisisExcelMaestro
+        import inspect
         
-        comando = ComandoAnalisisExcelMaestro(
-            archivo_cargado=uploaded_file,
-            nombre_archivo=uploaded_file.name,
-            limpiar_repositorio=True,
-            progress_callback=progress_callback  # Pass the progress callback!
-        )
+        # DEBUG: Verify command class version (force cache refresh)
+        sig = inspect.signature(ComandoAnalisisExcelMaestro.__init__)
+        logger.info(f"🔍 ComandoAnalisisExcelMaestro signature: {sig}")
+        
+        # Backwards-compatible command creation (handle old cached versions)
+        try:
+            # Try with progress_callback (new version)
+            comando = ComandoAnalisisExcelMaestro(
+                archivo_cargado=uploaded_file,
+                nombre_archivo=uploaded_file.name,
+                limpiar_repositorio=True,
+                progress_callback=progress_callback
+            )
+            logger.info("✅ Using NEW command version with progress_callback")
+        except TypeError as e:
+            # Fallback for cached old version
+            logger.warning(f"⚠️ Fallback to old command version: {str(e)}")
+            comando = ComandoAnalisisExcelMaestro(
+                archivo_cargado=uploaded_file,
+                nombre_archivo=uploaded_file.name,
+                limpiar_repositorio=True
+            )
+            # Set progress callback on caso_uso directly as fallback
+            caso_uso_maestro.progress_callback = progress_callback
+            logger.info("✅ Using OLD command version + direct progress_callback assignment")
         
         # Initialize progress display for real-time updates
         st.info("🤖 Iniciando análisis con Inteligencia Artificial...")
