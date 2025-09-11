@@ -104,7 +104,7 @@ class AnalizarExcelMaestroCasoUso:
         repositorio_comentarios: IRepositorioComentarios,
         lector_archivos: ILectorArchivos,
         analizador_maestro: AnalizadorMaestroIA,
-        max_comments_per_batch: int = 50,  # OPTIMIZATION: Increased to 50 for target <30s processing
+        max_comments_per_batch: int = 60,  # OPTIMIZATION: Increased to 60 for optimal performance based on rate limit analysis
         ai_configuration=None,
         progress_callback=None
     ):
@@ -114,14 +114,14 @@ class AnalizarExcelMaestroCasoUso:
         
         # OPTIMIZATION: Enhanced batch sizes for <30s target performance  
         if max_comments_per_batch > 80:
-            logger.error(f"❌ SAFETY: Batch size too large: {max_comments_per_batch}, forcing to 50")
-            max_comments_per_batch = 50
+            logger.error(f"❌ SAFETY: Batch size too large: {max_comments_per_batch}, forcing to 60")
+            max_comments_per_batch = 60
         elif max_comments_per_batch < 1:
-            logger.warning(f"⚠️ SAFETY: Batch size too small: {max_comments_per_batch}, setting to 50")
-            max_comments_per_batch = 50
-        elif max_comments_per_batch < 30:
-            logger.info(f"📈 PERFORMANCE: Increasing batch size from {max_comments_per_batch} to 50 for <30s target")
-            max_comments_per_batch = 50
+            logger.warning(f"⚠️ SAFETY: Batch size too small: {max_comments_per_batch}, setting to 60")
+            max_comments_per_batch = 60
+        elif max_comments_per_batch < 40:
+            logger.info(f"📈 PERFORMANCE: Increasing batch size from {max_comments_per_batch} to 60 for optimal performance")
+            max_comments_per_batch = 60
             
         self.max_comments_per_batch = max_comments_per_batch
         

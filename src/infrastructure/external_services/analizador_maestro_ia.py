@@ -181,7 +181,7 @@ class AnalizadorMaestroIA:
             tokens_finales = self.max_tokens_limit
             
         # Safety check 3: FASE 3 OPTIMIZED - Increased production limit for better performance
-        PRODUCTION_SAFE_LIMIT = 12000  # FASE 3: Increased from 8K to 12K for larger batches
+        PRODUCTION_SAFE_LIMIT = 14000  # OPTIMIZED: Increased from 12K to 14K based on rate limit analysis
         if tokens_finales > PRODUCTION_SAFE_LIMIT:
             logger.error(f"🚨 PRODUCTION SAFETY: Forzando tokens de {tokens_finales:,} a límite producción {PRODUCTION_SAFE_LIMIT:,}")
             tokens_finales = PRODUCTION_SAFE_LIMIT
@@ -266,12 +266,14 @@ class AnalizadorMaestroIA:
         # FASE 5 OPTIMIZATION: Adaptive safety nets based on file size and configuration
         
         # SAFETY NET 1: Adaptive maximum based on file size and token limits
-        if tokens_disponibles >= 12000:  # 12K+ tokens available
-            ADAPTIVE_MAX_COMMENTS = min(70, max_comentarios_teorico)  # Up to 70 for large token limits
+        if tokens_disponibles >= 14000:  # 14K+ tokens available
+            ADAPTIVE_MAX_COMMENTS = min(80, max_comentarios_teorico)  # Up to 80 for large token limits
+        elif tokens_disponibles >= 12000:  # 12K+ tokens available
+            ADAPTIVE_MAX_COMMENTS = min(70, max_comentarios_teorico)  # Up to 70 for 12K tokens
         elif tokens_disponibles >= 8000:   # 8K+ tokens available  
-            ADAPTIVE_MAX_COMMENTS = min(55, max_comentarios_teorico)  # Up to 55 for 8K tokens (was 40)
+            ADAPTIVE_MAX_COMMENTS = min(60, max_comentarios_teorico)  # Up to 60 for 8K tokens (optimized)
         else:  # Limited tokens
-            ADAPTIVE_MAX_COMMENTS = min(30, max_comentarios_teorico)  # Conservative for small token limits
+            ADAPTIVE_MAX_COMMENTS = min(40, max_comentarios_teorico)  # Conservative for small token limits
             
         if len(comentarios_raw) > ADAPTIVE_MAX_COMMENTS:
             logger.warning(f"🚨 ADAPTIVE SAFETY: {len(comentarios_raw)} comentarios > {ADAPTIVE_MAX_COMMENTS} (tokens={tokens_disponibles:,}), limitando")
