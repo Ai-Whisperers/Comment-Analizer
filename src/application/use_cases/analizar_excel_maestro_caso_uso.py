@@ -7,8 +7,8 @@ from datetime import datetime
 import logging
 import time
 import gc
-# ROLLBACK: Threading removed - incompatible with Streamlit Cloud
-# import asyncio, threading, concurrent.futures - REMOVED
+# OPTIMIZATION: AsyncIO for concurrent I/O (Streamlit-safe, no threading)
+import asyncio
 
 # OPTIMIZATION: Import Streamlit caching for smart result caching
 try:
@@ -625,9 +625,13 @@ class AnalizarExcelMaestroCasoUso:
             total_lotes = len(lotes)
             self._notify_progress_start(total_lotes, len(comentarios_validos))
             
-            # ROLLBACK: Parallel processing incompatible with Streamlit Cloud
-            # Use only optimized sequential processing for all files
-            return self._procesar_lotes_secuencial(lotes, total_lotes)
+            # OPTIMIZATION: Choose processing strategy based on batch count
+            if len(lotes) <= 2:
+                # Small files - use standard sequential processing (no overhead)
+                return self._procesar_lotes_secuencial(lotes, total_lotes)
+            else:
+                # Large files - use AsyncIO concurrent I/O for speed (Streamlit-safe)
+                return self._procesar_lotes_asyncio(lotes, total_lotes)
                 
         except Exception as e:
             logger.error(f"❌ Error en procesamiento por lotes: {str(e)}")
@@ -707,8 +711,77 @@ class AnalizarExcelMaestroCasoUso:
         # Agregar resultados de todos los lotes
         return self._agregar_resultados_lotes(resultados_lotes, comentarios_analizados_total, len(lotes) * self.max_comments_per_batch)
     
-    # ROLLBACK: _procesar_lotes_paralelo removed - incompatible with Streamlit Cloud deployment
-    # ThreadPoolExecutor causes "missing ScriptRunContext" errors in Streamlit Cloud
+    def _procesar_lotes_asyncio(self, lotes: List[List[str]], total_lotes: int) -> AnalisisCompletoIA:
+        """
+        OPTIMIZATION: AsyncIO concurrent I/O processing (Streamlit-safe)
+        Uses AsyncIO for concurrent API calls without threading
+        Expected: 30-50% performance improvement for large files
+        """
+        logger.info(f"⚡ Using AsyncIO concurrent I/O for {len(lotes)} lotes")
+        
+        try:
+            # Execute AsyncIO concurrent processing in main thread (Streamlit-safe)
+            resultados_lotes = asyncio.run(
+                self.analizador_maestro.analizar_batches_concurrent(lotes)
+            )
+            
+            # Update progress for each completed batch
+            comentarios_analizados_total = []
+            for i, resultado in enumerate(resultados_lotes):
+                batch_number = i + 1
+                
+                if resultado and resultado.es_exitoso():
+                    # Progress notification for successful batch
+                    self._notify_batch_success(batch_number, total_lotes, resultado.confianza_general)
+                    comentarios_analizados_total.extend(resultado.comentarios_analizados)
+                    logger.info(f"✅ [ASYNCIO] Lote {batch_number} exitoso: confianza={resultado.confianza_general:.2f}")
+                else:
+                    # Progress notification for failed batch
+                    self._notify_batch_failure(batch_number, total_lotes, "AsyncIO processing failed")
+                    logger.error(f"❌ [ASYNCIO] Lote {batch_number} falló")
+            
+            # Memory cleanup after AsyncIO processing
+            if PSUTIL_AVAILABLE:
+                try:
+                    process = psutil.Process()
+                    memory_mb = process.memory_info().rss / 1024 / 1024
+                    logger.info(f"💾 Memoria después de AsyncIO: {memory_mb:.1f}MB")
+                except:
+                    pass
+            
+            # Force garbage collection
+            gc.collect()
+            
+            # Aggregate all successful results
+            if resultados_lotes:
+                total_comments_processed = sum(len(resultado.comentarios_analizados) for resultado in resultados_lotes)
+                return self._agregar_resultados_lotes(resultados_lotes, comentarios_analizados_total, total_comments_processed)
+            else:
+                logger.error("❌ [ASYNCIO] No hay resultados de lotes para agregar")
+                from ..dtos.analisis_completo_ia import AnalisisCompletoIA
+                from datetime import datetime
+                return AnalisisCompletoIA(
+                    total_comentarios=0,
+                    tendencia_general='error',
+                    resumen_ejecutivo='Error en procesamiento AsyncIO',
+                    recomendaciones_principales=[],
+                    comentarios_analizados=[],
+                    confianza_general=0.0,
+                    tiempo_analisis=0.0,
+                    tokens_utilizados=0,
+                    modelo_utilizado='error',
+                    fecha_analisis=datetime.now(),
+                    distribucion_sentimientos={},
+                    temas_mas_relevantes={},
+                    dolores_mas_severos={},
+                    emociones_predominantes={}
+                )
+        
+        except Exception as e:
+            logger.error(f"❌ [ASYNCIO] Error en procesamiento: {str(e)}")
+            # Fallback to sequential processing
+            logger.info("🔄 [ASYNCIO] Falling back to sequential processing")
+            return self._procesar_lotes_secuencial(lotes, total_lotes)
     
     def _agregar_resultados_lotes(self, resultados_lotes: List[AnalisisCompletoIA], 
                                  comentarios_analizados_total: List[Dict], 

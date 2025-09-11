@@ -95,61 +95,104 @@ except ImportError as e:
     CSS_UTILS_AVAILABLE = False
 
 
-def _run_analysis(uploaded_file, analysis_type):
-    """Run pure IA analysis using maestro system only with real-time batch progress tracking"""
+@st.fragment(run_every=0.5)
+def live_batch_progress():
+    """
+    OPTIMIZATION: Real-time progress updates using Streamlit fragments
+    Updates every 0.5s without full page rerun (Streamlit-native pattern)
+    """
+    if 'batch_progress_data' not in st.session_state:
+        return
     
-    # NEW BATCH PROGRESS TRACKING: Create progress display containers
-    progress_container = st.empty()
-    status_container = st.empty()
+    progress_data = st.session_state.batch_progress_data
+    action = progress_data.get('action', 'unknown')
     
-    # Create progress callback for real-time updates
-    def create_progress_callback():
-        """Create callback for real-time batch progress updates"""
-        def update_progress(progress_data):
-            # Update Streamlit progress display in real-time
-            action = progress_data.get('action', 'unknown')
+    if action == 'start':
+        total_batches = progress_data.get('total_batches', 0)
+        total_comments = progress_data.get('total_comments', 0)
+        st.progress(0.0, text=f"Iniciando: {total_comments} comentarios en {total_batches} lotes")
+        
+        col1, col2, col3 = st.columns(3)
+        with col1:
+            st.metric("📊 Total", total_comments)
+        with col2:
+            st.metric("📦 Lotes", total_batches)
+        with col3:
+            st.metric("⚡ Modo", "AsyncIO" if total_batches > 2 else "Secuencial")
             
-            if action == 'start':
-                total_batches = progress_data.get('total_batches', 0)
-                total_comments = progress_data.get('total_comments', 0)
-                progress_container.progress(0.0, text=f"Iniciando análisis: {total_comments} comentarios en {total_batches} lotes")
-                status_container.info(f"**🚀 Iniciando Análisis IA**\n\n📊 **Total comentarios:** {total_comments}\n📦 **Lotes a procesar:** {total_batches}")
-                
-            elif action == 'batch_start':
-                current_batch = progress_data.get('current_batch', 0)
-                total_batches = progress_data.get('total_batches', 0)
-                batch_size = progress_data.get('batch_size', 0)
-                progress_pct = progress_data.get('progress_percentage', 0.0)
-                
-                progress_container.progress(progress_pct / 100, text=f"Procesando lote {current_batch}/{total_batches} ({batch_size} comentarios)")
-                status_container.info(f"**🔄 Procesando Lote {current_batch}/{total_batches}**\n\n📊 **Progreso:** {progress_pct:.1f}%\n📦 **Comentarios en lote:** {batch_size}\n⏱️ **Estado:** Analizando con IA...")
-                
-            elif action == 'batch_success':
-                current_batch = progress_data.get('current_batch', 0)
-                total_batches = progress_data.get('total_batches', 0)
-                confidence = progress_data.get('confidence', 0.0)
-                progress_pct = progress_data.get('progress_percentage', 0.0)
-                
-                progress_container.progress(progress_pct / 100, text=f"✅ Lote {current_batch}/{total_batches} completado")
-                status_container.success(f"**✅ Lote {current_batch}/{total_batches} Completado**\n\n📊 **Progreso:** {progress_pct:.1f}%\n🎯 **Confianza:** {confidence:.2f}\n⏱️ **Estado:** Éxito")
-                
-            elif action == 'batch_failure':
-                current_batch = progress_data.get('current_batch', 0)
-                total_batches = progress_data.get('total_batches', 0)
-                reason = progress_data.get('reason', 'Error desconocido')
-                progress_pct = progress_data.get('progress_percentage', 0.0)
-                
-                progress_container.progress(progress_pct / 100, text=f"❌ Error en lote {current_batch}/{total_batches}")
-                status_container.error(f"**❌ Error en Lote {current_batch}/{total_batches}**\n\n📊 **Progreso:** {progress_pct:.1f}%\n⚠️ **Razón:** {reason}")
+    elif action in ['batch_start', 'batch_success']:
+        current_batch = progress_data.get('current_batch', 0)
+        total_batches = progress_data.get('total_batches', 0)
+        progress_pct = progress_data.get('progress_percentage', 0.0)
+        confidence = progress_data.get('confidence', 0.0)
+        
+        # Progress bar with dynamic text
+        status_icon = "✅" if action == 'batch_success' else "🔄"
+        st.progress(progress_pct / 100, text=f"{status_icon} Lote {current_batch}/{total_batches}")
+        
+        # Real-time metrics
+        col1, col2, col3 = st.columns(3)
+        with col1:
+            st.metric("📈 Progreso", f"{progress_pct:.1f}%")
+        with col2:
+            st.metric("🎯 Confianza", f"{confidence:.2f}" if confidence > 0 else "---")
+        with col3:
+            processing_mode = "AsyncIO" if total_batches > 2 else "Secuencial"
+            st.metric("⚡ Procesando", processing_mode)
+            
+    elif action == 'batch_failure':
+        current_batch = progress_data.get('current_batch', 0)
+        total_batches = progress_data.get('total_batches', 0)
+        progress_pct = progress_data.get('progress_percentage', 0.0)
+        reason = progress_data.get('reason', 'Error')
+        
+        st.progress(progress_pct / 100, text=f"❌ Error en lote {current_batch}/{total_batches}")
+        st.error(f"**Lote {current_batch}**: {reason}")
+
+def _run_analysis(uploaded_file, analysis_type):
+    """Run pure IA analysis using maestro system with enhanced fragment-based progress tracking"""
+    
+    # OPTIMIZATION: Fragment-based progress display (no containers needed)
+    # The live_batch_progress fragment will handle all display logic
+    st.markdown("### 🚀 Análisis en Progreso")
+    
+    # Initialize session state for fragment communication
+    if 'batch_progress_data' not in st.session_state:
+        st.session_state.batch_progress_data = {'action': 'initialize'}
+    
+    # Display live progress using fragment (auto-updates every 0.5s)
+    live_batch_progress()
+    
+    # Create enhanced progress callback for fragment communication
+    def create_enhanced_progress_callback():
+        """Create callback that updates session state for fragment display"""
+        def update_progress(progress_data):
+            # Store in session state for fragment access
+            st.session_state.batch_progress_data = progress_data.copy()
+            
+            # Add processing mode info
+            if 'total_batches' in progress_data:
+                total_batches = progress_data['total_batches']
+                st.session_state.batch_progress_data['processing_mode'] = (
+                    'AsyncIO' if total_batches > 2 else 'Secuencial'
+                )
+            
+            # Fragment will auto-update based on session state
+            # No manual container updates needed
         
         return update_progress
     
-    # Create the progress callback
-    progress_callback = create_progress_callback()
+    # Create the enhanced progress callback
+    progress_callback = create_enhanced_progress_callback()
     
-    # Show initial progress state
-    progress_container.progress(0.0, text="Inicializando análisis IA...")
-    status_container.info("**Preparando análisis...** \n\n📊 Inicializando sistema de Inteligencia Artificial")
+    # Initialize progress state (fragment will display)
+    st.session_state.batch_progress_data = {
+        'action': 'start',
+        'total_batches': 0,
+        'total_comments': 0,
+        'current_batch': 0,
+        'progress_percentage': 0.0
+    }
     
     # Mark analysis as in progress
     st.session_state.ai_analysis_in_progress = True
@@ -188,12 +231,9 @@ def _run_analysis(uploaded_file, analysis_type):
             # Memory management: cleanup previous analysis before storing new one
             _cleanup_previous_analysis()
             
-            # PROGRESS TRACKING: Clear progress display on success
-            try:
-                progress_container.empty()  # Clear progress display
-                status_container.empty()    # Clear status display
-            except:
-                pass  # Containers may not exist in fallback mode
+            # PROGRESS TRACKING: Clear progress state on success
+            if 'batch_progress_data' in st.session_state:
+                del st.session_state.batch_progress_data
             
             st.session_state.analysis_results = resultado
             st.session_state.analysis_type = "maestro_ia"
@@ -201,44 +241,34 @@ def _run_analysis(uploaded_file, analysis_type):
             st.balloons()
             st.rerun()
         else:
-            # PROGRESS TRACKING: Clear progress on failure
-            try:
-                progress_container.empty()
-                status_container.empty()
-            except:
-                pass
+            # PROGRESS TRACKING: Clear progress state on failure
+            if 'batch_progress_data' in st.session_state:
+                del st.session_state.batch_progress_data
             
             st.error(f"Error en análisis IA: {resultado.mensaje}")
             
     except ArchivoException as e:
-        # PROGRESS TRACKING: Clear progress on file processing error
-        try:
-            progress_container.empty()
-            status_container.empty()
-        except:
-            pass
+        # PROGRESS TRACKING: Clear progress state on error
+        if 'batch_progress_data' in st.session_state:
+            del st.session_state.batch_progress_data
         st.error(f"Error procesando archivo: {str(e)}")
     except IAException as e:
-        # PROGRESS TRACKING: Clear progress on IA service error  
-        try:
-            progress_container.empty()
-            status_container.empty()
-        except:
-            pass
+        # PROGRESS TRACKING: Clear progress state on error
+        if 'batch_progress_data' in st.session_state:
+            del st.session_state.batch_progress_data
         st.error(f"Error de servicio IA: {str(e)}")
         st.info("Verifica que tu OpenAI API key esté configurada correctamente.")
     except Exception as e:
-        # PROGRESS TRACKING: Clear progress on unexpected error
-        try:
-            progress_container.empty()  
-            status_container.empty()
-        except:
-            pass
+        # PROGRESS TRACKING: Clear progress state on error
+        if 'batch_progress_data' in st.session_state:
+            del st.session_state.batch_progress_data
         st.error(f"Error inesperado: {str(e)}")
         st.error("Este es un error no manejado. Por favor contacta soporte técnico.")
     finally:
         # PROGRESS TRACKING: Final cleanup guarantee
         st.session_state.ai_analysis_in_progress = False
+        if 'batch_progress_data' in st.session_state:
+            del st.session_state.batch_progress_data
 
 
 def _create_comprehensive_emotions_chart(emociones_predominantes):
