@@ -261,14 +261,14 @@ class AnalizadorMaestroIA:
             threshold_high = self.configuracion.get('token_threshold_high', 14000)
             threshold_medium = self.configuracion.get('token_threshold_medium', 11000)
             threshold_low = self.configuracion.get('token_threshold_low', 8000)
-            max_high = self.configuracion.get('max_comments_high', 120)
-            max_medium = self.configuracion.get('max_comments_medium', 100)
-            max_low = self.configuracion.get('max_comments_low', 80)
-            max_minimal = self.configuracion.get('max_comments_minimal', 50)
+            max_high = self.configuracion.get('max_comments_high', 140)    # OPTIMIZED: Increased for 850+ comment files
+            max_medium = self.configuracion.get('max_comments_medium', 120) # OPTIMIZED: Increased for better performance
+            max_low = self.configuracion.get('max_comments_low', 100)       # OPTIMIZED: Increased threshold
+            max_minimal = self.configuracion.get('max_comments_minimal', 80) # OPTIMIZED: Increased minimal
         else:
-            # Fallback values
+            # Fallback values - OPTIMIZED to match configuration above
             threshold_high, threshold_medium, threshold_low = 14000, 11000, 8000
-            max_high, max_medium, max_low, max_minimal = 120, 100, 80, 50
+            max_high, max_medium, max_low, max_minimal = 140, 120, 100, 80
         
         if tokens_disponibles >= threshold_high:  # Configurable high threshold
             ADAPTIVE_MAX_COMMENTS = min(max_high, max_comentarios_teorico)

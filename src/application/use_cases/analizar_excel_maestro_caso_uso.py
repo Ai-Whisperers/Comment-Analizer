@@ -98,7 +98,7 @@ class AnalizarExcelMaestroCasoUso:
         repositorio_comentarios: IRepositorioComentarios,
         lector_archivos: ILectorArchivos,
         analizador_maestro: AnalizadorMaestroIA,
-        max_comments_per_batch: int = 100,  # OPTIMIZATION: Optimized for 1000-comment files (30s for 1000 comments)
+        max_comments_per_batch: int = 120,  # OPTIMIZATION: Increased for better performance (up to 850 comments in 20-30s)
         ai_configuration=None,
         progress_callback=None,
         configuracion=None
@@ -598,7 +598,7 @@ class AnalizarExcelMaestroCasoUso:
             self._notify_progress_start(total_lotes, len(comentarios_validos))
             
             # PERFORMANCE OPTIMIZATION: Use parallel processing for large files
-            if len(lotes) >= 4 and len(comentarios_validos) >= 200:
+            if len(lotes) >= 3 and len(comentarios_validos) >= 150:  # OPTIMIZED: Reduced threshold for more parallel processing
                 logger.info(f"🚀 Using PARALLEL processing for {len(lotes)} lotes (PERFORMANCE TARGET)")
                 return self._procesar_lotes_paralelo(lotes, total_lotes)
             else:
@@ -732,7 +732,7 @@ class AnalizarExcelMaestroCasoUso:
                     logger.error(f"❌ Thread {self.batch_id}: Error - {str(e)}")
         
         # Calculate optimal worker count based on batches
-        max_workers = min(len(lotes), 6)  # Max 6 concurrent workers
+        max_workers = min(len(lotes), 8)  # Max 8 concurrent workers (OPTIMIZED for performance)
         logger.info(f"👥 Using {max_workers} parallel workers for {len(lotes)} batches")
         
         # Create and start worker threads

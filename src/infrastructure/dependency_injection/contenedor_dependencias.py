@@ -97,7 +97,7 @@ class ContenedorDependencias:
                     repositorio_comentarios=self.obtener_repositorio_comentarios(),
                     lector_archivos=self.obtener_lector_archivos(),
                     analizador_maestro=self.obtener_analizador_maestro_ia(),
-                    max_comments_per_batch=self.configuracion.get('max_comments', 100),
+                    max_comments_per_batch=self.configuracion.get('max_comments', 120),  # OPTIMIZED: Increased for performance
                     ai_configuration=self.ai_configuration,
                     progress_callback=progress_callback,
                     configuracion=self.configuracion
@@ -109,7 +109,7 @@ class ContenedorDependencias:
                                                  repositorio_comentarios=self.obtener_repositorio_comentarios(),
                                                  lector_archivos=self.obtener_lector_archivos(),
                                                  analizador_maestro=self.obtener_analizador_maestro_ia(),
-                                                 max_comments_per_batch=self.configuracion.get('max_comments', 100),
+                                                 max_comments_per_batch=self.configuracion.get('max_comments', 120),  # OPTIMIZED: Increased for performance
                                                  ai_configuration=self.ai_configuration,
                                                  configuracion=self.configuracion
                                              ))
